@@ -1,0 +1,33 @@
+aruljo/vendor
+aruljo/.phpunit.cache
+aruljo/node_modules
+aruljo/public/build
+aruljo/public/hot
+aruljo/public/storage
+aruljo/vendor
+aruljo/.env
+aruljo/.env.backup
+aruljo/.env.production
+aruljo/.phpunit.result.cache
+aruljo/Homestead.json
+aruljo/Homestead.yaml
+aruljo/auth.json
+aruljo/npm-debug.log
+aruljo/yarn-error.log
+aruljo/.fleet
+aruljo/.idea
+aruljo/.vscode
+# Ignore everything in the storage directory
+aruljo/storage/*
+
+# Allow the specific directories to be tracked
+!aruljo/storage/framework/
+!aruljo/storage/framework/sessions/
+!aruljo/storage/framework/views/
+!aruljo/storage/framework/cache/
+
+# Ignore files in these directories
+aruljo/storage/framework/cache/*
+aruljo/storage/framework/sessions/*
+aruljo/storage/framework/views/*
+
