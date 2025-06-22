@@ -18,6 +18,11 @@
                 </div>
             </div>
 
+            <x-nav-link :href="route('leads.index')" :active="request()->routeIs('leads.*')">
+                {{ __('Leads') }}
+            </x-nav-link>
+
+
             <!-- Settings Dropdown -->
             <div class="hidden sm:flex sm:items-center sm:ms-6">
                 <x-dropdown align="right" width="48">
@@ -70,7 +75,12 @@
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                 {{ __('Dashboard') }}
             </x-responsive-nav-link>
+
+            <x-responsive-nav-link :href="route('leads.index')" :active="request()->routeIs('leads.*')">
+                {{ __('Leads') }}
+            </x-responsive-nav-link>
         </div>
+
 
         <!-- Responsive Settings Options -->
         <div class="pt-4 pb-1 border-t border-gray-200 dark:border-gray-600">
