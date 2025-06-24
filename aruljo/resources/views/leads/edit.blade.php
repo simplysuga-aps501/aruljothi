@@ -89,7 +89,7 @@
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
                 <select name="status" class="w-full border border-gray-300 rounded-lg px-3 py-2">
-                    @foreach(['New Lead', 'Lead Followup', 'In Progress', 'Quotation', 'PO', 'Cancelled', 'Completed'] as $status)
+                    @foreach(['New Lead', 'Lead Followup', 'Quotation', 'PO', 'Cancelled', 'Completed'] as $status)
                         <option value="{{ $status }}" @selected($lead->status === $status)>{{ $status }}</option>
                     @endforeach
                 </select>

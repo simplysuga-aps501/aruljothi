@@ -118,7 +118,7 @@ class LeadController extends Controller
     private function allowedStatuses(): array
     {
         return [
-            'New Enquiry',
+            'New Lead',
             'Lead Followup',
             'Quotation',
             'PO',
