@@ -16,6 +16,7 @@
                 <select name="platform" class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <option value="Justdial" @selected($lead->platform === 'Justdial')>Justdial</option>
                     <option value="IndiaMART" @selected($lead->platform === 'IndiaMART')>IndiaMART</option>
+                    <option value="Others" @selected($lead->platform === 'Others')>Others</option>
                 </select>
             </div>
 

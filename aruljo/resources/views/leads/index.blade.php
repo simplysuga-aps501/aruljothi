@@ -40,7 +40,13 @@
                             <td class="px-3 py-2 border">{{ $lead->platform }}</td>
                             <td class="px-3 py-2 border">{{ \Carbon\Carbon::parse($lead->lead_date)->format('d-m-Y h:i A') }}</td>
                             <td class="px-3 py-2 border">{{ $lead->buyer_name }}</td>
-                            <td class="px-3 py-2 border">{{ $lead->buyer_contact }}</td>
+                            <td class="px-3 py-2 border">
+                                <a href="tel:{{ $lead->buyer_contact }}"
+                                   onclick="copyPhone(event, '{{ $lead->buyer_contact }}')"
+                                   class="text-blue-600 hover:underline cursor-pointer">
+                                   {{ $lead->buyer_contact }}
+                                </a>
+                            </td>
                             <td class="px-3 py-2 border">
                                 <form action="{{ route('leads.update', $lead->id) }}" method="POST" class="flex flex-col gap-1">
                                     @csrf
@@ -108,7 +114,13 @@
                     </div>
                     <div class="text-xs text-gray-600 mb-2">
                         <p><strong>Platform:</strong> {{ $lead->platform }}</p>
-                        <p><strong>Contact:</strong> {{ $lead->buyer_contact }}</p>
+                        <p><strong>Contact:</strong>
+                            <a href="tel:{{ $lead->buyer_contact }}"
+                               onclick="copyPhone(event, '{{ $lead->buyer_contact }}')"
+                               class="text-blue-600 hover:underline cursor-pointer">
+                               {{ $lead->buyer_contact }}
+                            </a>
+                        </p>
                         <p><strong>Status:</strong> {{ $lead->status }}</p>
                         <p><strong>Assigned:</strong> {{ $lead->assigned_to }}</p>
                     </div>
@@ -135,3 +147,14 @@
         </div>
     </div>
 </x-app-layout>
+<script>
+function copyPhone(event, number) {
+    // Only copy on desktop
+    if (!/Mobi|Android|iPhone/i.test(navigator.userAgent)) {
+        event.preventDefault(); // Prevent dial
+        navigator.clipboard.writeText(number)
+            .then(() => alert('Phone number copied: ' + number))
+            .catch(() => alert('Failed to copy number.'));
+    }
+}
+</script>

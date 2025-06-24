@@ -25,7 +25,7 @@ class LeadController extends Controller
             'lead_date' => 'required|date',
             'buyer_name' => 'required|string',
             'buyer_location' => 'nullable|string',
-            'buyer_contact' => 'required|string',
+            'buyer_contact' => ['required', 'regex:/^[6-9]\d{9}$/'],
             'platform_keyword' => 'nullable|string',
         ]);
 
@@ -40,7 +40,9 @@ class LeadController extends Controller
     public function showAll()
     {
         $leads = Lead::orderBy('created_at', 'asc')->get();
-        $users = User::pluck('name', 'id'); // ['id' => 'name']
+        $users = User::whereDoesntHave('roles', function ($query) {
+            $query->where('name', 'admin');
+        })->pluck('name', 'id');
         $currentUser = Auth::user()->name;
 
         return view('leads.index', compact('leads', 'users', 'currentUser'));
@@ -68,7 +70,7 @@ class LeadController extends Controller
             'lead_date' => 'required|date',
             'buyer_name' => 'required|string',
             'buyer_location' => 'nullable|string',
-            'buyer_contact' => 'required|string',
+            'buyer_contact' => ['required', 'regex:/^[6-9]\d{9}$/'],
             'platform_keyword' => 'nullable|string',
             'product_detail' => 'nullable|string',
             'delivery_location' => 'nullable|string',
@@ -88,7 +90,9 @@ class LeadController extends Controller
     public function edit($id)
     {
         $lead = Lead::findOrFail($id);
-        $users = User::pluck('name', 'id');
+        $users = User::whereDoesntHave('roles', function ($query) {
+            $query->where('name', 'admin');
+        })->pluck('name', 'id');
         $currentUser = Auth::user()->name;
 
         return view('leads.edit', compact('lead', 'users', 'currentUser'));
