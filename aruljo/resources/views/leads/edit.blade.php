@@ -16,6 +16,7 @@
                 <select name="platform" class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <option value="Justdial" @selected($lead->platform === 'Justdial')>Justdial</option>
                     <option value="IndiaMART" @selected($lead->platform === 'IndiaMART')>IndiaMART</option>
+                    <option value="Others" @selected($lead->platform === 'Others')>Others</option>
                 </select>
             </div>
 
@@ -88,7 +89,7 @@
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
                 <select name="status" class="w-full border border-gray-300 rounded-lg px-3 py-2">
-                    @foreach(['New Lead', 'Lead Followup', 'In Progress', 'Quotation', 'PO', 'Cancelled', 'Completed'] as $status)
+                    @foreach(['New Lead', 'Lead Followup', 'Quotation', 'PO', 'Cancelled', 'Completed'] as $status)
                         <option value="{{ $status }}" @selected($lead->status === $status)>{{ $status }}</option>
                     @endforeach
                 </select>
