@@ -42,7 +42,7 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/leads/{id}/full-update', [LeadController::class, 'updateFull'])->name('leads.update.full');
     Route::get('/leads/{id}/edit', [LeadController::class, 'edit'])->name('leads.edit');
 
-    // 🛡️ Soft delete route (only for admins)
+    // 🛡️ Delete
     Route::delete('/leads/{id}', [LeadController::class, 'destroy'])
         ->name('leads.destroy');
 
