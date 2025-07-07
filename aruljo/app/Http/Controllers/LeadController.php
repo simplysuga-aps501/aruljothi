@@ -39,13 +39,17 @@ class LeadController extends Controller
     // 📝 Show all leads in blade view
     public function showAll()
     {
-        $leads = Lead::orderBy('created_at', 'asc')->get();
-        $users = User::whereDoesntHave('roles', function ($query) {
-            $query->where('name', 'admin');
-        })->pluck('name', 'id');
-        $currentUser = Auth::user()->name;
+         $leads = Lead::whereNotIn('status', ['Cancelled', 'Completed'])
+                         ->orderBy('created_at', 'asc')
+                         ->get();
 
-        return view('leads.index', compact('leads', 'users', 'currentUser'));
+            $users = User::whereDoesntHave('roles', function ($query) {
+                $query->where('name', 'admin');
+            })->pluck('name', 'id');
+
+            $currentUser = Auth::user()->name;
+
+            return view('leads.index', compact('leads', 'users', 'currentUser'));
     }
 
     public function update(Request $request, $id)

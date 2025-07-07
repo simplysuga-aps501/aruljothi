@@ -1,26 +1,39 @@
 <x-app-layout>
+    @push('styles')
+        <!--Datatable CSS-->
+        <link rel="stylesheet" href="https://cdn.datatables.net/2.3.2/css/dataTables.dataTables.css">
+        <!--Responsive CSS-->
+        <link rel="stylesheet" href="https://cdn.datatables.net/responsive/3.0.4/css/responsive.dataTables.css">
+        <!--Column Filter-->
+        <link rel="stylesheet" href="https://cdn.datatables.net/columncontrol/1.0.6/css/columnControl.dataTables.css">
+        <link rel="stylesheet" href="https://cdn.datatables.net/datetime/1.5.5/css/dataTables.dateTime.min.css">
+
+        <style>
+            div.dt-layout-row {
+                margin-bottom: 1rem;
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }
+        </style>
+    @endpush
     <x-slot name="header">
         <h2 class="text-xl font-semibold text-gray-800 leading-tight">All Leads</h2>
     </x-slot>
 
     <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
 
-        @if(session('success'))
+        @if (session('success'))
             <div class="bg-green-100 text-green-800 px-4 py-2 rounded mb-4 text-sm">
                 {{ session('success') }}
             </div>
         @endif
 
-        <div class="flex justify-end mb-4">
-            <a href="{{ route('leads.create') }}"
-               class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm">
-                + Create Lead
-            </a>
-        </div>
 
-        {{-- Desktop Table --}}
-        <div class="hidden md:block bg-white shadow-md rounded-lg overflow-x-auto">
-            <table class="min-w-full table-auto text-sm border border-gray-200">
+
+
+        <div class=" bg-white shadow-md rounded-lg overflow-x-auto">
+            <table id="leads_table"
+                class="w-full table-auto text-sm border border-gray-200 whitespace-nowrap opacity-0 transition-opacity duration-500">
                 <thead class="bg-gray-100 text-left text-xs sm:text-sm">
                     <tr>
                         <th class="px-3 py-2 border">#</th>
@@ -38,60 +51,38 @@
                         <tr class="hover:bg-gray-50">
                             <td class="px-3 py-2 border">{{ $index + 1 }}</td>
                             <td class="px-3 py-2 border">{{ $lead->platform }}</td>
-                            <td class="px-3 py-2 border">{{ \Carbon\Carbon::parse($lead->lead_date)->format('d-m-Y h:i A') }}</td>
+                            <td class="px-3 py-2 border">
+                                {{ \Carbon\Carbon::parse($lead->lead_date)->format('d-m-Y h:i A') }}</td>
                             <td class="px-3 py-2 border">{{ $lead->buyer_name }}</td>
                             <td class="px-3 py-2 border">
                                 <a href="tel:{{ $lead->buyer_contact }}"
-                                   onclick="copyPhone(event, '{{ $lead->buyer_contact }}')"
-                                   class="text-blue-600 hover:underline cursor-pointer">
-                                   {{ $lead->buyer_contact }}
+                                    onclick="copyPhone(event, '{{ $lead->buyer_contact }}')"
+                                    class="text-blue-600 hover:underline cursor-pointer">
+                                    {{ $lead->buyer_contact }}
                                 </a>
                             </td>
+                            <td class="px-3 py-2 border">{{ $lead->status }}</td>
+                            <td class="px-3 py-2 border">{{ $lead->assigned_to }}</td>
+
+
                             <td class="px-3 py-2 border">
-                                <form action="{{ route('leads.update', $lead->id) }}" method="POST" class="flex flex-col gap-1">
-                                    @csrf
-                                    @method('PUT')
-                                    <select name="status"
-                                        class="w-full sm:min-w-[200px] border border-gray-300 rounded-lg px-3 py-2 text-sm">
-                                        @foreach(['New Lead', 'Lead Followup', 'In Progress', 'Quotation', 'PO', 'Cancelled', 'Completed'] as $status)
-                                            <option value="{{ $status }}" @selected($lead->status === $status)>
-                                                {{ $status }}
-                                            </option>
-                                        @endforeach
-                                    </select>
+                                <div class="flex flex-col sm:flex-row sm:items-center gap-2">
+                                    <a href="{{ route('leads.edit', $lead->id) }}"
+                                        class="bg-green-600 text-white px-3 py-1 rounded text-xs hover:bg-green-700">
+                                        Update
+                                    </a>
+                                    <a href="{{ route('leads.audits', $lead->id) }}"
+                                        class="bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700">Logs</a>
 
-                            </td>
-                            <td class="px-3 py-2 border">
-                               <select name="assigned_to"
-                                   class="w-full sm:min-w-[200px] border border-gray-300 rounded-lg px-3 py-2 text-sm">
-                                   @foreach($users as $userId => $userName)
-                                       <option value="{{ $userName }}"
-                                           @selected($lead->assigned_to === $userName || (empty($lead->assigned_to) && $userName === $currentUser))>
-                                           {{ $userName }}
-                                       </option>
-                                   @endforeach
-                               </select>
-
-                            </td>
-                            <td class="px-3 py-2 border">
-                                <div class="flex flex-wrap gap-2">
-                                    <button type="submit" class="bg-green-600 text-white px-3 py-1 rounded text-xs hover:bg-green-700">Save</button>
-                                </form>
-
-                                <a href="{{ route('leads.edit', $lead->id) }}"
-                                   class="bg-gray-600 text-white px-3 py-1 rounded text-xs hover:bg-gray-700">Update</a>
-
-                                <a href="{{ route('leads.audits', $lead->id) }}"
-                                   class="bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700">Logs</a>
-
-                                <form action="{{ route('leads.destroy', $lead->id) }}" method="POST"
-                                      onsubmit="return confirm('Are you sure you want to delete this lead?');">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="bg-red-600 text-white px-3 py-1 rounded text-xs hover:bg-red-700">
-                                        Delete
-                                    </button>
-                                </form>
+                                    <form action="{{ route('leads.destroy', $lead->id) }}" method="POST"
+                                        onsubmit="return confirm('Are you sure you want to delete this lead?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit"
+                                            class="bg-red-600 text-white px-3 py-1 rounded text-xs hover:bg-red-700">
+                                            Delete
+                                        </button>
+                                    </form>
                                 </div>
                             </td>
                         </tr>
@@ -103,58 +94,49 @@
                 </tbody>
             </table>
         </div>
+        @push('scripts')
+            <!--JQuery JS-->
+            <script src="https://code.jquery.com/jquery-3.7.1.js"></script>
 
-        {{-- Mobile View --}}
-        <div class="md:hidden space-y-4">
-            @forelse($leads as $lead)
-                <div class="bg-white border shadow rounded-lg p-4">
-                    <div class="flex justify-between text-sm font-semibold text-gray-700 mb-2">
-                        <div>{{ $lead->buyer_name }}</div>
-                        <div class="text-gray-500">{{ \Carbon\Carbon::parse($lead->lead_date)->format('d-m-Y') }}</div>
-                    </div>
-                    <div class="text-xs text-gray-600 mb-2">
-                        <p><strong>Platform:</strong> {{ $lead->platform }}</p>
-                        <p><strong>Contact:</strong>
-                            <a href="tel:{{ $lead->buyer_contact }}"
-                               onclick="copyPhone(event, '{{ $lead->buyer_contact }}')"
-                               class="text-blue-600 hover:underline cursor-pointer">
-                               {{ $lead->buyer_contact }}
-                            </a>
-                        </p>
-                        <p><strong>Status:</strong> {{ $lead->status }}</p>
-                        <p><strong>Assigned:</strong> {{ $lead->assigned_to }}</p>
-                    </div>
-                    <div class="flex flex-wrap gap-2 mt-2">
-                        <a href="{{ route('leads.edit', $lead->id) }}"
-                           class="bg-gray-600 text-white px-3 py-1 rounded text-xs hover:bg-gray-700">Update</a>
+            <!--Datatable JS-->
+            <script src="https://cdn.datatables.net/2.3.2/js/dataTables.js"></script>
 
-                        <a href="{{ route('leads.audits', $lead->id) }}"
-                           class="bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700">Logs</a>
+            <!--Responsive JS-->
+            <script src="https://cdn.datatables.net/responsive/3.0.4/js/dataTables.responsive.js"></script>
+            <script src="https://cdn.datatables.net/responsive/3.0.4/js/responsive.dataTables.js"></script>
 
-                        <form action="{{ route('leads.destroy', $lead->id) }}" method="POST"
-                              onsubmit="return confirm('Are you sure you want to delete this lead?');">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="bg-red-600 text-white px-3 py-1 rounded text-xs hover:bg-red-700">
-                                Delete
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            @empty
-                <p class="text-sm text-gray-500 text-center">No leads found.</p>
-            @endforelse
-        </div>
-    </div>
+            <!-- Column Filtering -->
+            <script src="https://cdn.datatables.net/columncontrol/1.0.6/js/dataTables.columnControl.js"></script>
+            <script src="https://cdn.datatables.net/columncontrol/1.0.6/js/columnControl.dataTables.js"></script>
+
+
+            <script>
+                new DataTable('#leads_table', {
+                    responsive: true,
+                    stateSave: true,
+                    columnControl: ['order', ['search']],
+                    columnDefs: [{
+                        targets: [5, 6],
+                        columnControl: ['order', ['searchList']]
+                    }],
+                    ordering: {
+                        indicators: false,
+                        handler: false
+                    },
+                    initComplete: function() {
+                        document.querySelector('#leads_table').classList.remove('opacity-0');
+                    }
+                });
+
+                function copyPhone(event, number) {
+                    // Only copy on desktop
+                    if (!/Mobi|Android|iPhone/i.test(navigator.userAgent)) {
+                        event.preventDefault(); // Prevent dial
+                        navigator.clipboard.writeText(number)
+                            .then(() => alert('Phone number copied: ' + number))
+                            .catch(() => alert('Failed to copy number.'));
+                    }
+                }
+            </script>
+        @endpush
 </x-app-layout>
-<script>
-function copyPhone(event, number) {
-    // Only copy on desktop
-    if (!/Mobi|Android|iPhone/i.test(navigator.userAgent)) {
-        event.preventDefault(); // Prevent dial
-        navigator.clipboard.writeText(number)
-            .then(() => alert('Phone number copied: ' + number))
-            .catch(() => alert('Failed to copy number.'));
-    }
-}
-</script>
