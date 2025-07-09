@@ -3,7 +3,13 @@
 @section('title', 'Profile')
 
 @section('content_header')
-    <h1>Profile</h1>
+    <div class="d-flex justify-content-between align-items-center">
+        <h1 class="m-0 text-dark">Profile</h1>
+        <ol class="breadcrumb float-sm-right">
+            <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Home</a></li>
+            <li class="breadcrumb-item active">Profile</li>
+        </ol>
+    </div>
 @stop
 
 @section('content')

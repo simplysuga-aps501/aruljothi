@@ -324,7 +324,7 @@ return [
             'icon' => 'fas fa-fw fa-clipboard-list',
             'submenu' => [
                 [
-                    'text' => 'All Leads',
+                    'text' => 'View Leads',
                     'route' => 'leads.index',
                 ],
                 [

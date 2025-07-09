@@ -3,16 +3,19 @@
 @section('title', 'Create Lead')
 
 @section('content_header')
-    <h1>Create Lead</h1>
+    <div class="d-flex justify-content-between align-items-center">
+        <h1 class="m-0 text-dark">Create Lead</h1>
+        <ol class="breadcrumb float-sm-right">
+            <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Home</a></li>
+            <li class="breadcrumb-item active">Create Lead</li>
+        </ol>
+    </div>
 @stop
 
 @section('content')
 <section class="content">
   <div class="container-fluid">
     <div class="card card-primary">
-      <div class="card-header">
-        <h3 class="card-title">Create New Lead</h3>
-      </div>
 
       @if(session('success'))
         <div class="alert alert-success m-3">
@@ -36,25 +39,25 @@
           <div class="row">
             <!-- Lead Platform -->
             <div class="form-group col-md-6">
-              <label for="platform">Lead Platform</label>
+              <label for="platform">Lead Platform<span class="text-danger"> *</span></label>
               <select name="platform" id="platform" class="form-control" required>
                 <option value="">Select</option>
-                <option value="Just Dial">Just Dial</option>
-                <option value="India Mart">India Mart</option>
+                <option value="Justdial">Justdial</option>
+                <option value="Indiamart">Indiamart</option>
                 <option value="Others">Others</option>
               </select>
             </div>
 
             <!-- Lead Date -->
             <div class="form-group col-md-6">
-              <label for="lead_date">Lead Date & Time</label>
+              <label for="lead_date">Lead Date & Time<span class="text-danger"> *</span></label>
               <input type="datetime-local" id="lead_date" name="lead_date" class="form-control"
                 value="{{ old('lead_date', \Carbon\Carbon::now()->format('Y-m-d\TH:i')) }}" required>
             </div>
 
             <!-- Buyer Name -->
             <div class="form-group col-md-6">
-              <label for="buyer_name">Buyer Name</label>
+              <label for="buyer_name">Buyer Name<span class="text-danger"> *</span></label>
               <input type="text" id="buyer_name" name="buyer_name" class="form-control" value="{{ old('buyer_name') }}" required>
             </div>
 
@@ -66,7 +69,7 @@
 
             <!-- Buyer Contact -->
             <div class="form-group col-md-6">
-              <label for="buyer_contact">Buyer Contact Number</label>
+              <label for="buyer_contact">Buyer Contact Number<span class="text-danger"> *</span></label>
               <input type="text" id="buyer_contact" name="buyer_contact"
                 oninput="this.value=this.value.replace(/[^0-9]/g,'')"
                 maxlength="10"
@@ -84,12 +87,12 @@
         </div>
 
         <div class="card-footer d-flex justify-content-between">
-          <button type="submit" class="btn btn-primary">
-            <i class="fas fa-save"></i> Submit
-          </button>
           <a href="{{ route('leads.index') }}" class="btn btn-secondary">
             <i class="fas fa-arrow-left"></i> Back
           </a>
+          <button type="submit" class="btn btn-primary">
+              <i class="fas fa-save"></i> Submit
+          </button>
         </div>
       </form>
     </div>

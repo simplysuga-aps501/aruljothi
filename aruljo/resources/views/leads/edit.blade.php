@@ -3,16 +3,20 @@
 @section('title', 'Edit Lead')
 
 @section('content_header')
-    <h1>Edit Lead</h1>
+    <div class="d-flex justify-content-between align-items-center">
+        <h1 class="m-0 text-dark">Update Lead</h1>
+        <ol class="breadcrumb float-sm-right">
+            <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{{ route('leads.index') }}">View Leads</a></li>
+            <li class="breadcrumb-item active">Update Lead</li>
+        </ol>
+    </div>
 @stop
 
 @section('content')
 <section class="content">
   <div class="container-fluid">
     <div class="card card-primary">
-      <div class="card-header">
-        <h3 class="card-title">Update Lead Information</h3>
-      </div>
 
       @if ($errors->any())
         <div class="alert alert-danger m-3">
@@ -32,26 +36,27 @@
           <div class="row">
             <!-- Platform -->
             <div class="form-group col-md-6">
-              <label>Platform</label>
-              <select name="platform" class="form-control">
+              <label>Platform<span class="text-danger"> *</span></label>
+              <select name="platform" class="form-control" required>
                 <option value="Justdial" @selected($lead->platform === 'Justdial')>Justdial</option>
-                <option value="IndiaMART" @selected($lead->platform === 'IndiaMART')>IndiaMART</option>
+                <option value="Indiamart" @selected($lead->platform === 'Indiamart')>Indiamart</option>
                 <option value="Others" @selected($lead->platform === 'Others')>Others</option>
               </select>
             </div>
 
             <!-- Lead Date & Time -->
             <div class="form-group col-md-6">
-              <label>Lead Date & Time</label>
+              <label>Lead Date & Time<span class="text-danger"> *</span></label>
               <input type="datetime-local" name="lead_date"
                      value="{{ \Carbon\Carbon::parse($lead->lead_date)->format('Y-m-d\TH:i') }}"
-                     class="form-control">
+                     class="form-control"
+                     required>
             </div>
 
             <!-- Buyer Name -->
             <div class="form-group col-md-6">
-              <label>Buyer Name</label>
-              <input type="text" name="buyer_name" value="{{ $lead->buyer_name }}" class="form-control">
+              <label>Buyer Name<span class="text-danger"> *</span></label>
+              <input type="text" name="buyer_name" value="{{ $lead->buyer_name }}" class="form-control" required>
             </div>
 
             <!-- Buyer Location -->
@@ -62,8 +67,17 @@
 
             <!-- Buyer Contact -->
             <div class="form-group col-md-6">
-              <label>Buyer Contact</label>
-              <input type="text" name="buyer_contact" value="{{ $lead->buyer_contact }}" class="form-control">
+                <label for="buyer_contact">Buyer Contact<span class="text-danger"> *</span></label>
+                <input type="text"
+                       id="buyer_contact"
+                       name="buyer_contact"
+                       class="form-control"
+                       value="{{ $lead->buyer_contact }}"
+                       oninput="this.value=this.value.replace(/[^0-9]/g,'')"
+                       maxlength="10"
+                       pattern="[6-9]{1}[0-9]{9}"
+                       title="Enter a valid 10-digit Indian mobile number starting with 6-9"
+                       required>
             </div>
 
             <!-- Item Searched -->
@@ -132,12 +146,12 @@
         </div>
 
         <div class="card-footer d-flex justify-content-between">
-          <button type="submit" class="btn btn-primary">
-            <i class="fas fa-save"></i> Save Changes
-          </button>
           <a href="{{ route('leads.index') }}" class="btn btn-secondary">
             <i class="fas fa-arrow-left"></i> Cancel
           </a>
+          <button type="submit" class="btn btn-primary">
+              <i class="fas fa-save"></i> Save Changes
+          </button>
         </div>
       </form>
     </div>
