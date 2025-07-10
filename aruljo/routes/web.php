@@ -1,53 +1,53 @@
 <?php
 
-use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\LeadController;
 use Illuminate\Support\Facades\Auth;
+
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\LeadController;
+use App\Http\Controllers\ProfileController;
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
 |--------------------------------------------------------------------------
 |
-| Here is where you can register web routes for your application. These
-| routes are loaded by the RouteServiceProvider and all of them will
-| be assigned to the "web" middleware group. Make something great!
+| Here is where you register web routes for your application. These
+| routes are loaded by the RouteServiceProvider and assigned to the "web"
+| middleware group. Make something great!
 |
 */
 
+// 🔰 Public Route
 Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+// 📊 Dashboard (accessible only after login)
+Route::get('/dashboard', [DashboardController::class, 'index'])
+    ->middleware(['auth'])
+    ->name('dashboard');
 
+// 🔒 Protected Routes (Only for Authenticated Users)
 Route::middleware(['auth'])->group(function () {
 
-    // 🌟 Dashboard
-    Route::get('/dashboard', function () {
-        return view('dashboard');
-    })->name('dashboard');
-
+    // 🙍‍♂️ Profile Routes
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // 📝 Lead Routes
-    Route::get('/leads', [LeadController::class, 'showAll'])->name('leads.index');
-    Route::get('/leads/create', fn() => view('leads.create'))->name('leads.create');
-    Route::post('/leads', [LeadController::class, 'store'])->name('leads.store');
-    Route::put('/leads/{id}', [LeadController::class, 'update'])->name('leads.update');
-    Route::put('/leads/{id}/full-update', [LeadController::class, 'updateFull'])->name('leads.update.full');
-    Route::get('/leads/{id}/edit', [LeadController::class, 'edit'])->name('leads.edit');
+    Route::get('/leads', [LeadController::class, 'index'])->name('leads.index');                     // List leads
+    Route::get('/leads/create', fn() => view('leads.create'))->name('leads.create');                 // Show create form
+    Route::post('/leads', [LeadController::class, 'store'])->name('leads.store');                    // Store new lead
+    Route::get('/leads/{id}/edit', [LeadController::class, 'edit'])->name('leads.edit');             // Edit lead
+    Route::put('/leads/{id}', [LeadController::class, 'update'])->name('leads.update');              // Partial update
+    Route::put('/leads/{id}/full-update', [LeadController::class, 'updateFull'])->name('leads.update.full'); // Full update
+    Route::delete('/leads/{id}', [LeadController::class, 'destroy'])->name('leads.destroy');         // Delete lead
 
-    // 🛡️ Soft delete route (only for admins)
-    Route::delete('/leads/{id}', [LeadController::class, 'destroy'])
-        ->name('leads.destroy');
-
-    // 🧾 Audit logs
-    Route::get('/leads/{id}/audits', [LeadController::class, 'showAudits'])->name('leads.audits');
+    // 🧾 Audit Logs
+    Route::get('/leads/{id}/audits', [LeadController::class, 'showAudits'])->name('leads.audits');   // View audits
 });
 
+// 🔐 Auth Routes (login, register, forgot password, etc.)
 require __DIR__.'/auth.php';

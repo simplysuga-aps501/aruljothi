@@ -1,151 +1,190 @@
-<x-app-layout>
-    <x-slot name="header">
-        <h2 class="text-xl font-semibold text-gray-800 leading-tight">
-            Edit Lead
-        </h2>
-    </x-slot>
-<div class="py-6 px-4 sm:px-6 lg:px-8">
-    <div class="max-w-4xl mx-auto bg-white shadow-md rounded-xl p-6">
-    <form action="{{ route('leads.update.full', $lead->id) }}" method="POST" class="space-y-6">
+@extends('adminlte::page')
+
+@section('title', 'Edit Lead')
+
+@section('content_header')
+    <div class="d-flex justify-content-between align-items-center">
+        <h1 class="m-0 text-dark">Update Lead</h1>
+        <ol class="breadcrumb float-sm-right">
+            <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{{ route('leads.index') }}">View Leads</a></li>
+            <li class="breadcrumb-item active">Update Lead</li>
+        </ol>
+    </div>
+@stop
+
+@section('content')
+<section class="content">
+  <div class="container-fluid">
+    <div class="card card-primary">
+
+      @if ($errors->any())
+        <div class="alert alert-danger m-3">
+          <ul class="mb-0">
+            @foreach ($errors->all() as $error)
+              <li>{{ $error }}</li>
+            @endforeach
+          </ul>
+        </div>
+      @endif
+
+      <form action="{{ route('leads.update.full', $lead->id) }}" method="POST">
         @csrf
         @method('PUT')
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Platform</label>
-                <select name="platform" class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="Justdial" @selected($lead->platform === 'Justdial')>Justdial</option>
-                    <option value="IndiaMART" @selected($lead->platform === 'IndiaMART')>IndiaMART</option>
-                    <option value="Others" @selected($lead->platform === 'Others')>Others</option>
-                </select>
+        <div class="card-body">
+          <div class="row">
+            <!-- Platform -->
+            <div class="form-group col-md-6">
+              <label>Platform<span class="text-danger"> *</span></label>
+              <select name="platform" class="form-control" required>
+                <option value="Justdial" @selected($lead->platform === 'Justdial')>Justdial</option>
+                <option value="Indiamart" @selected($lead->platform === 'Indiamart')>Indiamart</option>
+                <option value="Others" @selected($lead->platform === 'Others')>Others</option>
+              </select>
             </div>
 
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Lead Date & Time</label>
-                <input type="datetime-local" name="lead_date" value="{{ \Carbon\Carbon::parse($lead->lead_date)->format('Y-m-d\TH:i') }}"
-                       class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <!-- Lead Date & Time -->
+            <div class="form-group col-md-6">
+              <label>Lead Date & Time<span class="text-danger"> *</span></label>
+              <input type="datetime-local" name="lead_date"
+                     value="{{ \Carbon\Carbon::parse($lead->lead_date)->format('Y-m-d\TH:i') }}"
+                     class="form-control"
+                     required>
             </div>
 
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Buyer Name</label>
-                <input type="text" name="buyer_name" value="{{ $lead->buyer_name }}"
-                       class="w-full border border-gray-300 rounded-lg px-3 py-2">
+            <!-- Buyer Name -->
+            <div class="form-group col-md-6">
+              <label>Buyer Name<span class="text-danger"> *</span></label>
+              <input type="text" name="buyer_name" value="{{ $lead->buyer_name }}" class="form-control" required>
             </div>
 
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Buyer Location</label>
-                <input type="text" name="buyer_location" value="{{ $lead->buyer_location }}"
-                       class="w-full border border-gray-300 rounded-lg px-3 py-2">
+            <!-- Buyer Location -->
+            <div class="form-group col-md-6">
+              <label>Buyer Location</label>
+              <input type="text" name="buyer_location" value="{{ $lead->buyer_location }}" class="form-control">
             </div>
 
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Buyer Contact</label>
-                <input type="text" name="buyer_contact" value="{{ $lead->buyer_contact }}"
-                       class="w-full border border-gray-300 rounded-lg px-3 py-2">
+            <!-- Buyer Contact -->
+            <div class="form-group col-md-6">
+                <label for="buyer_contact">Buyer Contact<span class="text-danger"> *</span></label>
+                <input type="text"
+                       id="buyer_contact"
+                       name="buyer_contact"
+                       class="form-control"
+                       value="{{ $lead->buyer_contact }}"
+                       oninput="this.value=this.value.replace(/[^0-9]/g,'')"
+                       maxlength="10"
+                       pattern="[6-9]{1}[0-9]{9}"
+                       title="Enter a valid 10-digit Indian mobile number starting with 6-9"
+                       required>
             </div>
 
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Item Searched</label>
-                <input type="text" name="platform_keyword" value="{{ $lead->platform_keyword }}"
-                       class="w-full border border-gray-300 rounded-lg px-3 py-2">
+            <!-- Item Searched -->
+            <div class="form-group col-md-6">
+              <label>Item Searched</label>
+              <input type="text" name="platform_keyword" value="{{ $lead->platform_keyword }}" class="form-control">
             </div>
 
-            <div class="sm:col-span-2">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Product Details (Product name; Quanity; Price/Unit)</label>
-                <textarea name="product_detail" rows="3"
-                          class="w-full border border-gray-300 rounded-lg px-3 py-2">{{ $lead->product_detail }}</textarea>
+            <!-- Product Details -->
+            <div class="form-group col-md-12">
+              <label>Product Details (Name; Quantity; Price/Unit)</label>
+              <textarea name="product_detail" rows="3" class="form-control">{{ $lead->product_detail }}</textarea>
             </div>
 
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Delivery Location</label>
-                <input type="text" name="delivery_location" value="{{ $lead->delivery_location }}"
-                       class="w-full border border-gray-300 rounded-lg px-3 py-2">
+            <!-- Delivery Location -->
+            <div class="form-group col-md-6">
+              <label>Delivery Location</label>
+              <input type="text" name="delivery_location" value="{{ $lead->delivery_location }}" class="form-control">
             </div>
 
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Expected Delivery Date</label>
-                <input type="date" name="expected_delivery_date" id="expected_delivery_date"
-                       value="{{ $lead->expected_delivery_date }}"
-                       class="w-full border border-gray-300 rounded-lg px-3 py-2">
-                <p id="delivery_days_left" class="text-xs text-gray-600 mt-1"></p>
+            <!-- Expected Delivery Date -->
+            <div class="form-group col-md-6">
+              <label>Expected Delivery Date</label>
+              <input type="date" name="expected_delivery_date" id="expected_delivery_date"
+                     value="{{ $lead->expected_delivery_date }}" class="form-control">
+              <small id="delivery_days_left" class="form-text text-muted"></small>
             </div>
 
-
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Remarks</label>
-                <textarea name="remarks" rows="2"
-                          class="w-full border border-gray-300 rounded-lg px-3 py-2">{{ $lead->remarks }}</textarea>
+            <!-- Remarks -->
+            <div class="form-group col-md-6">
+              <label>Remarks</label>
+              <textarea name="remarks" rows="2" class="form-control">{{ $lead->remarks }}</textarea>
             </div>
 
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Follow Up Date</label>
-                <input type="date" name="follow_up_date" id="follow_up_date"
-                       value="{{ $lead->follow_up_date }}"
-                       class="w-full border border-gray-300 rounded-lg px-3 py-2">
-                <p id="followup_days_left" class="text-xs text-gray-600 mt-1"></p>
+            <!-- Follow Up Date -->
+            <div class="form-group col-md-6">
+              <label>Follow Up Date</label>
+              <input type="date" name="follow_up_date" id="follow_up_date"
+                     value="{{ $lead->follow_up_date }}" class="form-control">
+              <small id="followup_days_left" class="form-text text-muted"></small>
             </div>
 
-
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                <select name="status" class="w-full border border-gray-300 rounded-lg px-3 py-2">
-                    @foreach(['New Lead', 'Lead Followup', 'Quotation', 'PO', 'Cancelled', 'Completed'] as $status)
-                        <option value="{{ $status }}" @selected($lead->status === $status)>{{ $status }}</option>
-                    @endforeach
-                </select>
+            <!-- Status -->
+            <div class="form-group col-md-6">
+              <label>Status</label>
+              <select name="status" class="form-control">
+                @foreach(['New Lead', 'Lead Followup', 'Quotation', 'PO', 'Cancelled', 'Completed'] as $status)
+                  <option value="{{ $status }}" @selected($lead->status === $status)>{{ $status }}</option>
+                @endforeach
+              </select>
             </div>
 
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Assigned To</label>
-                <select name="assigned_to" class="w-full border border-gray-300 rounded-lg px-3 py-2">
-                    @foreach($users as $userId => $userName)
-                        <option value="{{ $userName }}" @selected($lead->assigned_to === $userName || (empty($lead->assigned_to) && $userName === $currentUser))>
-                            {{ $userName }}
-                        </option>
-                    @endforeach
-                </select>
+            <!-- Assigned To -->
+            <div class="form-group col-md-6">
+              <label>Assigned To</label>
+              <select name="assigned_to" class="form-control">
+                @foreach($users as $userId => $userName)
+                  <option value="{{ $userName }}"
+                    @selected($lead->assigned_to === $userName || (empty($lead->assigned_to) && $userName === $currentUser))>
+                    {{ $userName }}
+                  </option>
+                @endforeach
+              </select>
             </div>
+          </div>
         </div>
 
-        <div class="flex flex-col sm:flex-row justify-between items-center mt-8 gap-4">
-            <button type="submit"
-                    class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-2 rounded-lg w-full sm:w-auto text-sm">
-                Save Changes
-            </button>
-            <a href="{{ route('leads.index') }}"
-               class="text-sm text-gray-500 hover:text-gray-700 underline">
-                Cancel
-            </a>
+        <div class="card-footer d-flex justify-content-between">
+          <a href="{{ route('leads.index') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Cancel
+          </a>
+          <button type="submit" class="btn btn-primary">
+              <i class="fas fa-save"></i> Save Changes
+          </button>
         </div>
-    </form>
-</div>
-</div>
+      </form>
+    </div>
+  </div>
+</section>
+@stop
+
+@section('js')
 <script>
-    function calculateDays(idInput, idOutput) {
-        const input = document.getElementById(idInput);
-        const output = document.getElementById(idOutput);
+  function calculateDays(inputId, outputId) {
+    const input = document.getElementById(inputId);
+    const output = document.getElementById(outputId);
 
-        const updateText = () => {
-            const date = new Date(input.value);
-            const today = new Date();
-            today.setHours(0, 0, 0, 0); // Remove time for accurate diff
+    const update = () => {
+      const date = new Date(input.value);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
 
-            if (!isNaN(date.getTime())) {
-                const diffTime = date - today;
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                output.textContent = diffDays >= 0
-                    ? `${diffDays} day(s) from today`
-                    : `${Math.abs(diffDays)} day(s) ago`;
-            } else {
-                output.textContent = '';
-            }
-        };
+      if (!isNaN(date)) {
+        const diff = Math.ceil((date - today) / (1000 * 60 * 60 * 24));
+        output.textContent = diff >= 0
+          ? `${diff} day(s) from today`
+          : `${Math.abs(diff)} day(s) ago`;
+      } else {
+        output.textContent = '';
+      }
+    };
 
-        input.addEventListener('input', updateText);
-        updateText(); // call once on page load
-    }
+    input.addEventListener('input', update);
+    update();
+  }
 
-    calculateDays('expected_delivery_date', 'delivery_days_left');
-    calculateDays('follow_up_date', 'followup_days_left');
+  calculateDays('expected_delivery_date', 'delivery_days_left');
+  calculateDays('follow_up_date', 'followup_days_left');
 </script>
-</x-app-layout>
+@stop

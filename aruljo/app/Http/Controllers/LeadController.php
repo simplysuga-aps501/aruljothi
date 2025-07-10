@@ -11,11 +11,27 @@ use Illuminate\Validation\Rule;
 class LeadController extends Controller
 {
     // 📋 Return leads as JSON (API use)
-    public function index()
+    public function index(Request $request)
     {
-        $leads = Lead::orderBy('created_at', 'desc')->get();
-        return response()->json($leads);
+        $tab = $request->get('tab', 'active'); // default to active leads
+
+        if ($tab === 'all') {
+            $leads = Lead::orderBy('created_at', 'asc')->get();
+        } else {
+            $leads = Lead::whereNotIn('status', ['Cancelled', 'Completed'])
+                         ->orderBy('created_at', 'asc')
+                         ->get();
+        }
+
+        $users = User::whereDoesntHave('roles', function ($query) {
+            $query->where('name', 'admin');
+        })->pluck('name', 'id');
+
+        $currentUser = Auth::user()->name;
+
+        return view('leads.index', compact('leads', 'users', 'currentUser', 'tab'));
     }
+
 
     // ✅ Store lead from form submission
     public function store(Request $request)
@@ -39,13 +55,17 @@ class LeadController extends Controller
     // 📝 Show all leads in blade view
     public function showAll()
     {
-        $leads = Lead::orderBy('created_at', 'asc')->get();
-        $users = User::whereDoesntHave('roles', function ($query) {
-            $query->where('name', 'admin');
-        })->pluck('name', 'id');
-        $currentUser = Auth::user()->name;
+         $leads = Lead::whereNotIn('status', ['Cancelled', 'Completed'])
+                         ->orderBy('created_at', 'asc')
+                         ->get();
 
-        return view('leads.index', compact('leads', 'users', 'currentUser'));
+            $users = User::whereDoesntHave('roles', function ($query) {
+                $query->where('name', 'admin');
+            })->pluck('name', 'id');
+
+            $currentUser = Auth::user()->name;
+
+            return view('leads.index', compact('leads', 'users', 'currentUser'));
     }
 
     public function update(Request $request, $id)
@@ -126,4 +146,5 @@ class LeadController extends Controller
             'Completed',
         ];
     }
+
 }
