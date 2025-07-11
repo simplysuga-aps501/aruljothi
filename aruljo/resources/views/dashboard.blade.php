@@ -21,10 +21,55 @@
     </div>
 @stop
 
+@section('css')
+    {{-- Manifest and theme color for PWA --}}
+    <link rel="manifest" href="{{ asset('manifest.json') }}">
+    <meta name="theme-color" content="#0d47a1">    
+@stop
+
 @section('js')
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then(registration => {
+              console.log('Service Worker registered with scope:', registration.scope);
+            })
+            .catch(error => {
+              console.error('Service Worker registration failed:', error);
+            });
+        });
+      }
+    </script>
+    <script>
+      let deferredPrompt;
+      window.addEventListener('beforeinstallprompt', (e) => {
+          // Prevent Chrome's mini-infobar
+          e.preventDefault();
+          // Save the event so you can trigger it later
+          deferredPrompt = e;
 
+          // Show your own install button
+          const installButton = document.getElementById('installButton');
+          if (installButton) {
+              installButton.style.display = 'block';
+              installButton.addEventListener('click', () => {
+                  deferredPrompt.prompt();
+                  deferredPrompt.userChoice.then((choiceResult) => {
+                      if (choiceResult.outcome === 'accepted') {
+                          console.log('User accepted install');
+                      } else {
+                          console.log('User dismissed install');
+                      }
+                      deferredPrompt = null;
+                  });
+              });
+          }
+      });
+    </script>
     <script>
         // Common options
         const chartOptions = {
