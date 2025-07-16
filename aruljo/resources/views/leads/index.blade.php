@@ -60,8 +60,21 @@
                                     <tr>
                                         <td>{{ $index + 1 }}</td>
                                         <td>{{ $lead->platform }}</td>
-                                        <td>{{ \Carbon\Carbon::parse($lead->lead_date)->format('d-m-Y h:i A') }}</td>
-                                        <td>{{ $lead->buyer_name }}</td>
+                                        @php
+                                            $leadDateObj = \Carbon\Carbon::parse($lead->lead_date);
+                                        @endphp
+                                        <td data-order="{{ $leadDateObj->format('Y-m-d H:i:s') }}">
+                                            {{ $leadDateObj->format('d-m-Y h:i A') }}
+                                        </td>
+                                        @php
+                                            $fullName = $lead->buyer_name;
+                                            $shortName = \Illuminate\Support\Str::limit($fullName, 20);
+                                        @endphp
+                                        <td>
+                                            <span @if(strlen($fullName) > 20) title="{{ $fullName }}" @endif>
+                                                {{ $shortName }}
+                                            </span>
+                                        </td>
                                         <td>
                                             <a href="tel:{{ $lead->buyer_contact }}"
                                                onclick="copyPhone(event, '{{ $lead->buyer_contact }}')"
@@ -71,14 +84,12 @@
                                         </td>
                                         <td>{{ $lead->status }}</td>
                                         <td>{{ $lead->assigned_to }}</td>
-                                        <td>
-                                            @if ($lead->follow_up_date)
-                                                @php
-                                                    $followUpDate = \Carbon\Carbon::parse($lead->follow_up_date);
-                                                    $isToday = $followUpDate->isToday();
-                                                @endphp
-
-                                                <span class="{{ $isToday ? 'bg-warning text-dark px-2 py-1 rounded' : '' }}">
+                                        @php
+                                            $followUpDate = $lead->follow_up_date ? \Carbon\Carbon::parse($lead->follow_up_date) : null;
+                                        @endphp
+                                        <td @if($followUpDate) data-order="{{ $followUpDate->format('Y-m-d') }}" @endif>
+                                            @if ($followUpDate)
+                                                <span class="{{ $followUpDate->isToday() ? 'bg-warning text-dark px-2 py-1 rounded' : '' }}">
                                                     {{ $followUpDate->format('d-m-Y') }}
                                                 </span>
                                             @else
