@@ -45,7 +45,9 @@
                             <thead class="thead-light">
                                 <tr>
                                     <th>#</th>
-                                    <th>Platform</th>
+                                    @if ($tab === 'all')
+                                        <th>Platform</th>
+                                    @endif
                                     <th>Lead Date</th>
                                     <th>Buyer</th>
                                     <th>Contact</th>
@@ -59,12 +61,17 @@
                                 @forelse ($leads as $index => $lead)
                                     <tr>
                                         <td>{{ $index + 1 }}</td>
-                                        <td>{{ $lead->platform }}</td>
+                                        @if ($tab === 'all')
+                                            <td>{{ $lead->platform }}</td>
+                                        @endif
+
                                         @php
                                             $leadDateObj = \Carbon\Carbon::parse($lead->lead_date);
+                                            $formattedShort = $leadDateObj->format('d-m-Y'); // or 'd-m-y'
+                                            $formattedFull = $leadDateObj->format('d-m-Y h:i A');
                                         @endphp
                                         <td data-order="{{ $leadDateObj->format('Y-m-d H:i:s') }}">
-                                            {{ $leadDateObj->format('d-m-Y h:i A') }}
+                                            <span title="{{ $formattedFull }}">{{ $formattedShort }}</span>
                                         </td>
                                         @php
                                             $fullName = $lead->buyer_name;
@@ -87,15 +94,16 @@
                                         @php
                                             $followUpDate = $lead->follow_up_date ? \Carbon\Carbon::parse($lead->follow_up_date) : null;
                                         @endphp
-                                        <td @if($followUpDate) data-order="{{ $followUpDate->format('Y-m-d') }}" @endif>
-                                            @if ($followUpDate)
-                                                <span class="{{ $followUpDate->isToday() ? 'bg-warning text-dark px-2 py-1 rounded' : '' }}">
-                                                    {{ $followUpDate->format('d-m-Y') }}
-                                                </span>
-                                            @else
-                                                -
-                                            @endif
-                                        </td>
+
+                                            <td @if($followUpDate) data-order="{{ $followUpDate->format('Y-m-d') }}" @endif>
+                                                @if ($followUpDate)
+                                                    <span class="{{ $followUpDate->isToday() ? 'bg-warning text-dark px-2 py-1 rounded' : '' }}">
+                                                        {{ $followUpDate->format('d-m-Y') }}
+                                                    </span>
+                                                @else
+                                                    -
+                                                @endif
+                                            </td>
                                         <td>
                                             <div class="btn-group btn-group-sm">
                                                 <a href="{{ route('leads.edit', $lead->id) }}" class="btn btn-success">Update</a>
@@ -108,7 +116,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="8" class="text-center text-muted">No leads found.</td>
+                                        <td colspan="{{ $tab === 'all' ? 9 : 8 }}" class="text-center text-muted">No leads found.</td>
                                     </tr>
                                 @endforelse
                             </tbody>

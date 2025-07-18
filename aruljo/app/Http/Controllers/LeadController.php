@@ -95,17 +95,34 @@ class LeadController extends Controller
             'product_detail' => 'nullable|string',
             'delivery_location' => 'nullable|string',
             'expected_delivery_date' => 'nullable|date',
-            'remarks' => 'nullable|string',
             'follow_up_date' => 'nullable|date',
             'status' => ['required', Rule::in($this->allowedStatuses())],
             'assigned_to' => 'nullable|string',
+            'current_remark' => 'nullable|string|max:500', // NEW!
         ]);
 
         $lead = Lead::findOrFail($id);
-        $lead->update($validated);
+
+        // Append the current remark to the remarks history (if given)
+        if ($request->filled('current_remark')) {
+            $timestamp = now()->format('d-m-Y H:i');
+            $user = Auth::user()->name;
+            $newRemarkEntry = "[{$timestamp}] {$user}: " . $request->current_remark;
+
+            // Append with newline if existing remarks exist
+            $existingRemarks = trim($lead->remarks ?? '');
+            $lead->remarks = $existingRemarks
+                        ? $existingRemarks . '~|~' . $newRemarkEntry
+                        : $newRemarkEntry;
+        }
+
+        // Update other validated fields (excluding current_remark)
+        $lead->fill(collect($validated)->except('current_remark')->toArray());
+        $lead->save();
 
         return redirect()->route('leads.index')->with('success', 'Lead updated successfully!');
     }
+
 
     public function edit($id)
     {
