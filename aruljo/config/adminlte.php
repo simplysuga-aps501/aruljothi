@@ -333,11 +333,23 @@ return [
                 ],
             ],
         ],
-
+        // Profile
+        [
+            'text' => 'Profile',
+            'route' => 'profile.edit',
+            'icon' => 'fas fa-fw fa-user',
+        ],
         ['header' => 'account_settings'],
         [
             'text' => 'profile',
             'route' => 'profile.edit',
+            'icon' => 'fas fa-fw fa-user',
+        ],
+
+        ['header' => 'Admin_Settings'],
+        [
+            'text' => 'users',
+            'route' => 'users.list',
             'icon' => 'fas fa-fw fa-user',
         ],
 

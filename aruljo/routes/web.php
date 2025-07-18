@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\UserRoleController;
 
 /*
 |--------------------------------------------------------------------------
@@ -47,7 +48,13 @@ Route::middleware(['auth'])->group(function () {
 
     // 🧾 Audit Logs
     Route::get('/leads/{id}/audits', [LeadController::class, 'showAudits'])->name('leads.audits');   // View audits
+
+    // User roles
+    Route::get('/users', [UserRoleController::class, 'index'])->name('users.list');
+    Route::put('/users/{id}', [UserRoleController::class, 'role'])->name('users.update'); //->middleware('role:admin');
+    
 });
 
 // 🔐 Auth Routes (login, register, forgot password, etc.)
 require __DIR__.'/auth.php';
+
