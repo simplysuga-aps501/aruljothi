@@ -346,11 +346,15 @@ return [
             'icon' => 'fas fa-fw fa-user',
         ],
 
-        ['header' => 'Admin_Settings'],
+        [
+            'header' => 'Admin_Settings',
+            'can' => 'manage-users',
+        ],
         [
             'text' => 'users',
             'route' => 'users.list',
             'icon' => 'fas fa-fw fa-user',
+            'can' => 'manage-users',  // 👈 Only visible to admin or owner roles
         ],
 
     ],

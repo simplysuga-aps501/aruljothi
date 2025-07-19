@@ -49,10 +49,12 @@ Route::middleware(['auth'])->group(function () {
     // 🧾 Audit Logs
     Route::get('/leads/{id}/audits', [LeadController::class, 'showAudits'])->name('leads.audits');   // View audits
 
-    // User roles
-    Route::get('/users', [UserRoleController::class, 'index'])->name('users.list');
-    Route::put('/users/{id}', [UserRoleController::class, 'role'])->name('users.update'); //->middleware('role:admin');
-    
+   // User roles (accessible to users with "owner" or "admin" role)
+   Route::middleware(['role:owner|admin'])->group(function () {
+       Route::get('/users', [UserRoleController::class, 'index'])->name('users.list');
+       Route::put('/users/{id}', [UserRoleController::class, 'role'])->name('users.update');
+   });
+
 });
 
 // 🔐 Auth Routes (login, register, forgot password, etc.)
