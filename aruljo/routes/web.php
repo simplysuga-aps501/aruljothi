@@ -6,6 +6,10 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Product\ProductController;
+use App\Http\Controllers\Product\UnitController;
+use App\Http\Controllers\Product\HsncodeController;
+use App\Http\Controllers\Product\ProductTemplateController;
 
 /*
 |--------------------------------------------------------------------------
@@ -47,6 +51,15 @@ Route::middleware(['auth'])->group(function () {
 
     // 🧾 Audit Logs
     Route::get('/leads/{id}/audits', [LeadController::class, 'showAudits'])->name('leads.audits');   // View audits
+
+    //Product routes
+    Route::resource('products', ProductController::class)->only(['index', 'store']);
+    Route::resource('units', UnitController::class)->only(['store']);
+    Route::resource('hsncodes', HsncodeController::class)->only(['store']);
+
+    // For AJAX: Get parameters for a selected template
+    Route::get('product-templates/{id}/parameters', [ProductTemplateController::class, 'parameters']);
+
 });
 
 // 🔐 Auth Routes (login, register, forgot password, etc.)
