@@ -2,7 +2,6 @@
 
 namespace App\Providers;
 
-// use Illuminate\Support\Facades\Gate;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;
 
@@ -22,10 +21,14 @@ class AuthServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-       $this->registerPolicies();
+        $this->registerPolicies();
 
-           Gate::define('manage-users', function ($user) {
-               return $user->hasAnyRole(['admin', 'owner']); // 👈 Spatie handles this
-           });
+        Gate::define('is-admin', function ($user) {
+            return $user->hasRole('admin');
+        });
+
+        Gate::define('is-admin-owner', function ($user) {
+            return $user->hasAnyRole(['admin', 'owner']);
+        });
     }
 }

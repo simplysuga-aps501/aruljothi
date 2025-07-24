@@ -333,28 +333,18 @@ return [
                 ],
             ],
         ],
-        // Profile
-        [
-            'text' => 'Profile',
-            'route' => 'profile.edit',
-            'icon' => 'fas fa-fw fa-user',
-        ],
         ['header' => 'account_settings'],
         [
             'text' => 'profile',
             'route' => 'profile.edit',
             'icon' => 'fas fa-fw fa-user',
         ],
-
+        ['header' => 'admin_settings'],
         [
-            'header' => 'Admin_Settings',
-            'can' => 'manage-users',
-        ],
-        [
-            'text' => 'users',
+            'text' => 'Users',
             'route' => 'users.list',
-            'icon' => 'fas fa-fw fa-user',
-            'can' => 'manage-users',  // 👈 Only visible to admin or owner roles
+            'icon' => 'fas fa-fw fa-users',
+            'can'   => 'is-admin',
         ],
 
     ],
