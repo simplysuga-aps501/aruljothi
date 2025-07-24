@@ -14,6 +14,8 @@ return new class extends Migration
         Schema::create('product_parameters', function (Blueprint $table) {
                     $table->id();
                     $table->string('name');
+                    $table->string('description')->nullable();
+                    $table->enum('input_type', ['select', 'number'])->default('select');
                     $table->unsignedBigInteger('modified_by')->nullable();
                     $table->timestamps();
                 });

@@ -15,52 +15,56 @@ use App\Http\Controllers\Product\ProductTemplateController;
 |--------------------------------------------------------------------------
 | Web Routes
 |--------------------------------------------------------------------------
-|
-| Here is where you register web routes for your application. These
-| routes are loaded by the RouteServiceProvider and assigned to the "web"
-| middleware group. Make something great!
-|
+| This file is where you define all your web (browser-accessible) routes.
+| Routes inside the 'auth' middleware block require a logged-in user.
 */
 
-// 🔰 Public Route
+// 🌐 Public Route
 Route::get('/', function () {
     return view('welcome');
 });
 
-// 📊 Dashboard (accessible only after login)
+// 📊 Dashboard
 Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth'])
     ->name('dashboard');
 
-// 🔒 Protected Routes (Only for Authenticated Users)
+// 🔒 Authenticated Routes
 Route::middleware(['auth'])->group(function () {
 
-    // 🙍‍♂️ Profile Routes
+    // 🙍‍♂️ Profile
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // 📝 Lead Routes
-    Route::get('/leads', [LeadController::class, 'index'])->name('leads.index');                     // List leads
-    Route::get('/leads/create', fn() => view('leads.create'))->name('leads.create');                 // Show create form
-    Route::post('/leads', [LeadController::class, 'store'])->name('leads.store');                    // Store new lead
-    Route::get('/leads/{id}/edit', [LeadController::class, 'edit'])->name('leads.edit');             // Edit lead
-    Route::put('/leads/{id}', [LeadController::class, 'update'])->name('leads.update');              // Partial update
-    Route::put('/leads/{id}/full-update', [LeadController::class, 'updateFull'])->name('leads.update.full'); // Full update
-    Route::delete('/leads/{id}', [LeadController::class, 'destroy'])->name('leads.destroy');         // Delete lead
+    // 📝 Leads
+    Route::prefix('leads')->name('leads.')->group(function () {
+        Route::get('/', [LeadController::class, 'index'])->name('index');
+        Route::get('/create', fn() => view('leads.create'))->name('create');
+        Route::post('/', [LeadController::class, 'store'])->name('store');
+        Route::get('{id}/edit', [LeadController::class, 'edit'])->name('edit');
+        Route::put('{id}', [LeadController::class, 'update'])->name('update');
+        Route::put('{id}/full-update', [LeadController::class, 'updateFull'])->name('update.full');
+        Route::delete('{id}', [LeadController::class, 'destroy'])->name('destroy');
+        Route::get('{id}/audits', [LeadController::class, 'showAudits'])->name('audits');
+    });
 
-    // 🧾 Audit Logs
-    Route::get('/leads/{id}/audits', [LeadController::class, 'showAudits'])->name('leads.audits');   // View audits
+    // 📦 Products
+    Route::prefix('products')->name('products.')->group(function () {
+        Route::get('/', [ProductController::class, 'index'])->name('index');
+        Route::post('/', [ProductController::class, 'store'])->name('store');
+        Route::get('/template/{id}/parameters', [ProductController::class, 'getParameters'])->name('getParameters');
+    });
 
-    //Product routes
-    Route::resource('products', ProductController::class)->only(['index', 'store']);
-    Route::resource('units', UnitController::class)->only(['store']);
-    Route::resource('hsncodes', HsncodeController::class)->only(['store']);
+    // 🧪 Units (used by AJAX modal)
+    Route::post('/units', [UnitController::class, 'store'])->name('units.store');
 
-    // For AJAX: Get parameters for a selected template
-    Route::get('product-templates/{id}/parameters', [ProductTemplateController::class, 'parameters']);
+    // 🧾 HSN Codes (used by AJAX modal)
+    Route::post('/hsncodes', [HsncodeController::class, 'store'])->name('hsncodes.store');
 
+    // 📋 Product Templates (optional - if you're managing templates)
+    Route::resource('product-templates', ProductTemplateController::class)->only(['index', 'create', 'store', 'edit', 'update']);
 });
 
-// 🔐 Auth Routes (login, register, forgot password, etc.)
+// 🔐 Auth scaffolding (login, register, forgot password, etc.)
 require __DIR__.'/auth.php';

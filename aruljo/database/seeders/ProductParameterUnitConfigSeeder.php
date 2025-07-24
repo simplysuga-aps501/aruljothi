@@ -14,13 +14,28 @@ class ProductParameterUnitConfigSeeder extends Seeder
 
         $data = [
             ['parameter_id' => 1, 'unit_id' => 1], // Diameter -> mm
+            ['parameter_id' => 1, 'unit_id' => 2], // Diameter -> in
+            ['parameter_id' => 1, 'unit_id' => 3], // Diameter -> ft
+            ['parameter_id' => 1, 'unit_id' => 4], // Diameter -> mtr
+            ['parameter_id' => 2, 'unit_id' => 1], // Length -> mm
+            ['parameter_id' => 2, 'unit_id' => 2], // Length -> in
+            ['parameter_id' => 2, 'unit_id' => 3], // Length -> ft
             ['parameter_id' => 2, 'unit_id' => 4], // Length -> mtr
+            ['parameter_id' => 3, 'unit_id' => 1], // Height -> mm
+            ['parameter_id' => 3, 'unit_id' => 2], // Height -> in
             ['parameter_id' => 3, 'unit_id' => 3], // Height -> ft
+            ['parameter_id' => 3, 'unit_id' => 4], // Height -> mtr
             ['parameter_id' => 4, 'unit_id' => 1], // Thickness -> mm
-            ['parameter_id' => 5, 'unit_id' => 3], // Width -> ft
+            ['parameter_id' => 4, 'unit_id' => 2], // Thickness -> in
+            ['parameter_id' => 4, 'unit_id' => 3], // Thickness -> ft
+            ['parameter_id' => 4, 'unit_id' => 4], // Thickness -> mtr
+            ['parameter_id' => 5, 'unit_id' => 1], // Height -> mm
+            ['parameter_id' => 5, 'unit_id' => 2], // Height -> in
+            ['parameter_id' => 5, 'unit_id' => 3], // Height -> ft
+            ['parameter_id' => 5, 'unit_id' => 4], // Height -> mtr
             ['parameter_id' => 6, 'unit_id' => 7], // KV -> kv
             ['parameter_id' => 7, 'unit_id' => 8], // Capacity -> liters
-            ['parameter_id' => 8, 'unit_id' => 6], // Shape -> round
+
         ];
 
         foreach ($data as $entry) {

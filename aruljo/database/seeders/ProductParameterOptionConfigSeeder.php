@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use App\Models\Product\ProductParameter;
 use App\Models\Product\ProductParameterOptionConfig;
 use Carbon\Carbon;
 
@@ -11,33 +10,30 @@ class ProductParameterOptionConfigSeeder extends Seeder
 {
     public function run(): void
     {
-        $parameterMap = ProductParameter::pluck('id', 'name')->toArray();
         $now = Carbon::parse('2025-07-22 10:00:00');
 
         $options = [
-            ['param' => 'Class', 'option' => 'NP2'],
-            ['param' => 'Class', 'option' => 'NP3'],
-            ['param' => 'Class', 'option' => 'NP4'],
-            ['param' => 'Type', 'option' => 'Plain'],
-            ['param' => 'Type', 'option' => 'Spygot'],
-            ['param' => 'Type', 'option' => 'Male Female'],
-            ['param' => 'Type', 'option' => 'Plain End With Separate Collar'],
-            ['param' => 'Shape', 'option' => 'Round'],
-            ['param' => 'Shape', 'option' => 'Square'],
-            ['param' => 'Lid', 'option' => 'With Lid'],
-            ['param' => 'Lid', 'option' => 'Without Lid'],
+            ['product_parameter_id' => 8, 'parameter_option' => 'Round'],
+            ['product_parameter_id' => 8, 'parameter_option' => 'Square'],
+            ['product_parameter_id' => 9, 'parameter_option' => 'With Lid'],
+            ['product_parameter_id' => 9, 'parameter_option' => 'Without Lid'],
+            ['product_parameter_id' => 10, 'parameter_option' => 'NP2'],
+            ['product_parameter_id' => 10, 'parameter_option' => 'NP3'],
+            ['product_parameter_id' => 10, 'parameter_option' => 'NP4'],
+            ['product_parameter_id' => 11, 'parameter_option' => 'Plain'],
+            ['product_parameter_id' => 11, 'parameter_option' => 'Spygot'],
+            ['product_parameter_id' => 11, 'parameter_option' => 'Male Female'],
+            ['product_parameter_id' => 11, 'parameter_option' => 'Plain End With Separate Collar'],
         ];
 
         foreach ($options as $entry) {
-            if (isset($parameterMap[$entry['param']])) {
-                ProductParameterOptionConfig::create([
-                    'product_parameter_id' => $parameterMap[$entry['param']],
-                    'parameter_option'     => $entry['option'],
-                    'modified_by'          => null, // or use a user_id if you have users
-                    'created_at'           => $now,
-                    'updated_at'           => $now,
-                ]);
-            }
+            ProductParameterOptionConfig::create([
+                'product_parameter_id' => $entry['product_parameter_id'],
+                'parameter_option'     => $entry['parameter_option'],
+                'modified_by'          => null,
+                'created_at'           => $now,
+                'updated_at'           => $now,
+            ]);
         }
     }
 }

@@ -4,6 +4,8 @@ namespace App\Models\Product;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
 
 class Product extends Model
 {
@@ -33,7 +35,10 @@ class Product extends Model
         {
             return $this->belongsTo(ProductTemplate::class);
         }
-
+        public function parameterValues()
+        {
+            return $this->hasMany(ProductParameterValue::class);
+        }
         public function modifiedBy()
         {
             return $this->belongsTo(\App\Models\User::class, 'modified_by');

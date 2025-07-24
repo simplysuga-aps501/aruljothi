@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class ProductParameter extends Model
 {
     use HasFactory;
-    protected $fillable = ['name', 'modified_by' ];
+    protected $fillable = ['name', 'input_type','modified_by' ];
 
     public function units()
     {
