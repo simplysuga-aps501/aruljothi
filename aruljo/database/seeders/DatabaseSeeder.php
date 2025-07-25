@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
        $this->call(ProductParameterSeeder::class);
        $this->call(ProductParameterUnitSeeder::class);
        $this->call(ProductParameterUnitConfigSeeder::class);
+       $this->call(ProductParameterOptionConfigSeeder::class);
        $this->call(ProductParameterConfigSeeder::class);
     }
 }

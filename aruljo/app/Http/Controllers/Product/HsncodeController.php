@@ -15,13 +15,14 @@ class HsncodeController extends Controller
             'description' => 'nullable|string|max:1000',
         ]);
 
-        Hsncode::create([
+        $hsncode = Hsncode::create([
             'name' => $request->name,
             'description' => $request->description,
-            'modified_by' => auth()->id(), // if you track this
+            'modified_by' => auth()->id(),
         ]);
 
-        return back();
+        return response()->json($hsncode);
+
     }
 
 }

@@ -19,7 +19,7 @@ class ProductController extends Controller
      */
     public function index()
     {
-        return view('products.index', [
+     return view('products.index', [
             'products' => Product::with(['unit', 'hsncode'])->get(),
             'product_templates' => ProductTemplate::all(),
             'units' => Unit::all(),
@@ -44,6 +44,7 @@ class ProductController extends Controller
                 'id' => $param->id,
                 'name' => $param->name,
                 'input_type' => $param->input_type,
+                'description' => $param->description,
                 'options' => $param->options->pluck('parameter_option')->toArray(),
                 'units' => $param->units->pluck('name')->toArray(),
             ];
@@ -69,9 +70,19 @@ class ProductController extends Controller
                'parameters.*.unit_id' => 'nullable|exists:parameter_units,id',
            ]);
 
+           //Duplicate product
+           $name = strtoupper($validated['name']);
+
+           if (Product::where('name', $name)->exists()) {
+               return response()->json([
+                   'success' => false,
+                   'message' => 'Product with this name already exists.',
+               ], 422);
+           }
+
            // ✅ Create product
            $product = Product::create([
-               'name' => $validated['name'],
+               'name' => strtoupper($validated['name']),
                'sku' => 'PRD-' . strtoupper(uniqid()), // or use your SKU logic
                'description' => '', // Optional - build from params if needed
                'stock_count' => 0, // Default for now
@@ -109,5 +120,13 @@ class ProductController extends Controller
            ], 500);
        }
    }
+
+   public function destroy($id)
+   {
+       Product::findOrFail($id)->delete();
+       return redirect()->route('products.index')->with('success', 'Product deleted successfully.');
+   }
+
+
 
 }

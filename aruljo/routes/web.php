@@ -49,6 +49,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('{id}/audits', [LeadController::class, 'showAudits'])->name('audits');
     });
 
+
     // 📦 Products
     Route::prefix('products')->name('products.')->group(function () {
         Route::get('/', [ProductController::class, 'index'])->name('index');
@@ -64,6 +65,10 @@ Route::middleware(['auth'])->group(function () {
 
     // 📋 Product Templates (optional - if you're managing templates)
     Route::resource('product-templates', ProductTemplateController::class)->only(['index', 'create', 'store', 'edit', 'update']);
+
+    //delete a product
+    Route::delete('/products/{id}', [ProductController::class, 'destroy'])->name('products.destroy');
+
 });
 
 // 🔐 Auth scaffolding (login, register, forgot password, etc.)

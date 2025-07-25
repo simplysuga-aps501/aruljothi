@@ -27,31 +27,58 @@
         <button class="btn btn-secondary" data-toggle="modal" data-target="#addUnitModal">Add Unit</button>
         <button class="btn btn-secondary" data-toggle="modal" data-target="#addHSNCodeModal">Add HSN Code</button>
     </div>
+    <x-adminlte-alert theme="success" id="productSuccessAlert" title="Success" class="d-none" dismissable>
+        Product created successfully!
+    </x-adminlte-alert>
 
     {{-- Products Table --}}
     <table id="productsTable" class="table table-bordered table-striped">
         <thead>
             <tr>
                <!-- <th>SKU</th>-->
+                <th>S. No.</th>
                 <th>Name</th>
+                <th>Product Template</th>
                 <th>Unit</th>
                 <th>HSN Code</th>
+                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
             @foreach ($products as $product)
                 <tr>
                    <!-- <td>{{ $product->sku }}</td>-->
+                    <td>{{ $loop->iteration }}</td>
                     <td>{{ $product->name }}</td>
+                    <td>{{ strtoupper($product->productTemplate->name ?? '') }}</td>
                     <td>{{ $product->unit->name ?? '' }}</td>
                     <td>{{ $product->hsncode->name ?? '' }}</td>
+                    <td>
+                        <div class="btn-group btn-group-sm">
+                            <x-adminlte-button label="Delete" theme="outline-danger" icon="fas fa-trash"
+                                data-toggle="modal" data-target="#deleteModal"
+                                onclick="setDeleteAction('{{ route('products.destroy', $product->id) }}')" />
+                        </div>
+                    </td>
                 </tr>
             @endforeach
         </tbody>
     </table>
 
+     {{-- Delete Product Modal --}}
+    <x-adminlte-modal id="deleteModal" title="Confirm Delete" theme="danger" icon="fas fa-exclamation-triangle" size="md">
+        <p class="text-center">Are you sure you want to delete this product?</p>
+        <x-slot name="footerSlot">
+            <form id="deleteForm" method="POST" action="">
+                @csrf
+                @method('DELETE')
+                <x-adminlte-button label="Yes, Delete" type="submit" theme="danger" icon="fas fa-trash"/>
+                <button type="button" class="btn btn-secondary ml-2" data-dismiss="modal">Cancel</button>
+            </form>
+        </x-slot>
+    </x-adminlte-modal>
+
     {{-- Add Product Modal --}}
-    <div id="productAlert"></div>
     <div class="modal fade" id="addProductModal" tabindex="-1" aria-labelledby="addProductModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -96,14 +123,25 @@
                         {{-- HSN Code --}}
                         <div class="mb-3">
                             <label for="hsncode_id" class="form-label">HSN Code</label>
-                            <select id="hsncode_id" class="form-control">
+                            <select id="hsncode_id" class="form-control" data-toggle="tooltip" title="">
                                 <option value="">-- Select HSN Code --</option>
                                 @foreach ($hsncodes as $hsn)
-                                    <option value="{{ $hsn->id }}">{{ $hsn->name }}</option>
+                                    <option
+                                        value="{{ $hsn->id }}"
+                                        data-description="{{ $hsn->description }}"
+                                        title="{{ $hsn->description }}"
+                                    >
+                                        {{ $hsn->name }}
+                                    </option>
                                 @endforeach
                             </select>
                         </div>
                     </div>
+                    {{-- AdminLTE Styled Success/Error Alert --}}
+
+                    <x-adminlte-alert theme="danger" id="productErrorAlert" title="Error" class="d-none" dismissable>
+                        Failed to save product.
+                    </x-adminlte-alert>
 
                     <div class="modal-footer">
                         <button type="button" class="btn btn-warning" id="clearProductForm">
@@ -125,6 +163,7 @@
                         <h5 class="modal-title">Add Unit</h5>
                         <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
                     </div>
+                 <div id="unitAlert"></div>
                     <div class="modal-body">
                         <input type="text" name="name" class="form-control" placeholder="Enter Unit Name" required>
                     </div>
@@ -145,6 +184,7 @@
                         <h5 class="modal-title">Add HSN Code</h5>
                         <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
                     </div>
+                <div id="hsnAlert"></div>
                     <div class="modal-body">
                         <div class="mb-3">
                             <input type="text" name="name" class="form-control" placeholder="Enter HSN Code" required>
@@ -170,7 +210,6 @@
 @stop
 
 @section('js')
-    <script src="https://code.jquery.com/jquery-3.7.1.js"></script>
     <script src="https://cdn.datatables.net/2.3.2/js/dataTables.js"></script>
     <script src="https://cdn.datatables.net/responsive/3.0.4/js/dataTables.responsive.js"></script>
     <script src="https://cdn.datatables.net/columncontrol/1.0.6/js/dataTables.columnControl.js"></script>
@@ -195,14 +234,14 @@
                         if (param.input_type === 'number') {
                             html += `
                                 <div class="input-group">
-                                    <input type="number" class="form-control param-input" data-parameter-id="${param.id}" placeholder="Enter ${param.name}">
+                                    <input type="number"  step="0.01" min="0" class="form-control param-input" data-parameter-id="${param.id}" data-description="${param.description}" placeholder="Enter ${param.name}">
                                     <select class="form-control param-unit">
                                         ${param.units.map(unit => `<option value="${unit}">${unit}</option>`).join('')}
                                     </select>
                                 </div>`;
                         } else {
                             html += `
-                                <select class="form-control param-select" data-parameter-id="${param.id}">
+                                <select class="form-control param-select" data-parameter-id="${param.id}" data-description="${param.description}">
                                     <option value="">-- Select --</option>
                                     ${param.options.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
                                 </select>`;
@@ -217,6 +256,16 @@
                 }
             });
         });
+        //hsn tooltip
+
+        // Initialize tooltip
+        $('[data-toggle="tooltip"]').tooltip();
+
+        // Update tooltip text when selection changes
+        $('#hsncode_id').on('change', function () {
+            const desc = $(this).find(':selected').data('description') || '';
+            $(this).attr('title', desc).tooltip('dispose').tooltip(); // Refresh tooltip
+        });
 
         // Update product name live based on parameter input
         $('#parameterFields').on('input change', '.param-input, .param-select, .param-unit', function () {
@@ -225,9 +274,9 @@
             $('#parameterFields .param-input').each(function () {
                 let val = $(this).val();
                 let unit = $(this).closest('.input-group').find('.param-unit').val();
-                let label = $(this).closest('.mb-3').find('label').text().trim();
-                if (val && unit && label) {
-                    parts.push(`${val} ${unit} ${label.toUpperCase().split(' ')[0]}`);
+                let desc = $(this).attr('data-description');
+                if (val && unit && desc) {
+                    parts.push(`${val} ${unit} ${desc.toUpperCase().split(' ')[0]}`);
                 }
             });
 
@@ -251,9 +300,19 @@
 
             $.post('/units', { name, _token: '{{ csrf_token() }}' }, function (unit) {
                 $('#unit_id').append(`<option value="${unit.id}">${unit.name}</option>`);
-                $('#unit_id').val(unit.id);
-                $('#addUnitModal').modal('hide');
-                $('#addUnitForm')[0].reset();
+               $('#unit_id').val(unit.id);
+               $('#addUnitModal').modal('hide');
+               $('#addUnitForm')[0].reset();
+
+               $('#unitAlert').html(`
+                   <div class="alert alert-success alert-dismissible fade show mt-2" role="alert">
+                       Unit added successfully!
+                       <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                           <span aria-hidden="true">&times;</span>
+                       </button>
+                   </div>
+               `);
+               setTimeout(() => $('.alert').alert('close'), 5000);
             }).fail(function (xhr) {
                 alert('Failed to add unit. Make sure the name is filled.');
                 console.log(xhr.responseText);
@@ -268,9 +327,19 @@
 
             $.post('/hsncodes', { name, description, _token: '{{ csrf_token() }}' }, function (hsn) {
                 $('#hsncode_id').append(`<option value="${hsn.id}">${hsn.name}</option>`);
-                $('#hsncode_id').val(hsn.id);
-                $('#addHSNCodeModal').modal('hide');
-                $('#addHSNForm')[0].reset();
+               $('#hsncode_id').val(hsn.id);
+               $('#addHSNCodeModal').modal('hide');
+               $('#addHSNForm')[0].reset();
+
+               $('#hsnAlert').html(`
+                   <div class="alert alert-success alert-dismissible fade show mt-2" role="alert">
+                       HSN Code added successfully!
+                       <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                           <span aria-hidden="true">&times;</span>
+                       </button>
+                   </div>
+               `);
+               setTimeout(() => $('.alert').alert('close'), 5000);
             }).fail(function (xhr) {
                 alert('Failed to add HSN Code. Ensure "name" is filled.');
                 console.log(xhr.responseText);
@@ -342,36 +411,46 @@
                     hsncode_id: hsncodeId,
                     parameters: parameters
                 }),
-                success: function (res) {
-                    $('#addProductModal').modal('hide');
-                    $('#productAlert').html(`
-                        <div class="alert alert-success alert-dismissible fade show mt-2" role="alert">
-                            Product created successfully!
-                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
-                        </div>
-                    `);
-                    $('#addProductForm')[0].reset();
-                    setTimeout(() => location.reload(), 1000);
-                },
-                error: function (xhr) {
-                    $('#productAlert').html(`
-                        <div class="alert alert-danger alert-dismissible fade show mt-2" role="alert">
-                            Failed to save product.
-                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
-                        </div>
-                    `);
-                    console.error(xhr.responseText);
-                }
+               success: function (res) {
+                   $('#addProductModal').modal('hide');
 
+                   // Show success alert
+                   $('#productSuccessAlert')
+                       .removeClass('d-none')
+                       .find('.alert-body').html('Product created successfully!');
+
+                   setTimeout(() => {
+                       $('#productSuccessAlert').addClass('d-none');
+                   }, 5000);
+
+                   $('#addProductForm')[0].reset();
+
+                   // Reload after short delay
+                   setTimeout(() => location.reload(), 1000);
+               },
+
+               error: function (xhr) {
+                   let msg = 'Failed to save product.';
+                   if (xhr.status === 422 && xhr.responseJSON?.message) {
+                       msg = xhr.responseJSON.message;
+                   }
+
+                   $('#productErrorAlert')
+                       .removeClass('d-none')
+                       .find('.alert-body').html(msg);
+
+                   console.error(xhr.responseText);
+               }
             });
         });
 
         // Initialize DataTable (optional, if you want)
         $('#productsTable').DataTable();
     });
+
+    //Delete a product
+    function setDeleteAction(actionUrl) {
+        document.getElementById('deleteForm').setAttribute('action', actionUrl);
+    }
 </script>
 @stop

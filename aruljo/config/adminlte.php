@@ -333,6 +333,28 @@ return [
                 ],
             ],
         ],
+        //Items
+        [
+            'text' => 'Items',
+            'icon' => 'fas fa-boxes',
+            'submenu' => [
+                [
+                    'text' => 'Products',
+                    'route' => 'products.index',
+                    'icon' => 'fas fa-box',
+                ],
+                [
+                    'text' => 'Raw Materials',
+                    'route' => '', // adjust to your route
+                    'icon' => 'fas fa-cubes',
+                ],
+                [
+                    'text' => 'Spares',
+                    'route' => '', // adjust to your route
+                    'icon' => 'fas fa-tools',
+                ],
+            ],
+        ],
 
         ['header' => 'account_settings'],
         [
