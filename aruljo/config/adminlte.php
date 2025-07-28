@@ -333,12 +333,19 @@ return [
                 ],
             ],
         ],
-
         ['header' => 'account_settings'],
         [
             'text' => 'profile',
             'route' => 'profile.edit',
             'icon' => 'fas fa-fw fa-user',
+        ],
+        ['header' => 'admin_settings',
+          'can' => 'is-admin',],
+        [
+            'text' => 'Users',
+            'route' => 'users.list',
+            'icon' => 'fas fa-fw fa-users',
+            'can'   => 'is-admin',
         ],
 
     ],
