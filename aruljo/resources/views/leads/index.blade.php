@@ -29,6 +29,12 @@
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link {{ $tab === 'my' ? 'active' : '' }}"
+                               href="{{ route('leads.index', ['tab' => 'my']) }}">
+                                My Leads
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link {{ $tab === 'all' ? 'active' : '' }}"
                                href="{{ route('leads.index', ['tab' => 'all']) }}">
                                 All Leads
