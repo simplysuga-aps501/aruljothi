@@ -72,7 +72,7 @@
                      class="form-control"
                      value="{{ $lead->buyer_contact }}"
                      oninput="this.value=this.value.replace(/[^0-9]/g,'')"
-                     maxlength="10" minlength="10"
+                     maxlength="15" minlength="10"
                      pattern="[6-9]{1}[0-9]{9}"
                      title="Enter a valid 10-digit Indian mobile number starting with 6-9"
                      required>
@@ -135,27 +135,31 @@
 
             <!-- Past and Current Remarks -->
           <!-- Past Remarks -->
-          <div class="form-group col-md-6">
+          <!-- Current Remark -->
+          <div class="form-group col-md-12">
+              <label for="currentRemark">Current Remark</label>
+              <textarea name="current_remark"
+                        id="currentRemark"
+                        rows="2"
+                        class="form-control"
+                        maxlength="1000"
+                        placeholder="Add your remark..."
+                        required
+                        style="resize: vertical; font-size: 0.9rem;"></textarea>
+          </div>
+          <div class="form-group col-md-12">
               <label for="pastRemarks">Past Remarks</label>
               <textarea id="pastRemarks"
                   class="form-control"
                   rows="6"
                   readonly
                   style="background-color: #f8f9fa; overflow-y: auto; font-size: 0.925rem; line-height: 1.7; text-align: left;">@php
-          $remarks = explode("~|~", $lead->remarks);
-          foreach($remarks as $remark) {
-              if (preg_match('/\[(.*?)\]\s(.*?):\s(.+)/', $remark, $matches)) {
-                  echo "{$matches[2]} ({$matches[1]}): {$matches[3]}\n";
-              } else {
-                  echo trim($remark) . "\n";
-              }
-          }
-          @endphp</textarea>
+                  $remarks = explode("~|~", $lead->remarks);
+                  foreach ($remarks as $remark) {
+                      echo trim($remark) . "\n";
+                  }
+              @endphp</textarea>
           </div>
-         <div class="form-group col-md-6">
-              <label>Current Remark</label>
-              <textarea name="current_remark" rows="6" class="form-control" maxlength="1000" placeholder="Add your remark..." required></textarea>
-            </div>
 
           </div>
         </div>

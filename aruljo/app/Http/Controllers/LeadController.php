@@ -10,28 +10,36 @@ use Illuminate\Validation\Rule;
 
 class LeadController extends Controller
 {
-    // 📋 Return leads as JSON (API use)
+// 📋 Return leads as JSON (API use)
     public function index(Request $request)
     {
-        $tab = $request->get('tab', 'active'); // default to active leads
+        $tab = $request->get('tab', 'active');
+        $userName = Auth::user()->name;
 
         if ($tab === 'all') {
-            $leads = Lead::orderBy('created_at', 'asc')->get();
+            $leads = Lead::orderBy('created_at', 'desc')->get();
+        } elseif ($tab === 'my') {
+            $leads = Lead::where('assigned_to', $userName)
+                         ->orderBy('created_at', 'desc')
+                         ->get();
         } else {
             $leads = Lead::whereNotIn('status', ['Cancelled', 'Completed'])
-                         ->orderBy('created_at', 'asc')
+                         ->orderBy('created_at', 'desc')
                          ->get();
         }
 
         $users = User::whereDoesntHave('roles', function ($query) {
             $query->where('name', 'admin');
-        })->pluck('name', 'id');
+        })->get();
 
-        $currentUser = Auth::user()->name;
+        $currentUser = $userName;
 
-        return view('leads.index', compact('leads', 'users', 'currentUser', 'tab'));
+        // ✅ Add this line
+        $statuses = $this->allowedStatuses();
+
+        // ✅ Also include it here
+        return view('leads.index', compact('leads', 'users', 'currentUser', 'tab', 'statuses'));
     }
-
 
     // ✅ Store lead from form submission
     public function store(Request $request)
@@ -56,7 +64,7 @@ class LeadController extends Controller
     public function showAll()
     {
          $leads = Lead::whereNotIn('status', ['Cancelled', 'Completed'])
-                         ->orderBy('created_at', 'asc')
+                         ->orderBy('created_at', 'desc')
                          ->get();
 
             $users = User::whereDoesntHave('roles', function ($query) {
@@ -67,20 +75,32 @@ class LeadController extends Controller
 
             return view('leads.index', compact('leads', 'users', 'currentUser'));
     }
-
-    public function update(Request $request, $id)
+    public function quickEdit(Request $request, $id)
     {
-        $request->validate([
+        $validated = $request->validate([
             'status' => ['required', Rule::in($this->allowedStatuses())],
             'assigned_to' => 'nullable|string',
+            'current_remark' => 'nullable|string|max:500',
         ]);
 
         $lead = Lead::findOrFail($id);
-        $lead->status = $request->status;
-        $lead->assigned_to = $request->assigned_to;
+
+        if ($request->filled('current_remark')) {
+            $user = Auth::user()->name;
+            $timestamp = now()->format('d M Y, h:i A');
+            $formattedRemark = "{$user} ({$timestamp}): {$request->current_remark}";
+
+            $existingRemarks = trim($lead->remarks ?? '');
+            $lead->remarks = $existingRemarks
+                        ? $formattedRemark . '~|~' . $existingRemarks
+                        : $formattedRemark;
+        }
+
+        $lead->status = $validated['status'];
+        $lead->assigned_to = $validated['assigned_to'];
         $lead->save();
 
-        return redirect()->back()->with('success', 'Lead status updated.');
+        return response()->json(['success' => true, 'message' => 'Lead updated successfully!']);
     }
 
     public function updateFull(Request $request, $id)
@@ -98,22 +118,21 @@ class LeadController extends Controller
             'follow_up_date' => 'nullable|date',
             'status' => ['required', Rule::in($this->allowedStatuses())],
             'assigned_to' => 'nullable|string',
-            'current_remark' => 'nullable|string|max:500', // NEW!
+            'current_remark' => 'nullable|string|max:500',
         ]);
 
         $lead = Lead::findOrFail($id);
 
         // Append the current remark to the remarks history (if given)
         if ($request->filled('current_remark')) {
-            $timestamp = now()->format('d-m-Y H:i');
             $user = Auth::user()->name;
-            $newRemarkEntry = "[{$timestamp}] {$user}: " . $request->current_remark;
+            $timestamp = now()->format('d M Y, h:i A'); // eg. 30 Jul 2025, 03:10 PM
+            $formattedRemark = "{$user} ({$timestamp}): {$request->current_remark}";
 
-            // Append with newline if existing remarks exist
             $existingRemarks = trim($lead->remarks ?? '');
             $lead->remarks = $existingRemarks
-                        ? $existingRemarks . '~|~' . $newRemarkEntry
-                        : $newRemarkEntry;
+                        ? $formattedRemark . '~|~' . $existingRemarks
+                        : $formattedRemark;
         }
 
         // Update other validated fields (excluding current_remark)
@@ -122,6 +141,7 @@ class LeadController extends Controller
 
         return redirect()->route('leads.index')->with('success', 'Lead updated successfully!');
     }
+
 
 
     public function edit($id)
@@ -162,6 +182,13 @@ class LeadController extends Controller
             'Cancelled',
             'Completed',
         ];
+    }
+
+    //Quick Edit
+    public function show($id)
+    {
+        $lead = Lead::findOrFail($id);
+        return response()->json($lead);
     }
 
 }

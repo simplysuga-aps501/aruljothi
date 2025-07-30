@@ -83,7 +83,7 @@
               <input type="text" id="buyer_contact" name="buyer_contact"
                      class="form-control"
                      minlength="10"
-                     maxlength="10"
+                     maxlength="15"
                      pattern="[6-9]{1}[0-9]{9}"
                      oninput="this.value = this.value.replace(/[^0-9]/g, '')"
                      title="Enter a valid 10-digit Indian mobile number starting with 6-9"
