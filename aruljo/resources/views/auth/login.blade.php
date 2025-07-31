@@ -1,6 +1,6 @@
 @extends('adminlte::auth.auth-page', ['auth_type' => 'login'])
 
-@section('auth_header', 'Sign in to start your session')
+@section('auth_header', 'Sign in to start your work')
 
 @section('auth_body')
     <form action="{{ route('login') }}" method="POST">
@@ -52,7 +52,7 @@
 @endsection
 
 @section('auth_footer')
-    <p class="mb-1">
+    <!-- <p class="mb-1">
         <a href="{{ route('password.request') }}">I forgot my password</a>
-    </p>
+    </p> -->
 @endsection
