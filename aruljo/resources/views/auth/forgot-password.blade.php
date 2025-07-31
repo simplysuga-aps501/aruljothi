@@ -36,7 +36,4 @@
     <p class="my-0">
         <a href="{{ route('login') }}">Back to Login</a>
     </p>
-    <p class="mb-0">
-        <a href="{{ route('register') }}">Register a New Account</a>
-    </p>
 @endsection
