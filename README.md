@@ -17,5 +17,7 @@ php -S 127.0.0.1:8000 -t public_html
 
 -- How to assign roles via tinker
 php artisan tinker
+
 $user = App\Models\User::where(‘name’,’Kavin’)->first();
+
 $user->assignRole(‘owner’);
