@@ -42,10 +42,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/leads/create', fn() => view('leads.create'))->name('leads.create');                 // Show create form
     Route::post('/leads', [LeadController::class, 'store'])->name('leads.store');                    // Store new lead
     Route::get('/leads/{id}/edit', [LeadController::class, 'edit'])->name('leads.edit');             // Edit lead
-    Route::put('/leads/{id}', [LeadController::class, 'update'])->name('leads.update');              // Partial update
     Route::put('/leads/{id}/full-update', [LeadController::class, 'updateFull'])->name('leads.update.full'); // Full update
+    Route::get('/leads/{id}', [LeadController::class, 'show']);
     Route::delete('/leads/{id}', [LeadController::class, 'destroy'])->name('leads.destroy');         // Delete lead
-
+    Route::put('/leads/{lead}', [LeadController::class, 'quickEdit'])->name('leads.quickEdit');
     // 🧾 Audit Logs
     Route::get('/leads/{id}/audits', [LeadController::class, 'showAudits'])->name('leads.audits');   // View audits
 

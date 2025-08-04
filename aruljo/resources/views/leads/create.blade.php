@@ -33,7 +33,7 @@
         </div>
       @endif
 
-      <form action="{{ route('leads.store') }}" method="POST">
+      <form action="{{ route('leads.store') }}" method="POST" onsubmit="return validateForm();">
         @csrf
         <div class="card-body">
           <div class="row">
@@ -58,30 +58,47 @@
             <!-- Buyer Name -->
             <div class="form-group col-md-6">
               <label for="buyer_name">Buyer Name<span class="text-danger"> *</span></label>
-              <input type="text" id="buyer_name" name="buyer_name" class="form-control" value="{{ old('buyer_name') }}" required>
+              <input type="text" id="buyer_name" name="buyer_name" class="form-control"
+                     value="{{ old('buyer_name') }}" required
+                     minlength="3"
+                     maxlength="100"
+                     pattern="^[a-zA-Z0-9\s.]+$"
+                     title="Only letters, numbers, spaces, and dots allowed. Min 3 and max 100 characters.">
             </div>
 
             <!-- Buyer Location -->
             <div class="form-group col-md-6">
               <label for="buyer_location">Buyer Location</label>
-              <input type="text" id="buyer_location" name="buyer_location" class="form-control" value="{{ old('buyer_location') }}">
+              <input type="text" id="buyer_location" name="buyer_location" class="form-control"
+                     minlength="3"
+                     maxlength="100"
+                     pattern="^[a-zA-Z0-9\s,.-]+$"
+                     title="Only letters, numbers, commas, periods, and dashes allowed."
+                     value="{{ old('buyer_location') }}">
             </div>
 
             <!-- Buyer Contact -->
             <div class="form-group col-md-6">
               <label for="buyer_contact">Buyer Contact Number<span class="text-danger"> *</span></label>
               <input type="text" id="buyer_contact" name="buyer_contact"
-                oninput="this.value=this.value.replace(/[^0-9]/g,'')"
-                maxlength="10"
-                pattern="[6-9]{1}[0-9]{9}"
-                title="Enter a valid 10-digit Indian mobile number starting with 6-9"
-                class="form-control" value="{{ old('buyer_contact') }}" required>
+                     class="form-control"
+                     minlength="10"
+                     maxlength="15"
+                     pattern="[6-9]{1}[0-9]{9}"
+                     oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                     title="Enter a valid 10-digit Indian mobile number starting with 6-9"
+                     value="{{ old('buyer_contact') }}" required>
             </div>
 
             <!-- Item Searched -->
             <div class="form-group col-md-6">
               <label for="platform_keyword">Item Searched</label>
-              <input type="text" id="platform_keyword" name="platform_keyword" class="form-control" value="{{ old('platform_keyword') }}">
+              <input type="text" id="platform_keyword" name="platform_keyword"
+                     class="form-control"
+                     maxlength="100"
+                     pattern="^[a-zA-Z0-9\s,.-]+$"
+                     title="Only letters, numbers, commas, periods, and dashes allowed."
+                     value="{{ old('platform_keyword') }}">
             </div>
           </div>
         </div>
@@ -100,11 +117,51 @@
 </section>
 @stop
 
-@section('css')
-    {{-- Add custom styles if needed --}}
-    {{-- <link rel="stylesheet" href="/css/admin_custom.css"> --}}
-@stop
-
 @section('js')
-    <script> console.log("Create Lead page loaded"); </script>
+<script>
+  function validateForm() {
+    const buyerName = document.getElementById('buyer_name').value.trim();
+    const contact = document.getElementById('buyer_contact').value.trim();
+    const leadDate = document.getElementById('lead_date').value;
+
+    if (buyerName.length < 3) {
+      alert("Buyer Name must be at least 3 characters.");
+      return false;
+    }
+
+    if (buyerName.length > 100) {
+      alert("Buyer Name cannot exceed 100 characters.");
+      return false;
+    }
+
+    if (contact.length !== 10 || !/^[6-9][0-9]{9}$/.test(contact)) {
+      alert("Contact number must be a valid 10-digit Indian number starting with 6-9.");
+      return false;
+    }
+
+    const now = new Date();
+    const inputDate = new Date(leadDate);
+
+    if (inputDate > now) {
+      alert("Lead date cannot be in the future.");
+      return false;
+    }
+
+    return true;
+  }
+
+  // ✅ Restrict future date with local time format (YYYY-MM-DDTHH:MM)
+  document.addEventListener('DOMContentLoaded', () => {
+    const now = new Date();
+    const pad = (n) => n.toString().padStart(2, '0');
+    const localDateTime = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+
+    const leadDateInput = document.getElementById('lead_date');
+    if (leadDateInput) {
+      leadDateInput.max = localDateTime;
+    }
+  });
+
+  console.log("Create Lead page loaded");
+</script>
 @stop

@@ -11,7 +11,7 @@
         <p class="text-muted">No audit records found for this lead.</p>
     @else
         <div class="table-responsive">
-            <table class="table table-bordered table-hover">
+            <table class="table table-bordered table-hover table-sm audit-table">
                 <thead class="thead-light">
                     <tr>
                         <th>Date</th>
@@ -26,7 +26,7 @@
                             <td>{{ $audit->created_at->toDayDateTimeString() }}</td>
                             <td>{{ optional($audit->user)->name ?? 'System' }}</td>
                             <td>{{ ucfirst($audit->event) }}</td>
-                            <td>
+                            <td style="word-break: break-word; white-space: normal;">
                                 <ul class="mb-0 ps-3">
                                     @foreach($audit->new_values as $key => $value)
                                         @php

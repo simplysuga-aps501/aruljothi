@@ -1,25 +1,39 @@
-<x-guest-layout>
-    <div class="mb-4 text-sm text-gray-600 dark:text-gray-400">
-        {{ __('Forgot your password? No problem. Just let us know your email address and we will email you a password reset link that will allow you to choose a new one.') }}
-    </div>
+@extends('adminlte::auth.auth-page', ['auth_type' => 'forgot'])
 
-    <!-- Session Status -->
-    <x-auth-session-status class="mb-4" :status="session('status')" />
+@section('auth_header', __('Forgot Your Password?'))
+
+@section('auth_body')
+    <p class="text-muted mb-3">
+        Enter your email and we’ll send you a link to reset your password.
+    </p>
+
+    @if (session('status'))
+        <x-adminlte-alert theme="success" dismissable>
+            {{ session('status') }}
+        </x-adminlte-alert>
+    @endif
 
     <form method="POST" action="{{ route('password.email') }}">
         @csrf
 
-        <!-- Email Address -->
-        <div>
-            <x-input-label for="email" :value="__('Email')" />
-            <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required autofocus />
-            <x-input-error :messages="$errors->get('email')" class="mt-2" />
+        {{-- Email Address --}}
+        <div class="input-group mb-3">
+            <input name="email" type="email" class="form-control @error('email') is-invalid @enderror"
+                   value="{{ old('email') }}" placeholder="Email" required autofocus>
+            <div class="input-group-append">
+                <div class="input-group-text"><span class="fas fa-envelope"></span></div>
+            </div>
+            @error('email')
+                <div class="invalid-feedback d-block">{{ $message }}</div>
+            @enderror
         </div>
 
-        <div class="flex items-center justify-end mt-4">
-            <x-primary-button>
-                {{ __('Email Password Reset Link') }}
-            </x-primary-button>
-        </div>
+        <button type="submit" class="btn btn-primary btn-block">Send Reset Link</button>
     </form>
-</x-guest-layout>
+@endsection
+
+@section('auth_footer')
+    <p class="my-0">
+        <a href="{{ route('login') }}">Back to Login</a>
+    </p>
+@endsection
