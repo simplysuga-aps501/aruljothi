@@ -77,6 +77,9 @@
 
                                         <td>
                                             <a href="tel:{{ $lead->buyer_contact }}" onclick="copyPhone(event, '{{ $lead->buyer_contact }}')" class="text-primary">{{ $lead->buyer_contact }}</a>
+                                            <a href="https://wa.me/91{{ $lead->buyer_contact }}" target="_blank" class="ms-2">
+                                                <x-adminlte-button label="" icon="fab fa-whatsapp" theme="success" />
+                                            </a>
                                         </td>
                                         <td>{{ $lead->status }}</td>
                                         <td>{{ $lead->assigned_to }}</td>
