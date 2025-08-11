@@ -123,14 +123,14 @@
 
             <div class="form-group col-md-6">
               <label>Assigned To</label>
-              <select name="assigned_to" class="form-control">
-                @foreach($users as $userId => $userName)
-                  <option value="{{ $userName }}"
-                    @selected($lead->assigned_to === $userName || (empty($lead->assigned_to) && $userName === $currentUser))>
-                    {{ $userName }}
-                  </option>
-                @endforeach
-              </select>
+             <select name="assigned_to" class="form-control">
+               @foreach($users as $user)
+                 <option value="{{ $user->id }}"
+                   @selected(old('assigned_to', auth()->id()) == $user->id)>
+                   {{ $user->name }}
+                 </option>
+               @endforeach
+             </select>
             </div>
 
             <!-- Past and Current Remarks -->

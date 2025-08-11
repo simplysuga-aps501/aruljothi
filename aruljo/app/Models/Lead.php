@@ -6,10 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 use OwenIt\Auditing\Auditable;
+use Spatie\Tags\HasTags;
 
 class Lead extends Model implements AuditableContract
 {
     use SoftDeletes, Auditable;
+    use HasTags;
 
     protected $fillable = [
         'platform',

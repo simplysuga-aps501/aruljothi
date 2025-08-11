@@ -7,103 +7,26 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
+use Spatie\Tags\Tag;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class LeadController extends Controller
 {
-// 📋 Return leads as JSON (API use)
-    public function index(Request $request)
+
+    //Display function for create lead
+    public function create()
     {
-        $tab = $request->get('tab', 'active');
-        $userName = Auth::user()->name;
-
-        if ($tab === 'all') {
-            $leads = Lead::orderBy('created_at', 'desc')->get();
-        } elseif ($tab === 'my') {
-            $leads = Lead::where('assigned_to', $userName)
-                         ->orderBy('created_at', 'desc')
-                         ->get();
-        } else {
-            $leads = Lead::whereNotIn('status', ['Cancelled', 'Completed'])
-                         ->orderBy('created_at', 'desc')
-                         ->get();
-        }
-
-        $users = User::whereDoesntHave('roles', function ($query) {
+        $users = \App\Models\User::whereDoesntHave('roles', function ($query) {
             $query->where('name', 'admin');
         })->get();
-
-        $currentUser = $userName;
-
-        // ✅ Add this line
-        $statuses = $this->allowedStatuses();
-
-        // ✅ Also include it here
-        return view('leads.index', compact('leads', 'users', 'currentUser', 'tab', 'statuses'));
+        $tags = \Spatie\Tags\Tag::all();
+        $platforms = $this->allowedPlatforms();
+        return view('leads.create', compact('users', 'tags', 'platforms'));
     }
 
-    // ✅ Store lead from form submission
+    // Store function for create lead
     public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'platform' => 'required|string',
-            'lead_date' => 'required|date',
-            'buyer_name' => 'required|string',
-            'buyer_location' => 'nullable|string',
-            'buyer_contact' => ['required', 'regex:/^[6-9]\d{9}$/'],
-            'platform_keyword' => 'nullable|string',
-        ]);
-
-        $validated['assigned_to'] = Auth::user()->name;
-
-        Lead::create($validated);
-
-        return redirect()->route('leads.index')->with('success', 'Lead added successfully!');
-    }
-
-    // 📝 Show all leads in blade view
-    public function showAll()
-    {
-         $leads = Lead::whereNotIn('status', ['Cancelled', 'Completed'])
-                         ->orderBy('created_at', 'desc')
-                         ->get();
-
-            $users = User::whereDoesntHave('roles', function ($query) {
-                $query->where('name', 'admin');
-            })->pluck('name', 'id');
-
-            $currentUser = Auth::user()->name;
-
-            return view('leads.index', compact('leads', 'users', 'currentUser'));
-    }
-    public function quickEdit(Request $request, $id)
-    {
-        $validated = $request->validate([
-            'status' => ['required', Rule::in($this->allowedStatuses())],
-            'assigned_to' => 'nullable|string',
-            'current_remark' => 'nullable|string|max:500',
-        ]);
-
-        $lead = Lead::findOrFail($id);
-
-        if ($request->filled('current_remark')) {
-            $user = Auth::user()->name;
-            $timestamp = now()->format('d M Y, h:i A');
-            $formattedRemark = "{$user} ({$timestamp}): {$request->current_remark}";
-
-            $existingRemarks = trim($lead->remarks ?? '');
-            $lead->remarks = $existingRemarks
-                        ? $formattedRemark . '~|~' . $existingRemarks
-                        : $formattedRemark;
-        }
-
-        $lead->status = $validated['status'];
-        $lead->assigned_to = $validated['assigned_to'];
-        $lead->save();
-
-        return response()->json(['success' => true, 'message' => 'Lead updated successfully!']);
-    }
-
-    public function updateFull(Request $request, $id)
     {
         $validated = $request->validate([
             'platform' => 'required|string',
@@ -114,47 +37,245 @@ class LeadController extends Controller
             'platform_keyword' => 'nullable|string',
             'product_detail' => 'nullable|string',
             'delivery_location' => 'nullable|string',
-            'expected_delivery_date' => 'nullable|date',
-            'follow_up_date' => 'nullable|date',
+            'expected_delivery_date' => 'nullable|date|after_or_equal:today',
+            'follow_up_date' => 'nullable|date|after_or_equal:today',
             'status' => ['required', Rule::in($this->allowedStatuses())],
             'assigned_to' => 'nullable|string',
             'current_remark' => 'nullable|string|max:500',
+            'tags' => 'nullable|array',
+            'tags.*' => 'string',
         ]);
 
-        $lead = Lead::findOrFail($id);
+        // Default assignment to creator if none given
+        $validated['assigned_to'] = $validated['assigned_to'] ?? Auth::user()->name;
 
-        // Append the current remark to the remarks history (if given)
+        $user = Auth::user()->name;
+        $timestamp = now()->format('d M Y, h:i A');
+        $remarkText = null;
+
+         // Assignment remark logic
+            if (!empty($validated['assigned_to']) && $validated['assigned_to'] !== $user) {
+                // Assigned to someone else
+                $remarkText = "assigned to {$validated['assigned_to']}";
+            } else {
+                // Created (self-assigned or no reassignment)
+                $remarkText = "created the lead";
+            }
+
+        // Add manual remark if given
         if ($request->filled('current_remark')) {
-            $user = Auth::user()->name;
-            $timestamp = now()->format('d M Y, h:i A'); // eg. 30 Jul 2025, 03:10 PM
-            $formattedRemark = "{$user} ({$timestamp}): {$request->current_remark}";
-
-            $existingRemarks = trim($lead->remarks ?? '');
-            $lead->remarks = $existingRemarks
-                        ? $formattedRemark . '~|~' . $existingRemarks
-                        : $formattedRemark;
+            if ($remarkText) {
+                // Merge both into one remark
+                $remarkText .= " — {$request->current_remark}";
+            } else {
+                $remarkText = $request->current_remark;
+            }
         }
 
-        // Update other validated fields (excluding current_remark)
-        $lead->fill(collect($validated)->except('current_remark')->toArray());
+        // Create new lead
+        $lead = new Lead(collect($validated)->except(['current_remark', 'tags'])->toArray());
+
+        // Add remark if available
+        if ($remarkText) {
+            $lead->remarks = "{$user} ({$timestamp}): {$remarkText}";
+        }
+
         $lead->save();
 
-        return redirect()->route('leads.index')->with('success', 'Lead updated successfully!');
+        // Attach tags if any
+        if ($request->has('tags')) {
+            $validTags = Tag::whereIn('name->en', $request->tags)->get();
+            $lead->syncTags($validTags);
+        }
+
+        return redirect()->route('leads.index')->with('success', 'Lead added successfully!');
     }
 
+   // Display function for index
+  public function index(Request $request)
+  {
+      $tab = $request->get('tab', 'active');
+      $userName = Auth::user()->name;
+      $today = now()->toDateString();
+
+      if ($tab === 'all') {
+          $leads = Lead::with('tags')
+              ->orderBy('created_at', 'desc')
+              ->get();
+      } else {
+          $query = Lead::with('tags')
+              ->whereNotIn('status', ['Cancelled', 'Completed'])
+              // Exclude leads with follow-up dates in the future
+              ->where(function ($q) use ($today) {
+                  $q->whereNull('follow_up_date')
+                    ->orWhere('follow_up_date', '<=', $today);
+              });
+
+          if ($tab === 'my') {
+              $query->where('assigned_to', $userName);
+          }
+
+          // Priority sorting:
+          // 1. Urgent (regardless of follow-up date)
+          // 2. Today follow-up (not urgent)
+          // 3. Past follow-up date
+          // 4. No follow-up date
+          $query->select('leads.*')
+              ->selectRaw("
+                  CASE
+                      WHEN EXISTS (
+                          SELECT 1
+                          FROM taggables tg
+                          JOIN tags t ON t.id = tg.tag_id
+                          WHERE tg.taggable_id = leads.id
+                            AND tg.taggable_type = ?
+                            AND JSON_UNQUOTE(JSON_EXTRACT(t.name, '$.en')) = 'Urgent'
+                      ) THEN 1
+                      WHEN DATE(follow_up_date) = ? THEN 2
+                      WHEN follow_up_date IS NOT NULL AND DATE(follow_up_date) < ? THEN 3
+                      WHEN follow_up_date IS NULL THEN 4
+                      ELSE 5
+                  END as sort_priority
+              ", [Lead::class, $today, $today])
+              ->orderBy('sort_priority')
+              ->orderBy('created_at', 'desc');
+
+          // Debug logs
+          \Log::info("SQL (placeholders): " . $query->toSql());
+          \Log::info("Bindings:", $query->getBindings());
+          \Log::info("SQL (with bindings): " . vsprintf(
+              str_replace('?', "'%s'", $query->toSql()),
+              $query->getBindings()
+          ));
+
+          $leads = $query->get();
+
+          // Log each lead’s priority and key info
+          foreach ($leads as $lead) {
+              \Log::info("Lead Order Debug", [
+                  'id' => $lead->id,
+                  'follow_up_date' => $lead->follow_up_date,
+                  'sort_priority' => $lead->sort_priority,
+                  'tags' => $lead->tags->pluck('name')->toArray(),
+                  'created_at' => $lead->created_at
+              ]);
+          }
+      }
+
+      $users = User::whereDoesntHave('roles', function ($query) {
+          $query->where('name', 'admin');
+      })->get();
+
+      $currentUser = $userName;
+      $statuses = $this->allowedStatuses();
+      $platforms = $this->allowedPlatforms();
+      $allTags = \Spatie\Tags\Tag::pluck('name');
+
+      return view('leads.index', compact('leads', 'users', 'currentUser', 'tab', 'statuses', 'platforms', 'allTags'));
+  }
 
 
-    public function edit($id)
+
+    //Display for edit lead
+    public function edit(Lead $lead)
+    {
+        return response()->json([
+            'id' => $lead->id,
+            'buyer_name' => $lead->buyer_name,
+            'buyer_contact' => $lead->buyer_contact,
+            'lead_date' => $lead->lead_date,
+            'platform' => $lead->platform,
+            'platform_keyword' => $lead->platform_keyword,
+            'product_detail' => $lead->product_detail,
+            'buyer_location' => $lead->buyer_location,
+            'delivery_location' => $lead->delivery_location,
+            'expected_delivery_date' => $lead->expected_delivery_date,
+            'follow_up_date' => $lead->follow_up_date,
+            'status' => $lead->status,
+            'assigned_to' => $lead->assigned_to,
+            'current_remark' => '', // input field only
+            'past_remarks' => explode('~|~', $lead->remarks ?? ''),
+            'tags' => $lead->tags->pluck('name')->toArray(), // if using Spatie Tags
+        ]);
+    }
+
+    //Store the edit
+    public function update(Request $request, $id)
     {
         $lead = Lead::findOrFail($id);
-        $users = User::whereDoesntHave('roles', function ($query) {
-            $query->where('name', 'admin');
-        })->pluck('name', 'id');
-        $currentUser = Auth::user()->name;
 
-        return view('leads.edit', compact('lead', 'users', 'currentUser'));
+        $validated = $request->validate([
+            'platform' => 'required|string',
+            'lead_date' => 'required|date',
+            'buyer_name' => 'required|string',
+            'buyer_location' => 'nullable|string',
+            'buyer_contact' => ['required', 'regex:/^[6-9]\d{9}$/'],
+            'platform_keyword' => 'nullable|string',
+            'product_detail' => 'nullable|string',
+            'delivery_location' => 'nullable|string',
+            'expected_delivery_date' => 'nullable|date|after_or_equal:today',
+            'follow_up_date' => 'nullable|date|after_or_equal:today',
+            'status' => ['required', Rule::in($this->allowedStatuses())],
+            'assigned_to' => 'nullable|string',
+            'current_remark' => 'nullable|string|max:500',
+            'tags' => 'nullable|array',
+            'tags.*' => 'string',
+        ]);
+
+        // Save old assignment before updating
+        $oldAssignedTo = $lead->assigned_to;
+
+        // Fill updated values except remarks/tags
+        $lead->fill(collect($validated)->except(['current_remark', 'tags'])->toArray());
+
+        $user = Auth::user()->name;
+        $timestamp = now()->format('d M Y, h:i A');
+        $remarkText = null;
+
+        // Check if reassignment happened
+        if ($oldAssignedTo !== $lead->assigned_to && $lead->assigned_to) {
+            $remarkText = "reassigned to {$lead->assigned_to}";
+        }
+
+        // Add manual remark if given
+        if ($request->filled('current_remark')) {
+            if ($remarkText) {
+                // Merge both into one remark
+                $remarkText .= " — {$request->current_remark}";
+            } else {
+                $remarkText = $request->current_remark;
+            }
+        }
+
+        // Append remark if we have one
+        if ($remarkText) {
+            $fullRemark = "{$user} ({$timestamp}): {$remarkText}";
+            $lead->remarks = $lead->remarks
+                ? $fullRemark . "~|~" . $lead->remarks
+                : $fullRemark;
+        }
+
+        $lead->save();
+
+        // Attach tags if any
+        $validTags = collect($request->input('tags', []))
+            ->filter()
+            ->map(function ($tagName) {
+                return Tag::where('name->en', $tagName)->first();
+            })
+            ->filter()
+            ->values();
+
+        $lead->syncTags($validTags);
+
+        $tab = $request->query('tab', 'active');
+        return redirect()->route('leads.index', ['tab' => $tab])
+                         ->with('success', 'Lead updated successfully.');
     }
 
+
+
+    //Delete the lead
     public function destroy($id)
     {
         $lead = Lead::findOrFail($id);
@@ -163,6 +284,7 @@ class LeadController extends Controller
         return redirect()->route('leads.index')->with('success', 'Lead moved to trash.');
     }
 
+    //Display Logs for lead
     public function showAudits($id)
     {
         $lead = Lead::findOrFail($id);
@@ -171,7 +293,7 @@ class LeadController extends Controller
         return view('leads.audits', compact('lead', 'audits'));
     }
 
-    // ✅ Centralized list of allowed statuses
+    //Centralized list of allowed statuses
     private function allowedStatuses(): array
     {
         return [
@@ -184,11 +306,13 @@ class LeadController extends Controller
         ];
     }
 
-    //Quick Edit
-    public function show($id)
+    //Centralized list of allowed platforms
+    private function allowedPlatforms(): array
     {
-        $lead = Lead::findOrFail($id);
-        return response()->json($lead);
+        return [
+            'Justdial',
+            'Indiamart',
+            'Others',
+        ];
     }
-
 }

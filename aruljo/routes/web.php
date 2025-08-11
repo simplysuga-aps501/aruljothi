@@ -37,16 +37,22 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // 📝 Lead Routes
-    Route::get('/leads', [LeadController::class, 'index'])->name('leads.index');                     // List leads
-    Route::get('/leads/create', fn() => view('leads.create'))->name('leads.create');                 // Show create form
+    //Lead Routes
+    //Display Index
+    Route::get('/leads', [LeadController::class, 'index'])->name('leads.index');
+    //Display Edit
+    Route::get('/leads/{lead}/edit', [LeadController::class, 'edit'])->name('leads.edit');
+    //Store Edit
+    Route::put('/leads/{lead}', [LeadController::class, 'update'])->name('leads.update');
+
+    //Display Create
+    Route::get('/leads/create', [LeadController::class, 'create'])->name('leads.create');              // Show create form
+    //Store Create
     Route::post('/leads', [LeadController::class, 'store'])->name('leads.store');                    // Store new lead
-    Route::get('/leads/{id}/edit', [LeadController::class, 'edit'])->name('leads.edit');             // Edit lead
-    Route::put('/leads/{id}/full-update', [LeadController::class, 'updateFull'])->name('leads.update.full'); // Full update
-    Route::get('/leads/{id}', [LeadController::class, 'show']);
+
+    //Delete a lead
     Route::delete('/leads/{id}', [LeadController::class, 'destroy'])->name('leads.destroy');         // Delete lead
-    Route::put('/leads/{lead}', [LeadController::class, 'quickEdit'])->name('leads.quickEdit');
-    // 🧾 Audit Logs
+    // Audit Logs
     Route::get('/leads/{id}/audits', [LeadController::class, 'showAudits'])->name('leads.audits');   // View audits
 
    // User roles (accessible to users with "owner" or "admin" role)
