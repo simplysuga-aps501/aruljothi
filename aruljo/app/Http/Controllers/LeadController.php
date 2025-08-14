@@ -91,9 +91,7 @@ class LeadController extends Controller
             $tab = 'my';
         }
 
-        if ($tab === 'all')
-        {
-
+        if ($tab === 'all') {
             $leads = Lead::with('tags')
                 ->orderBy('created_at', 'desc')
                 ->get();
@@ -101,15 +99,13 @@ class LeadController extends Controller
             $query = Lead::with('tags');
 
             if ($tab === 'my') {
+                // My Leads: allow future follow-ups
                 $query->where('assigned_to', $user->name)
-                      ->whereNotIn('status', ['Cancelled', 'Completed'])
-                      ->where(function ($q) use ($today) {
-                          $q->whereNull('follow_up_date')
-                            ->orWhere('follow_up_date', '<=', $today);
-                      });
+                      ->whereNotIn('status', ['Cancelled', 'Completed']);
             }
 
             if ($tab === 'active') {
+                // Active Leads: only today or past follow-ups
                 $query->whereNotIn('status', ['Cancelled', 'Completed'])
                       ->where(function ($q) use ($today) {
                           $q->whereNull('follow_up_date')
@@ -130,12 +126,27 @@ class LeadController extends Controller
                           ) THEN 1
                           WHEN DATE(follow_up_date) = ? THEN 2
                           WHEN follow_up_date IS NOT NULL AND DATE(follow_up_date) < ? THEN 3
-                          WHEN follow_up_date IS NULL THEN 4
-                          ELSE 5
+                          ELSE 4
                       END as sort_priority
                   ", [Lead::class, $today, $today])
-                  ->orderBy('sort_priority')
-                  ->orderBy('created_at', 'desc');
+                  ->orderByRaw("
+                      CASE
+                          WHEN sort_priority IN (1, 2, 3) THEN sort_priority
+                          ELSE 999
+                      END ASC
+                  ")
+                  ->orderByRaw("
+                      CASE
+                          WHEN sort_priority IN (1, 2, 3) THEN created_at
+                          ELSE NULL
+                      END DESC
+                  ")
+                  ->orderByRaw("
+                      CASE
+                          WHEN sort_priority NOT IN (1, 2, 3) THEN created_at
+                          ELSE NULL
+                      END DESC
+                  ");
 
             $leads = $query->get();
         }
@@ -161,6 +172,7 @@ class LeadController extends Controller
 
         return view('leads.index', compact('leads', 'users', 'currentUser', 'tab', 'statuses', 'platforms', 'allTags'));
     }
+
 
     /**
      * Show lead for editing.
