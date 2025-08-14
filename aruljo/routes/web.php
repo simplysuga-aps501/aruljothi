@@ -1,68 +1,73 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Foundation\Auth\EmailVerificationRequest;
+use Illuminate\Http\Request;
 
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UserRoleController;
 
-/*
-|--------------------------------------------------------------------------
-| Web Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you register web routes for your application. These
-| routes are loaded by the RouteServiceProvider and assigned to the "web"
-| middleware group. Make something great!
-|
-*/
+require __DIR__.'/auth.php';
 
-// 🔰 Public Route
+// Public welcome
 Route::get('/', function () {
     return view('welcome');
 });
 
-// 📊 Dashboard (accessible only after login)
-Route::get('/dashboard', [DashboardController::class, 'index'])
-    ->middleware(['auth'])
-    ->name('dashboard');
-
-// 🔒 Protected Routes (Only for Authenticated Users)
+// Protected routes — only for authenticated users
 Route::middleware(['auth'])->group(function () {
 
-    // 🙍‍♂️ Profile Routes
+    // Email verification pages
+    Route::get('/email/verify', function () {
+        return view('auth.verify-email');
+    })->name('verification.notice');
+
+    Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
+        $request->fulfill();
+        return redirect('/dashboard');
+    })->middleware(['signed'])->name('verification.verify');
+
+    Route::post('/email/verification-notification', function (Request $request) {
+        $request->user()->sendEmailVerificationNotification();
+        return back()->with('message', 'Verification link sent!');
+    })->middleware('throttle:6,1')->name('verification.send');
+
+    //Dashboard
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+
+    // Profile routes (accessible to all authenticated users)
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    //Lead Routes
-    //Display Index
+    /*
+    |--------------------------------------------------------------------------
+    | Lead Routes per Role
+    |--------------------------------------------------------------------------
+    */
+
+    // staff & owner: all lead actions except delete
     Route::get('/leads', [LeadController::class, 'index'])->name('leads.index');
-    //Display Edit
     Route::get('/leads/{lead}/edit', [LeadController::class, 'edit'])->name('leads.edit');
-    //Store Edit
     Route::put('/leads/{lead}', [LeadController::class, 'update'])->name('leads.update');
+    Route::get('/leads/create', [LeadController::class, 'create'])->name('leads.create');
+    Route::post('/leads', [LeadController::class, 'store'])->name('leads.store');
+    Route::get('/leads/{id}/audits', [LeadController::class, 'showAudits'])->name('leads.audits');
 
-    //Display Create
-    Route::get('/leads/create', [LeadController::class, 'create'])->name('leads.create');              // Show create form
-    //Store Create
-    Route::post('/leads', [LeadController::class, 'store'])->name('leads.store');                    // Store new lead
 
-    //Delete a lead
-    Route::delete('/leads/{id}', [LeadController::class, 'destroy'])->name('leads.destroy');         // Delete lead
-    // Audit Logs
-    Route::get('/leads/{id}/audits', [LeadController::class, 'showAudits'])->name('leads.audits');   // View audits
+    /*
+    |--------------------------------------------------------------------------
+    | Admin Routes
+    |--------------------------------------------------------------------------
+    */
+    Route::middleware(['role:admin'])->group(function () {
+        Route::get('/users', [UserRoleController::class, 'index'])->name('users.list');
+        Route::put('/users/{id}', [UserRoleController::class, 'role'])->name('users.update');
 
-   // User roles (accessible to users with "owner" or "admin" role)
-   Route::middleware(['role:admin'])->group(function () {
-       Route::get('/users', [UserRoleController::class, 'index'])->name('users.list');
-       Route::put('/users/{id}', [UserRoleController::class, 'role'])->name('users.update');
-   });
-
+        // admin can do everything in leads, including delete
+        Route::delete('/leads/{id}', [LeadController::class, 'destroy'])->name('leads.destroy');
+    });
 });
-
-// 🔐 Auth Routes (login, register, forgot password, etc.)
-require __DIR__.'/auth.php';
-

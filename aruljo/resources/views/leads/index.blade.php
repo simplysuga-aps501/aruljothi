@@ -19,18 +19,42 @@
     <section class="content">
         <div class="container-fluid">
             <div class="card card-outline">
+                @php
+                    $onlyEuser = auth()->user()->getRoleNames()->count() === 1 && auth()->user()->hasRole('euser');
+                @endphp
+
                 <div class="card-header">
-                    <ul class="nav nav-pills">
-                        <li class="nav-item">
-                            <a class="nav-link {{ $tab === 'active' ? 'active' : '' }}" href="{{ route('leads.index', ['tab' => 'active']) }}">Active Leads</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {{ $tab === 'my' ? 'active' : '' }}" href="{{ route('leads.index', ['tab' => 'my']) }}">My Leads</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {{ $tab === 'all' ? 'active' : '' }}" href="{{ route('leads.index', ['tab' => 'all']) }}">All Leads</a>
-                        </li>
-                    </ul>
+                    @if($onlyEuser)
+                        <ul class="nav nav-pills">
+                            <li class="nav-item">
+                                <a class="nav-link {{ $tab === 'my' ? 'active' : '' }}"
+                                   href="{{ route('leads.index', ['tab' => 'my']) }}">
+                                    My Leads
+                                </a>
+                            </li>
+                        </ul>
+                    @else
+                        <ul class="nav nav-pills">
+                            <li class="nav-item">
+                                <a class="nav-link {{ $tab === 'active' ? 'active' : '' }}"
+                                   href="{{ route('leads.index', ['tab' => 'active']) }}">
+                                    Active Leads
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ $tab === 'my' ? 'active' : '' }}"
+                                   href="{{ route('leads.index', ['tab' => 'my']) }}">
+                                    My Leads
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ $tab === 'all' ? 'active' : '' }}"
+                                   href="{{ route('leads.index', ['tab' => 'all']) }}">
+                                    All Leads
+                                </a>
+                            </li>
+                        </ul>
+                    @endif
                 </div>
 
                 <div class="card-body">
@@ -49,7 +73,7 @@
                                     <th>Contact</th>
                                     <th>Status</th>
                                     <th>Assigned To</th>
-                                    <th>Followup Date</th>
+                                    <th>Follow-up</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -60,14 +84,20 @@
                                         @if ($tab === 'all')
                                             <td>{{ $lead->platform }}</td>
                                         @endif
-                                        @php
-                                            $leadDateObj = \Carbon\Carbon::parse($lead->lead_date);
-                                            $formattedShort = $leadDateObj->format('d-m-Y');
-                                            $formattedFull = $leadDateObj->format('d-m-Y h:i A');
-                                        @endphp
-                                        <td data-order="{{ $leadDateObj->format('Y-m-d H:i:s') }}">
-                                            <span title="{{ $formattedFull }}">{{ $formattedShort }}</span>
-                                        </td>
+                                      @php
+                                          $leadDateObj = \Carbon\Carbon::parse($lead->lead_date);
+                                          $formattedShort = $leadDateObj->format('d-m-Y');
+                                          $formattedFull = $leadDateObj->format('d-m-Y h:i A');
+                                          $daysAgo = $leadDateObj->diffInDays(now());
+                                      @endphp
+
+                                      <td data-order="{{ $leadDateObj->format('Y-m-d H:i:s') }}">
+                                          <span title="{{ $formattedFull }}">
+                                              {{ $formattedShort }}
+                                              <small class="text-muted">({{ str_pad($daysAgo, 2, '0', STR_PAD_LEFT) }})</small>
+                                          </span>
+                                      </td>
+
                                        <td>
                                            <a href="javascript:void(0);"
                                               class="open-edit-lead-modal"
@@ -107,14 +137,47 @@
                                             @endif
                                         </td>
 
-                                        <td>
-                                            <div class="btn-group btn-group-sm">
-                                                <a href="{{ route('leads.audits', $lead->id) }}" class="btn btn-info">Logs</a>
-                                                @role('admin')
-                                                    <x-adminlte-button label="Delete" theme="outline-danger" icon="fas fa-trash" data-toggle="modal" data-target="#deleteModal" onclick="setDeleteAction('{{ route('leads.destroy', $lead->id) }}')" />
-                                                @endrole
-                                            </div>
-                                        </td>
+                                       <td data-order="{{ $lead->updated_at->timestamp }}">
+                                           <div class="btn-group btn-group-sm">
+                                               @php
+                                                   $updatedAt = \Carbon\Carbon::parse($lead->updated_at);
+                                                   $now = \Carbon\Carbon::now();
+                                                   $diffMinutes = $updatedAt->diffInMinutes($now);
+                                                   $diffHours = $updatedAt->diffInHours($now);
+                                                   $diffDays = $updatedAt->diffInDays($now);
+
+                                                   if ($diffMinutes < 60) {
+                                                       // Round to nearest 15 mins
+                                                       $roundedMinutes = round($diffMinutes / 15) * 15;
+                                                       $lastUpdatedText = $roundedMinutes > 0 ? "{$roundedMinutes} mins ago" : "just now";
+                                                   } elseif ($diffHours < 48) {
+                                                       $lastUpdatedText = "{$diffHours} hrs ago";
+                                                   } else {
+                                                       $lastUpdatedText = "{$diffDays} days ago";
+                                                   }
+                                               @endphp
+
+                                               <div class="d-flex align-items-center">
+                                                   <small style="display:inline-block; min-width:70px;">
+                                                       {{ $lastUpdatedText }}
+                                                   </small>
+                                                   <a href="{{ route('leads.audits', $lead->id) }}"
+                                                      class="btn btn-xs btn-outline-info ml-1"
+                                                      title="View Logs">
+                                                       <i class="fas fa-sticky-note"></i>
+                                                   </a>
+                                               </div>
+
+                                               @role('admin')
+                                                   <x-adminlte-button label="Delete"
+                                                                      theme="outline-danger"
+                                                                      icon="fas fa-trash"
+                                                                      data-toggle="modal"
+                                                                      data-target="#deleteModal"
+                                                                      onclick="setDeleteAction('{{ route('leads.destroy', $lead->id) }}')" />
+                                               @endrole
+                                           </div>
+                                       </td>
                                     </tr>
                                 @endforeach
                             </tbody>
