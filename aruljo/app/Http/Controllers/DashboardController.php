@@ -147,6 +147,13 @@ class DashboardController extends Controller
 
       // Merge with default zero array (preserves order)
       $leadStatusCounts = array_merge($statuses, $counts);
+
+      //To hide the charts based on view
+      $user = Auth::user();
+
+      $isEuser = ($user->getRoleNames()->count() === 0)
+              || ($user->getRoleNames()->count() === 1 && $user->hasRole('euser'));
+
        return view('dashboard', compact(
            'monthlyLabels',
            'monthlyCreated',
@@ -159,7 +166,8 @@ class DashboardController extends Controller
            'userFollowUps',
            'userQuotations',
            'userPOStatus',
-           'leadStatusCounts' // pass to view
+           'leadStatusCounts',
+            'isEuser'// pass to view
        ));
     }
 }

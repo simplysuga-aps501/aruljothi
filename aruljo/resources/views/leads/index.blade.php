@@ -19,42 +19,38 @@
     <section class="content">
         <div class="container-fluid">
             <div class="card card-outline">
-                @php
-                    $onlyEuser = auth()->user()->getRoleNames()->count() === 1 && auth()->user()->hasRole('euser');
-                @endphp
-
-                <div class="card-header">
-                    @if($onlyEuser)
-                        <ul class="nav nav-pills">
-                            <li class="nav-item">
-                                <a class="nav-link {{ $tab === 'my' ? 'active' : '' }}"
-                                   href="{{ route('leads.index', ['tab' => 'my']) }}">
-                                    My Leads
-                                </a>
-                            </li>
-                        </ul>
-                    @else
-                        <ul class="nav nav-pills">
-                            <li class="nav-item">
-                                <a class="nav-link {{ $tab === 'active' ? 'active' : '' }}"
-                                   href="{{ route('leads.index', ['tab' => 'active']) }}">
-                                    Active Leads
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link {{ $tab === 'my' ? 'active' : '' }}"
-                                   href="{{ route('leads.index', ['tab' => 'my']) }}">
-                                    My Leads
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link {{ $tab === 'all' ? 'active' : '' }}"
-                                   href="{{ route('leads.index', ['tab' => 'all']) }}">
-                                    All Leads
-                                </a>
-                            </li>
-                        </ul>
-                    @endif
+              <div class="card-header">
+                   <ul class="nav nav-pills">
+                       @if ($isEuser)
+                           {{-- Only Euser or No Roles: show only My Leads --}}
+                           <li class="nav-item">
+                               <a class="nav-link {{ $tab === 'my' ? 'active' : '' }}"
+                                  href="{{ route('leads.index', ['tab' => 'my']) }}">
+                                   My Leads
+                               </a>
+                           </li>
+                       @else
+                           {{-- Other roles: show all three --}}
+                           <li class="nav-item">
+                               <a class="nav-link {{ $tab === 'active' ? 'active' : '' }}"
+                                  href="{{ route('leads.index', ['tab' => 'active']) }}">
+                                   Active Leads
+                               </a>
+                           </li>
+                           <li class="nav-item">
+                               <a class="nav-link {{ $tab === 'my' ? 'active' : '' }}"
+                                  href="{{ route('leads.index', ['tab' => 'my']) }}">
+                                   My Leads
+                               </a>
+                           </li>
+                           <li class="nav-item">
+                               <a class="nav-link {{ $tab === 'all' ? 'active' : '' }}"
+                                  href="{{ route('leads.index', ['tab' => 'all']) }}">
+                                   All Leads
+                               </a>
+                           </li>
+                       @endif
+                   </ul>
                 </div>
 
                 <div class="card-body">
@@ -84,18 +80,17 @@
                                         @if ($tab === 'all')
                                             <td>{{ $lead->platform }}</td>
                                         @endif
-                                      @php
-                                          $leadDateObj = \Carbon\Carbon::parse($lead->lead_date);
-                                          $formattedShort = $leadDateObj->format('d-m-Y');
-                                          $formattedFull = $leadDateObj->format('d-m-Y h:i A');
-                                          $daysAgo = $leadDateObj->diffInDays(now());
-                                      @endphp
-
-                                      <td data-order="{{ $leadDateObj->format('Y-m-d H:i:s') }}">
-                                          <span title="{{ $formattedFull }}">
-                                              {{ $formattedShort }}
-                                              <small class="text-muted">({{ str_pad($daysAgo, 2, '0', STR_PAD_LEFT) }})</small>
-                                          </span>
+                                      <td data-order="{{ $lead->lead_date_order ?? '' }}">
+                                          @if($lead->lead_date_formatted_short)
+                                              <span title="{{ $lead->lead_date_formatted_full }}">
+                                                  {{ $lead->lead_date_formatted_short }}
+                                                  <small class="text-muted">
+                                                      ({{ $lead->lead_date_daysago }})
+                                                  </small>
+                                              </span>
+                                          @else
+                                              <span class="text-muted">—</span>
+                                          @endif
                                       </td>
 
                                        <td>
@@ -114,7 +109,6 @@
                                                </span>
                                            </a>
                                        </td>
-
                                         <td>
                                             <a href="tel:{{ $lead->buyer_contact }}" onclick="copyPhone(event, '{{ $lead->buyer_contact }}')" class="text-primary">{{ $lead->buyer_contact }}</a>
                                             <a href="https://wa.me/91{{ $lead->buyer_contact }}" target="_blank" class="ms-2">
@@ -123,50 +117,30 @@
                                         </td>
                                         <td>{{ $lead->status }}</td>
                                         <td>{{ $lead->assigned_to }}</td>
-                                        @php $followUpDate = $lead->follow_up_date ? \Carbon\Carbon::parse($lead->follow_up_date) : null; @endphp
-                                        <td @if($followUpDate) data-order="{{ $followUpDate->format('Y-m-d') }}" @endif>
-                                            @if ($followUpDate)
-                                                <span class="
-                                                    {{ $followUpDate->isToday() ? 'bg-warning text-dark px-2 py-1 rounded' : '' }}
-                                                    {{ $followUpDate->isPast() && !$followUpDate->isToday() ? 'bg-danger text-white px-2 py-1 rounded' : '' }}
-                                                ">
-                                                    {{ $followUpDate->format('d-m-Y') }}
-                                                </span>
-                                            @else
-                                                -
-                                            @endif
-                                        </td>
+                                       <td @if($lead->followup_order) data-order="{{ $lead->followup_order }}" @endif>
+                                           @if ($lead->followup_formatted)
+                                               <span class="
+                                                   {{ $lead->followup_is_today ? 'bg-warning text-dark px-2 py-1 rounded' : '' }}
+                                                   {{ $lead->followup_is_past ? 'bg-danger text-white px-2 py-1 rounded' : '' }}
+                                               ">
+                                                   {{ $lead->followup_formatted }}
+                                               </span>
+                                           @else
+                                               -
+                                           @endif
+                                       </td>
 
-                                       <td data-order="{{ $lead->updated_at->timestamp }}">
-                                           <div class="btn-group btn-group-sm">
-                                               @php
-                                                   $updatedAt = \Carbon\Carbon::parse($lead->updated_at);
-                                                   $now = \Carbon\Carbon::now();
-                                                   $diffMinutes = $updatedAt->diffInMinutes($now);
-                                                   $diffHours = $updatedAt->diffInHours($now);
-                                                   $diffDays = $updatedAt->diffInDays($now);
-
-                                                   if ($diffMinutes < 60) {
-                                                       // Round to nearest 15 mins
-                                                       $roundedMinutes = round($diffMinutes / 15) * 15;
-                                                       $lastUpdatedText = $roundedMinutes > 0 ? "{$roundedMinutes} mins ago" : "just now";
-                                                   } elseif ($diffHours < 48) {
-                                                       $lastUpdatedText = "{$diffHours} hrs ago";
-                                                   } else {
-                                                       $lastUpdatedText = "{$diffDays} days ago";
-                                                   }
-                                               @endphp
-
-                                               <div class="d-flex align-items-center">
-                                                   <small style="display:inline-block; min-width:70px;">
-                                                       {{ $lastUpdatedText }}
-                                                   </small>
-                                                   <a href="{{ route('leads.audits', $lead->id) }}"
-                                                      class="btn btn-xs btn-outline-info ml-1"
-                                                      title="View Logs">
-                                                       <i class="fas fa-sticky-note"></i>
-                                                   </a>
-                                               </div>
+                                       <td data-order="{{ $lead->last_updated_order }}">
+                                           <div class="d-flex align-items-center">
+                                               <small style="display:inline-block; min-width:70px;">
+                                                   {{ $lead->last_updated_text }}
+                                               </small>
+                                               <a href="{{ route('leads.audits', $lead->id) }}"
+                                                  class="btn btn-xs btn-outline-info ml-1"
+                                                  title="View Logs">
+                                                   <i class="fas fa-sticky-note"></i>
+                                               </a>
+                                           </div>
 
                                                @role('admin')
                                                    <x-adminlte-button label="Delete"
@@ -275,22 +249,6 @@
             document.getElementById('deleteForm').setAttribute('action', actionUrl);
         }
 
-        function formatLeadDate(dateStr) {
-            if (!dateStr) return '';
-            const date = new Date(dateStr);
-            if (isNaN(date.getTime())) return dateStr; // fallback to raw if invalid
-
-            const day = date.getDate().toString().padStart(2, '0');
-            const month = date.toLocaleString('en-US', { month: 'short' }); // "Jul"
-            const year = date.getFullYear();
-
-            let hours = date.getHours();
-            const minutes = date.getMinutes().toString().padStart(2, '0');
-            const ampm = hours >= 12 ? 'pm' : 'am';
-            hours = hours % 12 || 12;
-
-            return `${day}${month}${year} ${hours}.${minutes} ${ampm}`;
-        }
 
         function initTagMultiselect() {
                 $('#tags').multiselect('destroy').multiselect({

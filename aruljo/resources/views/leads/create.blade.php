@@ -177,16 +177,18 @@
             </div>
           </div>
         </div>
-        <div class="form-group d-flex justify-content-between mt-2 px-4">
-             <a href="{{ route('leads.index') }}" class="btn btn-secondary px-4" style="min-width: 220px;">
-                <i class="fas fa-times"></i> Cancel
-            </a>
-            <x-adminlte-button label="Submit" type="submit" theme="primary" icon="fas fa-save"
-                class="px-4" style="min-width: 220px;" />
+        <div class="form-group row mt-2 px-4">
+            <div class="col-12 col-md-6 mb-2 mb-md-0">
+                <a href="{{ route('leads.index') }}" class="btn btn-secondary btn-block">
+                    <i class="fas fa-times"></i> Cancel
+                </a>
+            </div>
+            <div class="col-12 col-md-6">
+                <x-adminlte-button label="Submit" type="submit" theme="primary" icon="fas fa-save"
+                    class="btn-block" />
+            </div>
         </div>
-
-
-      </form>
+     </form>
     </div>
   </div>
 </section>

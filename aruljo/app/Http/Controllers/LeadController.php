@@ -87,7 +87,10 @@ class LeadController extends Controller
         $tab = $request->get('tab', 'active');
         $today = now()->toDateString();
 
-        if ($user->getRoleNames()->count() === 1 && $user->hasRole('euser')) {
+        if (
+            ($user->getRoleNames()->count() === 1 && $user->hasRole('euser')) ||
+            $user->getRoleNames()->count() === 0
+        ) {
             $tab = 'my';
         }
 
@@ -151,16 +154,6 @@ class LeadController extends Controller
             $leads = $query->get();
         }
 
-        foreach ($leads as $lead) {
-            \Log::info("Lead Order Debug", [
-                'id' => $lead->id,
-                'follow_up_date' => $lead->follow_up_date,
-                'sort_priority' => $lead->sort_priority,
-                'tags' => $lead->tags->pluck('name')->toArray(),
-                'created_at' => $lead->created_at,
-            ]);
-        }
-
         $users = User::whereDoesntHave('roles', function ($query) {
             $query->where('name', 'admin');
         })->get();
@@ -170,7 +163,33 @@ class LeadController extends Controller
         $platforms = config('platforms.list');
         $allTags = Tag::pluck('name');
 
-        return view('leads.index', compact('leads', 'users', 'currentUser', 'tab', 'statuses', 'platforms', 'allTags'));
+        $isEuser = ($user->getRoleNames()->count() === 0)
+                || ($user->getRoleNames()->count() === 1 && $user->hasRole('euser'));
+
+        foreach ($leads as $lead)
+        {
+
+            // Lead date
+            if ($lead->lead_date) {
+                $leadDate = \Carbon\Carbon::parse($lead->lead_date);
+                $lead->lead_date_formatted_short = $leadDate->format('d-m-Y');
+                $lead->lead_date_formatted_full = $leadDate->format('d-m-Y h:i A');
+                $lead->lead_date_order = $leadDate->format('Y-m-d H:i:s');
+                $lead->lead_date_daysago = str_pad($leadDate->diffInDays(now()), 2, '0', STR_PAD_LEFT);
+            }
+             // Follow up date
+            if ($lead->follow_up_date) {
+                $followUp = \Carbon\Carbon::parse($lead->follow_up_date);
+                $lead->followup_formatted = $followUp->format('d-m-Y');
+                $lead->followup_order = $followUp->format('Y-m-d');
+                $lead->followup_diff = $followUp->diffForHumans(null, true);
+                $lead->followup_is_today = $followUp->isToday();
+                $lead->followup_is_past = $followUp->isPast() && !$followUp->isToday();
+            }
+        }
+
+       return view('leads.index', compact(
+            'leads', 'users', 'currentUser', 'tab', 'statuses', 'platforms', 'allTags','isEuser'));
     }
 
 
@@ -277,19 +296,26 @@ class LeadController extends Controller
     /**
      * Show audit logs for a lead.
      */
-    public function showAudits($id)
-    {
-        $lead = Lead::findOrFail($id);
-        $user = auth()->user();
+   public function showAudits($id)
+   {
+       $lead = Lead::findOrFail($id);
+       $user = auth()->user();
 
-        if ($user->hasRole('euser') && $lead->assigned_to !== $user->name) {
-            abort(403, 'Unauthorized access to this audit log.');
-        }
+       // ✅ Allow admins and owners regardless of euser role
+       if ($user->hasAnyRole(['admin', 'owner'])) {
+           $audits = $lead->audits()->latest()->get();
+           return view('leads.audits', compact('lead', 'audits'));
+       }
 
-        $audits = $lead->audits()->latest()->get();
+       // 🔒 Restrict euser to only their assigned leads
+       if ($lead->assigned_to !== $user->name) {
+           abort(403, 'Unauthorized access to this audit log.');
+       }
 
-        return view('leads.audits', compact('lead', 'audits'));
-    }
+       $audits = $lead->audits()->latest()->get();
+       return view('leads.audits', compact('lead', 'audits'));
+   }
+
 
     /**
      * Allowed statuses.
@@ -305,4 +331,25 @@ class LeadController extends Controller
             'Completed',
         ];
     }
+
+    private function formatDaysDiff($date)
+    {
+        if (!$date) {
+            return '';
+        }
+
+        $today = Carbon::today();
+        $date = Carbon::parse($date)->startOfDay();
+
+        $diff = $date->diffInDays($today, false); // negative if in future
+
+        if ($diff === 0) {
+            return 'Today';
+        } elseif ($diff > 0) {
+            return "{$diff} day(s) ago";
+        } else {
+            return abs($diff) . " day(s) from today";
+        }
+    }
+
 }

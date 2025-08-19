@@ -8,77 +8,71 @@
 
 @section('content')
     <div class="row">
-      @php
-          $roles = auth()->user()->getRoleNames();
-      @endphp
-
-      @if($roles->count() === 1 && $roles->contains('euser'))
-          {{-- Only Euser: show only their leads --}}
-          <div class="col-md-6">
-              <x-adminlte-card title="My Lead Status Summary" theme="success" icon="fas fa-chart-pie" style="height: 354px;" collapsible>
-                  <div class="row">
-                      @foreach($leadStatusCounts as $status => $count)
-                          <div class="col-md-4 col-sm-6 col-12">
-                              <div style="
-                                  border: 1px solid #ccc;
-                                  padding: 10px;
-                                  margin: 5px;
-                                  text-align: center;
-                                  border-radius: 8px;
-                                  background-color: {{ $statusColors[$status] ?? '#f8f9fa' }};
-                                  color: black;
-                              ">
-                                  <h4>{{ $count }}</h4>
-                                  <p>{{ $status }}</p>
-                              </div>
-                          </div>
-                      @endforeach
-                  </div>
-              </x-adminlte-card>
-          </div>
-      @else
-          {{-- Owner+Euser, Staff+Euser, or multiple roles: show full dashboard --}}
-          <div class="col-md-6">
-            <x-adminlte-card title="My Lead Status Summary" theme="success" icon="fas fa-chart-pie" style="height: 354px;" collapsible>
-                <div class="row">
-                    @foreach($leadStatusCounts as $status => $count)
-                        <div class="col-md-4 col-sm-6 col-12">
-                            <div style="
-                                border: 1px solid #ccc;
-                                padding: 10px;
-                                margin: 5px;
-                                text-align: center;
-                                border-radius: 8px;
-                                background-color: {{ $statusColors[$status] ?? '#f8f9fa' }};
-                                color: black;
-                            ">
-                                <h4>{{ $count }}</h4>
-                                <p>{{ $status }}</p>
-                            </div>
+       @if($isEuser)
+            {{-- Only Euser: show only their leads --}}
+            <div class="row align-items-stretch w-100">
+                <div class="col-md-6 mb-3">
+                    <x-adminlte-card title="My Lead Status Summary" theme="success" icon="fas fa-chart-pie"
+                                     class="h-100" collapsible>
+                        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3">
+                            @foreach($leadStatusCounts as $status => $count)
+                                <div class="col mb-2">
+                                    <div class="p-2 text-center rounded"
+                                         style="border:1px solid #ccc; background-color: {{ $statusColors[$status] ?? '#f8f9fa' }}; color:black;">
+                                        <h4>{{ $count }}</h4>
+                                        <p>{{ $status }}</p>
+                                    </div>
+                                </div>
+                            @endforeach
                         </div>
-                    @endforeach
+                    </x-adminlte-card>
                 </div>
-            </x-adminlte-card>
-          </div>
-          <div class="col-md-6">
-              <x-adminlte-card title="Active Leads by Person" theme="secondary" icon="fas fa-user" collapsible>
-                  <canvas id="userLeadsChart" height="180"></canvas>
-              </x-adminlte-card>
-          </div>
-          <div class="col-md-6">
-              <x-adminlte-card title="Month-wise Lead Summary" theme="primary" icon="fas fa-chart-bar" collapsible>
-                  <canvas id="monthlyChart" height="180"></canvas>
-              </x-adminlte-card>
-          </div>
+            </div>
+        @else
+            {{-- Owner+Euser, Staff+Euser, or multiple roles: show full dashboard --}}
+            <div class="row align-items-stretch w-100">
+                <div class="col-md-6 mb-3">
+                    <x-adminlte-card title="My Lead Status Summary" theme="success" icon="fas fa-chart-pie"
+                                     class="h-100" collapsible>
+                        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3">
+                            @foreach($leadStatusCounts as $status => $count)
+                                <div class="col mb-2">
+                                    <div class="p-2 text-center rounded"
+                                         style="border:1px solid #ccc; background-color: {{ $statusColors[$status] ?? '#f8f9fa' }}; color:black;">
+                                        <h4>{{ $count }}</h4>
+                                        <p>{{ $status }}</p>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </x-adminlte-card>
+                </div>
 
-          <div class="col-md-6">
-              <x-adminlte-card title="Platform-wise Lead Summary" theme="info" icon="fas fa-layer-group" collapsible>
-                  <canvas id="platformChart" height="180"></canvas>
-              </x-adminlte-card>
-          </div>
-      @endif
+                <div class="col-md-6 mb-3">
+                    <x-adminlte-card title="Active Leads by Person" theme="secondary" icon="fas fa-user"
+                                     class="h-100" collapsible>
+                        <canvas id="userLeadsChart" height="180"></canvas>
+                    </x-adminlte-card>
+                </div>
+            </div>
+
+            <div class="row align-items-stretch w-100">
+                <div class="col-md-6 mb-3">
+                    <x-adminlte-card title="Month-wise Lead Summary" theme="primary" icon="fas fa-chart-bar"
+                                     class="h-100" collapsible>
+                        <canvas id="monthlyChart" height="180"></canvas>
+                    </x-adminlte-card>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <x-adminlte-card title="Platform-wise Lead Summary" theme="info" icon="fas fa-layer-group"
+                                     class="h-100" collapsible>
+                        <canvas id="platformChart" height="180"></canvas>
+                    </x-adminlte-card>
+                </div>
+            </div>
+        @endif
     </div>
-
 @stop
 
 @section('css')
@@ -163,7 +157,6 @@
         });
 
         // PLATFORM-WISE CREATED CHART
-        // PLATFORM-WISE CREATED CHART
         const platformCtx = document.getElementById('platformChart').getContext('2d');
         const platformLabels = @json($platformLabels);
         const rawPlatformData = @json($platformData);
@@ -171,11 +164,10 @@
         const platforms = Object.keys(rawPlatformData);
         const totalPlatforms = platforms.length;
 
-        // Generate N distinct pastel colors
         function generateDistinctPastelColors(count) {
             const colors = [];
             for (let i = 0; i < count; i++) {
-                const hue = Math.round((360 / count) * i); // evenly spaced hues
+                const hue = Math.round((360 / count) * i);
                 colors.push(`hsl(${hue}, 70%, 75%)`);
             }
             return colors;
@@ -205,7 +197,7 @@
             plugins: [ChartDataLabels]
         });
 
-        // ACTIVE LEADS BY PERSON (multiple statuses)
+        // ACTIVE LEADS BY PERSON
         const userLeadsCtx = document.getElementById('userLeadsChart').getContext('2d');
         new Chart(userLeadsCtx, {
             type: 'bar',
@@ -224,6 +216,5 @@
             },
             plugins: [ChartDataLabels]
         });
-
     </script>
 @stop
