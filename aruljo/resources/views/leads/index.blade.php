@@ -14,24 +14,43 @@
 
 @section('content')
     @if (session('success'))
-        <div class="alert alert-success">{{ session('success') }}</div>
+        <div class="alert alert-success" id="flashSuccess">{{ session('success') }}</div>
     @endif
-    <div id="leadSuccessAlert"></div>
     <section class="content">
         <div class="container-fluid">
             <div class="card card-outline">
-                <div class="card-header">
-                    <ul class="nav nav-pills">
-                        <li class="nav-item">
-                            <a class="nav-link {{ $tab === 'active' ? 'active' : '' }}" href="{{ route('leads.index', ['tab' => 'active']) }}">Active Leads</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {{ $tab === 'my' ? 'active' : '' }}" href="{{ route('leads.index', ['tab' => 'my']) }}">My Leads</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {{ $tab === 'all' ? 'active' : '' }}" href="{{ route('leads.index', ['tab' => 'all']) }}">All Leads</a>
-                        </li>
-                    </ul>
+              <div class="card-header">
+                   <ul class="nav nav-pills">
+                       @if ($isEuser)
+                           {{-- Only Euser or No Roles: show only My Leads --}}
+                           <li class="nav-item">
+                               <a class="nav-link {{ $tab === 'my' ? 'active' : '' }}"
+                                  href="{{ route('leads.index', ['tab' => 'my']) }}">
+                                   My Leads
+                               </a>
+                           </li>
+                       @else
+                           {{-- Other roles: show all three --}}
+                           <li class="nav-item">
+                               <a class="nav-link {{ $tab === 'active' ? 'active' : '' }}"
+                                  href="{{ route('leads.index', ['tab' => 'active']) }}">
+                                   Active Leads
+                               </a>
+                           </li>
+                           <li class="nav-item">
+                               <a class="nav-link {{ $tab === 'my' ? 'active' : '' }}"
+                                  href="{{ route('leads.index', ['tab' => 'my']) }}">
+                                   My Leads
+                               </a>
+                           </li>
+                           <li class="nav-item">
+                               <a class="nav-link {{ $tab === 'all' ? 'active' : '' }}"
+                                  href="{{ route('leads.index', ['tab' => 'all']) }}">
+                                   All Leads
+                               </a>
+                           </li>
+                       @endif
+                   </ul>
                 </div>
 
                 <div class="card-body">
@@ -50,7 +69,7 @@
                                     <th>Contact</th>
                                     <th>Status</th>
                                     <th>Assigned To</th>
-                                    <th>Followup Date</th>
+                                    <th>Follow-up</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -61,20 +80,35 @@
                                         @if ($tab === 'all')
                                             <td>{{ $lead->platform }}</td>
                                         @endif
-                                        @php
-                                            $leadDateObj = \Carbon\Carbon::parse($lead->lead_date);
-                                            $formattedShort = $leadDateObj->format('d-m-Y');
-                                            $formattedFull = $leadDateObj->format('d-m-Y h:i A');
-                                        @endphp
-                                        <td data-order="{{ $leadDateObj->format('Y-m-d H:i:s') }}">
-                                            <span title="{{ $formattedFull }}">{{ $formattedShort }}</span>
-                                        </td>
-                                        <td>
-                                            <a href="javascript:void(0);" class="lead-quick-edit" data-lead-id="{{ $lead->id }}">
-                                                <span title="{{ $lead->buyer_name }}">{{ \Illuminate\Support\Str::limit($lead->buyer_name, 20) }}</span>
-                                            </a>
-                                        </td>
+                                      <td data-order="{{ $lead->lead_date_order ?? '' }}">
+                                          @if($lead->lead_date_formatted_short)
+                                              <span title="{{ $lead->lead_date_formatted_full }}">
+                                                  {{ $lead->lead_date_formatted_short }}
+                                                  <small class="text-muted">
+                                                      ({{ $lead->lead_date_daysago }})
+                                                  </small>
+                                              </span>
+                                          @else
+                                              <span class="text-muted">—</span>
+                                          @endif
+                                      </td>
 
+                                       <td>
+                                           <a href="javascript:void(0);"
+                                              class="open-edit-lead-modal"
+                                              data-lead-id="{{ $lead->id }}">
+
+                                               {{-- Show tags as badges first --}}
+                                               @foreach($lead->tags as $tag)
+                                                   <span class="badge badge-info">{{ $tag->name }}</span>
+                                               @endforeach
+
+                                               {{-- Then show buyer name --}}
+                                               <span title="{{ $lead->buyer_name }}">
+                                                   {{ \Illuminate\Support\Str::limit($lead->buyer_name, 20) }}
+                                               </span>
+                                           </a>
+                                       </td>
                                         <td>
                                             <a href="tel:{{ $lead->buyer_contact }}" onclick="copyPhone(event, '{{ $lead->buyer_contact }}')" class="text-primary">{{ $lead->buyer_contact }}</a>
                                             <a href="https://wa.me/91{{ $lead->buyer_contact }}" target="_blank" class="ms-2">
@@ -83,19 +117,41 @@
                                         </td>
                                         <td>{{ $lead->status }}</td>
                                         <td>{{ $lead->assigned_to }}</td>
-                                        @php $followUpDate = $lead->follow_up_date ? \Carbon\Carbon::parse($lead->follow_up_date) : null; @endphp
-                                        <td @if($followUpDate) data-order="{{ $followUpDate->format('Y-m-d') }}" @endif>
-                                            @if ($followUpDate)
-                                                <span class="{{ $followUpDate->isToday() ? 'bg-warning text-dark px-2 py-1 rounded' : '' }}">{{ $followUpDate->format('d-m-Y') }}</span>
-                                            @else - @endif
-                                        </td>
-                                        <td>
-                                            <div class="btn-group btn-group-sm">
-                                                <a href="{{ route('leads.edit', $lead->id) }}" class="btn btn-success">Update</a>
-                                                <a href="{{ route('leads.audits', $lead->id) }}" class="btn btn-info">Logs</a>
-                                                <x-adminlte-button label="Delete" theme="outline-danger" icon="fas fa-trash" data-toggle="modal" data-target="#deleteModal" onclick="setDeleteAction('{{ route('leads.destroy', $lead->id) }}')" />
-                                            </div>
-                                        </td>
+                                       <td @if($lead->followup_order) data-order="{{ $lead->followup_order }}" @endif>
+                                           @if ($lead->followup_formatted)
+                                               <span class="
+                                                   {{ $lead->followup_is_today ? 'bg-warning text-dark px-2 py-1 rounded' : '' }}
+                                                   {{ $lead->followup_is_past ? 'bg-danger text-white px-2 py-1 rounded' : '' }}
+                                               ">
+                                                   {{ $lead->followup_formatted }}
+                                               </span>
+                                           @else
+                                               -
+                                           @endif
+                                       </td>
+
+                                       <td data-order="{{ $lead->last_updated_order }}">
+                                           <div class="d-flex align-items-center">
+                                               <small style="display:inline-block; min-width:70px;">
+                                                   {{ $lead->last_updated_text }}
+                                               </small>
+                                               <a href="{{ route('leads.audits', $lead->id) }}"
+                                                  class="btn btn-xs btn-outline-info ml-1"
+                                                  title="View Logs">
+                                                   <i class="fas fa-sticky-note"></i>
+                                               </a>
+                                           </div>
+
+                                               @role('admin')
+                                                   <x-adminlte-button label="Delete"
+                                                                      theme="outline-danger"
+                                                                      icon="fas fa-trash"
+                                                                      data-toggle="modal"
+                                                                      data-target="#deleteModal"
+                                                                      onclick="setDeleteAction('{{ route('leads.destroy', $lead->id) }}')" />
+                                               @endrole
+                                           </div>
+                                       </td>
                                     </tr>
                                 @endforeach
                             </tbody>
@@ -116,132 +172,67 @@
                 </x-slot>
             </x-adminlte-modal>
 
-            {{-- Quick Edit Modal with Form --}}
-            <form id="editLeadForm" method="POST">
-                @csrf
-                @method('PUT')
-                <x-adminlte-modal id="editLeadModal" title="Quick Edit" theme="primary" icon="fas fa-edit" size="md" static-backdrop scrollable>
-
-                    {{-- Quick Info Summary --}}
-
-                    <div class="mb-3 small text-muted d-flex flex-wrap">
-                        <span class="mr-2"><i class="fas fa-user"></i> <strong id="leadBuyer"></strong></span>
-                        <span class="mr-2"><i class="fas fa-map-marker-alt"></i> <strong id="leadLocation"></strong></span>
-                        <span class="mr-2">
-                            <i class="fas fa-phone-alt"></i>
-                            <strong id="leadContactWrapper">
-                                <a href="#" id="leadContact" class="text-dark text-decoration-none"></a>
-                            </strong>
-                        </span>
-                        <span><i class="fas fa-calendar-day"></i> <strong id="leadDate"></strong></span>
-                    </div>
-
-                    {{-- Editable Fields --}}
-                    <div class="row mb-3">
-                        <div class="col-12 col-md-6">
-                            <x-adminlte-select name="status" igroup-size="sm">
-                                <x-slot name="prependSlot">
-                                    <div class="input-group-text">Status</div>
-                                </x-slot>
-                                @foreach($statuses as $status)
-                                    <option value="{{ $status }}">{{ $status }}</option>
-                                @endforeach
-                            </x-adminlte-select>
-                        </div>
-                        <div class="col-12 col-md-6 mt-2 mt-md-0">
-                            <x-adminlte-select name="assigned_to" igroup-size="sm">
-                                <x-slot name="prependSlot">
-                                    <div class="input-group-text">Assigned</div>
-                                </x-slot>
-                                @foreach($users as $user)
-                                    <option value="{{ $user->name }}">{{ $user->name }}</option>
-                                @endforeach
-                            </x-adminlte-select>
-                        </div>
-                    </div>
-
-                    {{-- New Remark --}}
-                    <x-adminlte-textarea name="current_remark" rows=2 igroup-size="sm" placeholder="Add new remark...">
-                        <x-slot name="prependSlot">
-                            <div class="input-group-text">📝</div>
-                        </x-slot>
-                    </x-adminlte-textarea>
-
-                    {{-- Past Remarks (read-only) --}}
-                    <x-adminlte-textarea name="past_remarks" rows=4 igroup-size="sm" disabled>
-                        <x-slot name="prependSlot">
-                            <div class="input-group-text">Past</div>
-                        </x-slot>
-                    </x-adminlte-textarea>
-
-                    {{-- Footer --}}
-                    <x-slot name="footerSlot">
-                        <x-adminlte-button class="mr-auto edit-full-link" theme="outline-secondary" label="Full Edit" icon="fas fa-external-link-alt" />
-                        <x-adminlte-button type="submit" theme="primary" label="Save" icon="fas fa-save" />
-                    </x-slot>
-
-                </x-adminlte-modal>
-            </form>
         </div>
     </section>
 @stop
 
 @section('css')
+    <!--Datatable CSS-->
     <link rel="stylesheet" href="https://cdn.datatables.net/2.3.2/css/dataTables.dataTables.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/responsive/3.0.4/css/responsive.dataTables.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/columncontrol/1.0.6/css/columnControl.dataTables.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/datetime/1.5.5/css/dataTables.dateTime.min.css">
-    <style>.lead-row { cursor: pointer; }</style>
+
+    <!--Select2 Tags JS-->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-multiselect@1.1.0/dist/css/bootstrap-multiselect.css">
+
+    <style>
+        .lead-row { cursor: pointer; }
+
+        .multiselect-container > li > a,
+        .multiselect-container > li.multiselect-group label,
+        .multiselect-container > li.multiselect-all label,
+        .btn-group > .multiselect{
+            text-align: left !important;
+        }
+
+    </style>
 @stop
 
 @section('js')
+
+    @include('leads.partials.edit-modal')
+
+    <!--Datatable JS-->
     <script src="https://cdn.datatables.net/2.3.2/js/dataTables.js"></script>
     <script src="https://cdn.datatables.net/responsive/3.0.4/js/dataTables.responsive.js"></script>
     <script src="https://cdn.datatables.net/columncontrol/1.0.6/js/dataTables.columnControl.js"></script>
-
+    <!--Multiselect-->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap-multiselect@1.1.0/dist/js/bootstrap-multiselect.min.js"></script>
+    <!--Validation-->
+    <script src="https://cdn.jsdelivr.net/jquery.validation/1.19.5/jquery.validate.min.js"></script>
+     @include('leads.partials.shared-js')
     <script>
         $(document).ready(function () {
             new DataTable('#leads_table', {
                 responsive: true,
                 stateSave: true,
-                columnControl: true,
-                ordering: true,
+                ordering: true, // allow sorting
                 language: { emptyTable: "No leads available for this tab." },
+
+                stateSaveParams: function (settings, data) {
+                    // Always reset ordering before saving state
+                    data.order = [];
+                },
+
                 initComplete: function () {
                     document.querySelector('#leads_table').classList.remove('opacity-0');
                 }
             });
 
-            $('#leads_table').on('click', '.lead-quick-edit', function () {
-                const leadId = $(this).data('lead-id');
-                $('#editLeadForm').attr('action', `/leads/${leadId}`);
-                $.get(`/leads/${leadId}`, function (lead) {
-                    $('#editLeadForm').attr('action', `/leads/${leadId}`);
-
-                    $('#leadDate').text(formatLeadDate(lead.lead_date));
-                    $('#leadBuyer').text(lead.buyer_name || '');
-                    if (lead.buyer_location) {
-                        $('#leadLocation').text(lead.buyer_location);
-                        $('#leadLocation').parent().show();
-                    } else {
-                        $('#leadLocation').parent().hide();
-                    }
-                    const contact = lead.buyer_contact || '';
-                    $('#leadContact').text(contact);
-                    $('#leadContact').attr('href', contact ? `tel:${contact}` : '#');
-
-                    // Editable Fields
-                    $('[name="status"]').val(lead.status);
-                    $('[name="assigned_to"]').val(lead.assigned_to);
-                    $('[name="current_remark"]').val('');
-                    $('[name="past_remarks"]').val(
-                        (lead.remarks || '').split('~|~').join('\n')
-                    );
-
-                    $('.edit-full-link').attr('onclick', `window.location='/leads/${leadId}/edit'`);
-                    $('#editLeadModal').modal('show');
-                });
-            });
+            setTimeout(() => {
+                $('#flashSuccess').fadeOut();
+            }, 3000);
         });
 
         function copyPhone(event, number) {
@@ -258,57 +249,109 @@
             document.getElementById('deleteForm').setAttribute('action', actionUrl);
         }
 
-        function formatLeadDate(dateStr) {
-            if (!dateStr) return '';
-            const date = new Date(dateStr);
-            if (isNaN(date.getTime())) return dateStr; // fallback to raw if invalid
 
-            const day = date.getDate().toString().padStart(2, '0');
-            const month = date.toLocaleString('en-US', { month: 'short' }); // "Jul"
-            const year = date.getFullYear();
+        function initTagMultiselect() {
+                $('#tags').multiselect('destroy').multiselect({
+                    includeSelectAllOption: true,
+                    buttonWidth: '100%',
+                    nonSelectedText: 'Select Tags',
+                    numberDisplayed: 2,
+                    enableFiltering: true,
+                    enableCaseInsensitiveFiltering: true
+                });
+            }
 
-            let hours = date.getHours();
-            const minutes = date.getMinutes().toString().padStart(2, '0');
-            const ampm = hours >= 12 ? 'pm' : 'am';
-            hours = hours % 12 || 12;
-
-            return `${day}${month}${year} ${hours}.${minutes} ${ampm}`;
-        }
-        $('#editLeadForm').on('submit', function (e) {
-            e.preventDefault();
-
-            const form = $(this);
-            const action = form.attr('action');
-            const formData = form.serialize();
-
+        //Edit Modal
+        $(document).on('click', '.open-edit-lead-modal', function () {
+            const leadId = $(this).data('lead-id');
+            const currentTab = new URLSearchParams(window.location.search).get('tab') || 'active';
             $.ajax({
-                url: action,
-                method: 'POST', // Still POST because `_method=PUT` is inside the form
-                data: formData,
-                success: function (res) {
-                    $('#editLeadModal').modal('hide');
+                 url: `/leads/${leadId}/edit?tab=${currentTab}`,
+                method: 'GET',
+                success: function (data) {
+                    $('#editLeadForm').attr('action', `/leads/${leadId}?tab=${currentTab}`);
+                    // Fill form fields using correct names from DB and modal
+                    $('#editLeadModal input[name="buyer_name"]').val(data.buyer_name);
+                    $('#editLeadModal input[name="buyer_contact"]').val(data.buyer_contact);
+                    $('#editLeadModal input[name="lead_date"]').val(data.lead_date);
+                    $('#editLeadModal input[name="buyer_location"]').val(data.buyer_location);
+                    $('#editLeadModal select[name="platform"]').val(data.platform);
+                    $('#editLeadModal input[name="platform_keyword"]').val(data.platform_keyword);
+                    $('#editLeadModal textarea[name="product_detail"]').val(data.product_detail);
+                    $('#editLeadModal input[name="delivery_location"]').val(data.delivery_location);
+                    $('#editLeadModal input[name="expected_delivery_date"]').val(data.expected_delivery_date);
+                    $('#editLeadModal input[name="follow_up_date"]').val(data.follow_up_date);
+                    $('#editLeadModal select[name="status"]').val(data.status);
+                    $('#editLeadModal select[name="assigned_to"]').val(data.assigned_to);
+                    $('#editLeadModal textarea[name="past_remarks"]').val(data.past_remarks.join('\n'));
+                    $('#editLeadModal input[name="current_remark"]').val('');
+                    // Clear any previous selection
+                    $('#editLeadModal select[name="tags[]"]').val([]);
 
-                    // Show success alert (customize this container if needed)
-                    $('#leadSuccessAlert').html(`
-                        <div class="alert alert-success alert-dismissible fade show mt-2" role="alert">
-                            ${res.message}
-                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
-                        </div>
-                    `);
+                    // Set the selected tags from response (data.tags should be an array of strings)
+                    $('#editLeadModal select[name="tags[]"]').val(data.tags);
 
-                    // Refresh DataTable
-                    location.reload();
+                    // Rebuild multiselect with the selection
+                    initTagMultiselect();
+
+                    // Show modal
+                    $('#editLeadModal').modal('show');
                 },
-                error: function (xhr) {
-                    let msg = 'Failed to update lead.';
-                    if (xhr.responseJSON && xhr.responseJSON.message) {
-                        msg = xhr.responseJSON.message;
-                    }
-                    alert(msg);
+                error: function () {
+                    alert('Failed to load lead data.');
                 }
             });
+        });
+        // When modal is fully shown, initialize the tag dropdown
+        $('#editLeadModal').on('shown.bs.modal', function () {
+            initTagMultiselect();
+            initDaysCalculation(this);
+        });
+
+        $('#editLeadForm').validate({
+            rules: {
+                platform: { required: true },
+                lead_date: { required: true, date: true },
+                platform_keyword: { required: true },
+                buyer_name: { required: true },
+                buyer_contact: { required: true, digits: true, minlength: 10, maxlength: 15 },
+                buyer_location: { required: true },
+                product_detail: { required: true },
+                delivery_location: { required: true },
+                expected_delivery_date: { required: true, date: true },
+                follow_up_date: { required: true, date: true },
+                status: { required: true },
+                assigned_to: { required: true },
+                current_remark: { required: true },
+                'tags[]': { required: true }
+            },
+            messages: {
+                buyer_contact: {
+                    digits: "Enter only numbers",
+                    minlength: "Minimum 10 digits",
+                    maxlength: "Maximum 15 digits"
+                },
+                'tags[]': {
+                    required: "Please select at least one tag"
+                }
+            },
+            errorElement: 'span',
+            errorClass: 'invalid-feedback',
+            highlight: function (element) {
+                $(element).closest('.form-group, .mb-3').addClass('has-error');
+                $(element).addClass('is-invalid');
+            },
+            unhighlight: function (element) {
+                $(element).closest('.form-group, .mb-3').removeClass('has-error');
+                $(element).removeClass('is-invalid');
+            },
+            errorPlacement: function (error, element) {
+                if (element.attr("name") === "tags[]") {
+                    error.insertAfter($('#tags').closest('.form-group, .mb-3'));
+                } else {
+                    error.insertAfter(element);
+                }
+            }
         });
 
     </script>
