@@ -15,6 +15,7 @@ class TagSeeder extends Seeder
         $tags = [
             'Urgent',
             'Bulk',
+            'GrpShp',
         ];
 
         foreach ($tags as $tag) {
