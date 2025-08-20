@@ -180,8 +180,8 @@
     <!--Datatable CSS-->
     <link rel="stylesheet" href="https://cdn.datatables.net/2.3.2/css/dataTables.dataTables.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/responsive/3.0.4/css/responsive.dataTables.css">
-    <link rel="stylesheet" href="https://cdn.datatables.net/columncontrol/1.0.6/css/columnControl.dataTables.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/datetime/1.5.5/css/dataTables.dateTime.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/columncontrol/1.0.7/css/columnControl.dataTables.min.css">
 
     <!--Select2 Tags JS-->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-multiselect@1.1.0/dist/css/bootstrap-multiselect.css">
@@ -206,7 +206,8 @@
     <!--Datatable JS-->
     <script src="https://cdn.datatables.net/2.3.2/js/dataTables.js"></script>
     <script src="https://cdn.datatables.net/responsive/3.0.4/js/dataTables.responsive.js"></script>
-    <script src="https://cdn.datatables.net/columncontrol/1.0.6/js/dataTables.columnControl.js"></script>
+    <script src="https://cdn.datatables.net/columncontrol/1.0.7/js/dataTables.columnControl.min.js"></script>
+
     <!--Multiselect-->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap-multiselect@1.1.0/dist/js/bootstrap-multiselect.min.js"></script>
     <!--Validation-->
@@ -217,7 +218,8 @@
             new DataTable('#leads_table', {
                 responsive: true,
                 stateSave: true,
-                ordering: true, // allow sorting
+                // ordering: true, // allow sorting
+                columnControl: [['orderAsc', 'orderDesc', 'search']],
                 language: { emptyTable: "No leads available for this tab." },
 
                 stateSaveParams: function (settings, data) {
