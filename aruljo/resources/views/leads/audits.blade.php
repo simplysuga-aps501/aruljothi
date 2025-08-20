@@ -31,6 +31,19 @@
                                     @foreach($audit->new_values as $key => $value)
                                         @php
                                             $old = $audit->old_values[$key] ?? '—';
+
+                                            if ($key === 'remarks') {
+                                                // Take only the first entry from old and new remarks
+                                                $oldFirst = explode('~|~', $old)[0] ?? '';
+                                                $newFirst = explode('~|~', $value)[0] ?? '';
+
+                                                // Strip everything before '):' if it exists
+                                                $oldStripped = isset(explode('):', $oldFirst, 2)[1]) ? trim(explode('):', $oldFirst, 2)[1]) : $oldFirst;
+                                                $newStripped = isset(explode('):', $newFirst, 2)[1]) ? trim(explode('):', $newFirst, 2)[1]) : $newFirst;
+
+                                                $old = $oldStripped;
+                                                $value = $newStripped;
+                                            }
                                         @endphp
                                         <li>
                                             <strong>{{ $key }}</strong>:
