@@ -41,7 +41,7 @@ Route::middleware(['auth'])->group(function () {
         return back()->with('message', 'Verification link sent!');
     })->middleware(['auth', 'throttle:6,1'])->name('verification.send');
 
-
+  
     /*
     |--------------------------------------------------------------------------
     | Verified User Routes (only after email_verified_at is set)

@@ -80,6 +80,7 @@
                                         @if ($tab === 'all')
                                             <td>{{ $lead->platform }}</td>
                                         @endif
+
                                       <td data-order="{{ $lead->lead_date_order ?? '' }}">
                                           @if($lead->lead_date_formatted_short)
                                               <span title="{{ $lead->lead_date_formatted_full }}">
@@ -109,6 +110,7 @@
                                                </span>
                                            </a>
                                        </td>
+
                                         <td>
                                             <a href="tel:{{ $lead->buyer_contact }}" onclick="copyPhone(event, '{{ $lead->buyer_contact }}')" class="text-primary">{{ $lead->buyer_contact }}</a>
                                             <a href="https://wa.me/91{{ $lead->buyer_contact }}" target="_blank" class="ms-2">
@@ -248,7 +250,6 @@
         function setDeleteAction(actionUrl) {
             document.getElementById('deleteForm').setAttribute('action', actionUrl);
         }
-
 
         function initTagMultiselect() {
                 $('#tags').multiselect('destroy').multiselect({

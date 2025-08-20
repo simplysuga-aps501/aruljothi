@@ -1,5 +1,0 @@
-{
-    "require": {
-        "spatie/laravel-activitylog": "^4.10"
-    }
-}

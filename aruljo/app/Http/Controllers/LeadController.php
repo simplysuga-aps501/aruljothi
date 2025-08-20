@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use Spatie\Tags\Tag;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class LeadController extends Controller
 {
@@ -223,6 +224,7 @@ class LeadController extends Controller
      */
     public function update(Request $request, $id)
     {
+
         $lead = Lead::findOrFail($id);
 
         $validated = $request->validate([
@@ -243,7 +245,9 @@ class LeadController extends Controller
             'tags.*' => 'string',
         ]);
 
+
         $oldAssignedTo = $lead->assigned_to;
+
         $lead->fill(collect($validated)->except(['current_remark', 'tags'])->toArray());
 
         $user = Auth::user()->name;
@@ -332,6 +336,7 @@ class LeadController extends Controller
         ];
     }
 
+
     private function formatDaysDiff($date)
     {
         if (!$date) {
@@ -350,6 +355,6 @@ class LeadController extends Controller
         } else {
             return abs($diff) . " day(s) from today";
         }
-    }
 
+    }
 }
