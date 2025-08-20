@@ -1,75 +1,86 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Foundation\Auth\EmailVerificationRequest;
+use Illuminate\Http\Request;
 
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\Product\ProductController;
-use App\Http\Controllers\Product\UnitController;
-use App\Http\Controllers\Product\HsncodeController;
-use App\Http\Controllers\Product\ProductTemplateController;
+use App\Http\Controllers\UserRoleController;
 
-/*
-|--------------------------------------------------------------------------
-| Web Routes
-|--------------------------------------------------------------------------
-| This file is where you define all your web (browser-accessible) routes.
-| Routes inside the 'auth' middleware block require a logged-in user.
-*/
+require __DIR__.'/auth.php';
 
-// 🌐 Public Route
+// Public welcome page
 Route::get('/', function () {
     return view('welcome');
 });
 
-// 📊 Dashboard
-Route::get('/dashboard', [DashboardController::class, 'index'])
-    ->middleware(['auth'])
-    ->name('dashboard');
-
-// 🔒 Authenticated Routes
+// Protected routes — only for authenticated users
 Route::middleware(['auth'])->group(function () {
 
-    // 🙍‍♂️ Profile
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    /*
+    |--------------------------------------------------------------------------
+    | Email Verification Routes
+    |--------------------------------------------------------------------------
+    */
+    // Notice to verify
+    Route::get('/email/verify', function () {
+        return view('auth.verify-email');
+    })->name('verification.notice');
 
-    // 📝 Leads
-    Route::prefix('leads')->name('leads.')->group(function () {
-        Route::get('/', [LeadController::class, 'index'])->name('index');
-        Route::get('/create', fn() => view('leads.create'))->name('create');
-        Route::post('/', [LeadController::class, 'store'])->name('store');
-        Route::get('{id}/edit', [LeadController::class, 'edit'])->name('edit');
-        Route::put('{id}', [LeadController::class, 'update'])->name('update');
-        Route::put('{id}/full-update', [LeadController::class, 'updateFull'])->name('update.full');
-        Route::delete('{id}', [LeadController::class, 'destroy'])->name('destroy');
-        Route::get('{id}/audits', [LeadController::class, 'showAudits'])->name('audits');
+    // Link from email
+    Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
+        $request->fulfill(); // sets email_verified_at
+        return redirect('/dashboard');
+    })->middleware(['auth', 'signed'])->name('verification.verify');
+
+    // Resend verification
+    Route::post('/email/verification-notification', function (Request $request) {
+        $request->user()->sendEmailVerificationNotification();
+        return back()->with('message', 'Verification link sent!');
+    })->middleware(['auth', 'throttle:6,1'])->name('verification.send');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Verified User Routes (only after email_verified_at is set)
+    |--------------------------------------------------------------------------
+    */
+    Route::middleware(['verified'])->group(function () {
+
+        // Dashboard
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+        // Profile
+        Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+        Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+        Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+        /*
+        |--------------------------------------------------------------------------
+        | Lead Routes (per role)
+        |--------------------------------------------------------------------------
+        */
+        // staff & owner: all lead actions except delete
+        Route::get('/leads', [LeadController::class, 'index'])->name('leads.index');
+        Route::get('/leads/{lead}/edit', [LeadController::class, 'edit'])->name('leads.edit');
+        Route::put('/leads/{lead}', [LeadController::class, 'update'])->name('leads.update');
+        Route::get('/leads/create', [LeadController::class, 'create'])->name('leads.create');
+        Route::post('/leads', [LeadController::class, 'store'])->name('leads.store');
+        Route::get('/leads/{id}/audits', [LeadController::class, 'showAudits'])->name('leads.audits');
+
+        /*
+        |--------------------------------------------------------------------------
+        | Admin Routes
+        |--------------------------------------------------------------------------
+        */
+        Route::middleware(['role:admin'])->group(function () {
+            Route::get('/users', [UserRoleController::class, 'index'])->name('users.list');
+            Route::put('/users/{id}', [UserRoleController::class, 'role'])->name('users.update');
+
+            // admin can do everything in leads, including delete
+            Route::delete('/leads/{id}', [LeadController::class, 'destroy'])->name('leads.destroy');
+        });
     });
-
-
-    // 📦 Products
-    Route::prefix('products')->name('products.')->group(function () {
-        Route::get('/', [ProductController::class, 'index'])->name('index');
-        Route::post('/', [ProductController::class, 'store'])->name('store');
-        Route::get('/template/{id}/parameters', [ProductController::class, 'getParameters'])->name('getParameters');
-    });
-
-    // 🧪 Units (used by AJAX modal)
-    Route::post('/units', [UnitController::class, 'store'])->name('units.store');
-
-    // 🧾 HSN Codes (used by AJAX modal)
-    Route::post('/hsncodes', [HsncodeController::class, 'store'])->name('hsncodes.store');
-
-    // 📋 Product Templates (optional - if you're managing templates)
-    Route::resource('product-templates', ProductTemplateController::class)->only(['index', 'create', 'store', 'edit', 'update']);
-
-    //delete a product
-    Route::delete('/products/{id}', [ProductController::class, 'destroy'])->name('products.destroy');
-
 });
-
-// 🔐 Auth scaffolding (login, register, forgot password, etc.)
-require __DIR__.'/auth.php';

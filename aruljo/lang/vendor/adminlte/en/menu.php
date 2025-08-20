@@ -6,6 +6,7 @@ return [
     'blog' => 'Blog',
     'pages' => 'Pages',
     'account_settings' => 'ACCOUNT SETTINGS',
+    'admin_settings' => 'ADMIN SETTINGS',
     'profile' => 'Profile',
     'change_password' => 'Change Password',
     'multilevel' => 'Multi Level',
