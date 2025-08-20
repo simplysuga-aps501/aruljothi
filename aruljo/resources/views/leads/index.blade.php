@@ -137,21 +137,19 @@
                                                <small style="display:inline-block; min-width:70px;">
                                                    {{ $lead->last_updated_text }}
                                                </small>
-                                               <a href="{{ route('leads.audits', $lead->id) }}"
-                                                  class="btn btn-xs btn-outline-info ml-1"
-                                                  title="View Logs">
-                                                   <i class="fas fa-sticky-note"></i>
-                                               </a>
+                                                <a href="{{ route('leads.audits', $lead->id) }}"
+                                                    class="btn btn-xs btn-outline-info ml-1"
+                                                    title="View Logs">
+                                                    <i class="fas fa-sticky-note"></i>
+                                                </a>
+                                                @role('admin')
+                                                    <i class="fas fa-trash text-danger" style="cursor:pointer; font-size:0.85rem; margin-left:8px;" 
+                                                        data-toggle="modal"
+                                                        data-target="#deleteModal"
+                                                        onclick="setDeleteAction('{{ route('leads.destroy', $lead->id) }}')"></i>
+                                                @endrole
                                            </div>
 
-                                               @role('admin')
-                                                   <x-adminlte-button label="Delete"
-                                                                      theme="outline-danger"
-                                                                      icon="fas fa-trash"
-                                                                      data-toggle="modal"
-                                                                      data-target="#deleteModal"
-                                                                      onclick="setDeleteAction('{{ route('leads.destroy', $lead->id) }}')" />
-                                               @endrole
                                            </div>
                                        </td>
                                     </tr>
