@@ -25,6 +25,8 @@ class ProductParameterSeeder extends Seeder
                ['name' => 'Cover', 'input_type' => 'select'],
                ['name' => 'Class', 'input_type' => 'select'],
                ['name' => 'Pipe Type', 'input_type' => 'select'],
+               ['name' => 'Handle', 'input_type' => 'select'],
+               ['name' => 'Partition', 'description' => 'split', 'input_type' => 'select'],
            ];
 
            foreach ($parameters as $param) {

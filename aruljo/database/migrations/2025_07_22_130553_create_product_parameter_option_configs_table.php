@@ -15,6 +15,7 @@ return new class extends Migration
                 $table->id();
                 $table->foreignId('product_parameter_id')->constrained('product_parameters')->onDelete('cascade');
                 $table->string('parameter_option');
+                $table->json('dependencies')->nullable();
                 $table->unsignedBigInteger('modified_by')->nullable();
                 $table->timestamps();
             });

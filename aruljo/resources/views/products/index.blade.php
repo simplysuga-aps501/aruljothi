@@ -227,29 +227,10 @@
                 url: `/products/template/${templateId}/parameters`,
                 method: 'GET',
                 success: function (response) {
-                    response.parameters.forEach(function (param) {
-                        let html = `<div class="col-md-3 col-12 mb-3">
-                            <label class="form-label">${param.name}</label>`;
 
-                        if (param.input_type === 'number') {
-                            html += `
-                                <div class="input-group">
-                                    <input type="number"  step="0.01" min="0" class="form-control param-input" data-parameter-id="${param.id}" data-description="${param.description}" placeholder="Enter ${param.name}">
-                                    <select class="form-control param-unit">
-                                        ${param.units.map(unit => `<option value="${unit}">${unit}</option>`).join('')}
-                                    </select>
-                                </div>`;
-                        } else {
-                            html += `
-                                <select class="form-control param-select" data-parameter-id="${param.id}" data-description="${param.description}">
-                                    <option value="">-- Select --</option>
-                                    ${param.options.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
-                                </select>`;
-                        }
-
-                        html += `</div>`;
-                        $('#parameterFields').append(html);
-                    });
+                   window.allParameters = response.parameters; // save globally
+                   console.log(allParameters);
+                   renderParameters(); // call function to render
                 },
                 error: function (xhr) {
                     console.error('Error loading parameters:', xhr.responseText);
@@ -447,6 +428,72 @@
         // Initialize DataTable (optional, if you want)
         $('#productsTable').DataTable();
     });
+
+    // Listen to shape change
+   $('#parameterFields').on('change', '.param-select', function () {
+       let paramName = $(this).closest('div').find('label').text();
+       let selectedOption = $(this).val();
+
+       // Find the parameter definition
+       let paramDef = allParameters.find(p => p.name === paramName);
+       if (!paramDef) return;
+
+       // Find selected option object
+       let optionObj = paramDef.options?.find(opt => opt.option === selectedOption);
+
+       // Determine dependencies
+       let dependencies = optionObj?.dependencies || [];
+
+       // Always include independent parameters (e.g., Cover, Handle, Partition)
+       let independentParams = allParameters.filter(p => p.name !== 'Shape' && !p.options.some(o => o.dependencies?.length)).map(p => p.id);
+
+       renderParameters([...dependencies, ...independentParams]);
+   });
+
+
+    // Render parameters
+    function renderParameters(allowedIds = []) {
+        let currentValues = {};
+        $('#parameterFields .param-select, #parameterFields .param-input').each(function () {
+            let id = $(this).data('parameter-id');
+            if (id) currentValues[id] = $(this).val();
+        });
+
+        $('#parameterFields').empty();
+
+        allParameters.forEach(function (param) {
+            // Always show base parameters or independent ones
+            if (allowedIds.length > 0 && !allowedIds.includes(param.id) && param.name !== 'Shape' && !param.always_show) {
+                return;
+            }
+
+            let html = `<div class="col-md-3 col-12 mb-3">
+                            <label class="form-label">${param.name}</label>`;
+
+            if (param.input_type === 'number') {
+                html += `<div class="input-group">
+                            <input type="number" step="0.01" min="0" class="form-control param-input"
+                                   data-parameter-id="${param.id}"
+                                   data-description="${param.description}"
+                                   placeholder="Enter ${param.name}"
+                                   value="${currentValues[param.id] || ''}">
+                            <select class="form-control param-unit">
+                                ${param.units.map(u => `<option value="${u}">${u}</option>`).join('')}
+                            </select>
+                         </div>`;
+            } else {
+                html += `<select class="form-control param-select"
+                                 data-parameter-id="${param.id}"
+                                 data-description="${param.description}">
+                            <option value="">-- Select --</option>
+                            ${param.options.map(opt => `<option value="${opt.option}" ${currentValues[param.id] === opt.option ? 'selected' : ''}>${opt.option}</option>`).join('')}
+                         </select>`;
+            }
+
+            html += `</div>`;
+            $('#parameterFields').append(html);
+        });
+    }
 
     //Delete a product
     function setDeleteAction(actionUrl) {

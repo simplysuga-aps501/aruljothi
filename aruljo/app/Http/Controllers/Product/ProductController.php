@@ -33,19 +33,27 @@ class ProductController extends Controller
     public function getParameters($templateId)
     {
         $configs = ProductParameterConfig::with([
-            'productParameter.options',
+            'productParameter.options', // Make sure this relationship returns ProductParameterOptionConfig models
             'productParameter.units',
         ])->where('product_template_id', $templateId)->get();
 
         $parameters = $configs->map(function ($config) {
             $param = $config->productParameter;
 
+            $options = $param->options->map(function ($option) {
+                return [
+                    'id' => $option->id,
+                    'option' => $option->parameter_option,
+                    'dependencies' => $option->dependencies ?? [], // <-- include dependencies
+                ];
+            });
+
             return [
                 'id' => $param->id,
                 'name' => $param->name,
                 'input_type' => $param->input_type,
                 'description' => $param->description,
-                'options' => $param->options->pluck('parameter_option')->toArray(),
+                'options' => $options,
                 'units' => $param->units->pluck('name')->toArray(),
             ];
         });

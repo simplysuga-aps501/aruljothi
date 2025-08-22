@@ -8,11 +8,18 @@ use Illuminate\Database\Eloquent\Model;
 class ProductParameterOptionConfig extends Model
 {
     use HasFactory;
+
     protected $fillable = [
-            'product_parameter_id',
-            'parameter_option',
-            'modified_by',
-        ];
+        'product_parameter_id',
+        'parameter_option',
+        'dependencies', // added this
+        'modified_by',
+    ];
+
+    // Cast dependencies JSON to array automatically
+    protected $casts = [
+        'dependencies' => 'array',
+    ];
 
     public function parameter()
     {

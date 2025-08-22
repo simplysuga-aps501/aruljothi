@@ -8,6 +8,12 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UserRoleController;
+use App\Http\Controllers\Product\ProductController;
+use App\Http\Controllers\Product\UnitController;
+use App\Http\Controllers\Product\HsncodeController;
+use App\Http\Controllers\Product\ProductTemplateController;
+
+
 
 require __DIR__.'/auth.php';
 
@@ -69,6 +75,31 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/leads/create', [LeadController::class, 'create'])->name('leads.create');
         Route::post('/leads', [LeadController::class, 'store'])->name('leads.store');
         Route::get('/leads/{id}/audits', [LeadController::class, 'showAudits'])->name('leads.audits');
+
+        /*
+        |--------------------------------------------------------------------------
+        | Product Routes
+        |--------------------------------------------------------------------------
+        */
+        Route::prefix('products')->name('products.')->group(function () {
+            Route::get('/', [ProductController::class, 'index'])->name('index');
+            Route::post('/', [ProductController::class, 'store'])->name('store');
+            Route::get('/template/{id}/parameters', [ProductController::class, 'getParameters'])->name('getParameters');
+        });
+
+        // 🧪 Units (used by AJAX modal)
+        Route::post('/units', [UnitController::class, 'store'])->name('units.store');
+
+        // 🧾 HSN Codes (used by AJAX modal)
+        Route::post('/hsncodes', [HsncodeController::class, 'store'])->name('hsncodes.store');
+
+        // 📋 Product Templates (optional - if you're managing templates)
+        Route::resource('product-templates', ProductTemplateController::class)->only(['index', 'create', 'store', 'edit', 'update']);
+
+        //delete a product
+        Route::delete('/products/{id}', [ProductController::class, 'destroy'])->name('products.destroy');
+
+        Route::get('/units', [UnitController::class, 'index']);
 
         /*
         |--------------------------------------------------------------------------
