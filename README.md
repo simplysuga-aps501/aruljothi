@@ -30,4 +30,6 @@ php artisan backup:run --only-db
 For full backup:
 php artisan backup:run
 
+-- DB seeder for tags
+php artisan db:seed --class=TagSeeder
 
