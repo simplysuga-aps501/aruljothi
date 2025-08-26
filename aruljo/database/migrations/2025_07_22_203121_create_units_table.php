@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('units', function (Blueprint $table) {
                     $table->id(); // BIGINT Primary Key
-                    $table->string('name'); // e.g., KG, NOS, etc.
+                    $table->string('name')->unique(); // e.g., KG, NOS, etc.
                     $table->string('modified_by')->nullable(); // User name (can be nullable)
                     $table->timestamps(); // created_at, updated_at
                 });

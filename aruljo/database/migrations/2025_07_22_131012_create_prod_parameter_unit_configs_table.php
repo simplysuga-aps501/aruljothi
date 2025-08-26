@@ -11,10 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('product_parameter_unit_config', function (Blueprint $table) {
+        Schema::create('prod_parameter_unit_configs', function (Blueprint $table) {
                    $table->id();
-                   $table->foreignId('product_parameter_id')->constrained('product_parameters')->onDelete('cascade');
-                   $table->foreignId('product_parameter_unit_id')->constrained('product_parameter_units')->onDelete('cascade');
+                   $table->foreignId('prod_parameter_id')->constrained('prod_parameters')->onDelete('cascade');
+                   $table->foreignId('prod_parameter_unit_id')->constrained('prod_parameter_units')->onDelete('cascade');
                    $table->unsignedBigInteger('modified_by')->nullable();
                    $table->timestamps();
                });
@@ -25,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('product_parameter_unit_configs');
+        Schema::dropIfExists('prod_parameter_unit_configs');
     }
 };

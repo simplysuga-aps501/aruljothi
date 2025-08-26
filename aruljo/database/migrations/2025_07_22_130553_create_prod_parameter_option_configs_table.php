@@ -11,9 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('product_parameter_option_configs', function (Blueprint $table) {
+        Schema::create('prod_parameter_option_configs', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('product_parameter_id')->constrained('product_parameters')->onDelete('cascade');
+                $table->foreignId('prod_parameter_id')->constrained('prod_parameters')->onDelete('cascade');
                 $table->string('parameter_option');
                 $table->json('dependencies')->nullable();
                 $table->unsignedBigInteger('modified_by')->nullable();
@@ -26,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('product_parameter_option_configs');
+        Schema::dropIfExists('prod_parameter_option_configs');
     }
 };

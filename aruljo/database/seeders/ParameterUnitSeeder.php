@@ -4,9 +4,9 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use App\Models\Product\ProductParameterUnit;
+use App\Models\Product\ParameterUnit;
 
-class ProductParameterUnitSeeder extends Seeder
+class ParameterUnitSeeder extends Seeder
 {
     /**
      * Run the database seeds.
@@ -25,7 +25,7 @@ class ProductParameterUnitSeeder extends Seeder
             ];
 
             foreach ($units as $unit) {
-                ProductParameterUnit::create([
+                ParameterUnit::create([
                     'name' => $unit,
                     'modified_by' => null,
                 ]);

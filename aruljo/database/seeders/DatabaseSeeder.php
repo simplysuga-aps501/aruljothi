@@ -12,11 +12,13 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-       $this->call(ProductTemplateSeeder::class);
-       $this->call(ProductParameterSeeder::class);
-       $this->call(ProductParameterUnitSeeder::class);
-       $this->call(ProductParameterUnitConfigSeeder::class);
-       $this->call(ProductParameterOptionConfigSeeder::class);
-       $this->call(ProductParameterConfigSeeder::class);
+       $this->call(templateSeeder::class);
+       $this->call(ParameterSeeder::class);
+       $this->call(ParameterUnitSeeder::class);
+       $this->call(ParameterUnitConfigSeeder::class);
+       $this->call(ParameterOptionConfigSeeder::class);
+       $this->call(ParameterConfigSeeder::class);
+       $this->call(ParameterOptionDependenciesSeeder::class);
+       $this->call(TruckTypeSeeder::class);
     }
 }

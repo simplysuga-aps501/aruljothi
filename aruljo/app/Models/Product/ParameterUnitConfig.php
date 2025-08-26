@@ -5,25 +5,26 @@ namespace App\Models\Product;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class ProductParameterOptionConfig extends Model
+class ParameterUnitConfig extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'product_parameter_id',
-        'parameter_option',
-        'dependencies', // added this
-        'modified_by',
-    ];
+    protected $table = 'prod_parameter_unit_configs';
 
-    // Cast dependencies JSON to array automatically
-    protected $casts = [
-        'dependencies' => 'array',
+    protected $fillable = [
+        'prod_parameter_id',
+        'prod_parameter_unit_id',
+        'modified_by',
     ];
 
     public function parameter()
     {
-        return $this->belongsTo(ProductParameter::class, 'product_parameter_id');
+        return $this->belongsTo(Parameter::class, 'prod_parameter_id');
+    }
+
+    public function unit()
+    {
+        return $this->belongsTo(ParameterUnit::class, 'prod_parameter_unit_id');
     }
 
     public function modifiedBy()

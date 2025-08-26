@@ -333,6 +333,22 @@ return [
                 ],
             ],
         ],
+
+       // Items
+       [
+           'text'    => 'Items',
+           'icon'    => 'fas fa-fw fa-layer-group',
+           'submenu' => [
+               // Products
+               [
+                   'text'  => 'Products',
+                   'route' => 'products.index',
+                   'icon'  => 'fas fa-fw fa-boxes',
+               ],
+               // (you can add more sub-items here later, like Units, HSN Codes, etc.)
+           ],
+       ],
+
         ['header' => 'account_settings'],
         [
             'text' => 'profile',

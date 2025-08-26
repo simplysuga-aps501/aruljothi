@@ -4,9 +4,9 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use App\Models\Product\ProductTemplate;
+use App\Models\Product\Template;
 
-class ProductTemplateSeeder extends Seeder
+class TemplateSeeder extends Seeder
 {
     /**
      * Run the database seeds.
@@ -14,8 +14,8 @@ class ProductTemplateSeeder extends Seeder
     public function run(): void
     {
        $data = [
-                   ['name' => 'pipe',        'modified_by' => 1],
-                   ['name' => 'offcut',      'modified_by' => 1],
+                   ['name' => 'rcc pipe',        'modified_by' => 1],
+                   ['name' => 'offcut rcc pipe',      'modified_by' => 1],
                    ['name' => 'chamber',     'modified_by' => 1],
                    ['name' => 'ring',        'modified_by' => 1],
                    ['name' => 'vtrough',     'modified_by' => 1],
@@ -24,7 +24,7 @@ class ProductTemplateSeeder extends Seeder
                ];
 
                foreach ($data as $item) {
-                   ProductTemplate::create($item);
+                   Template::create($item);
                    }
     }
 }

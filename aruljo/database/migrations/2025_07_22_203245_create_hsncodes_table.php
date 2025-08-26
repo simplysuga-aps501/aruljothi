@@ -13,7 +13,7 @@ return new class extends Migration
     {
        Schema::create('hsncodes', function (Blueprint $table) {
                    $table->id(); // BIGINT Primary Key
-                   $table->string('name'); // HSN code (e.g., 6810, 7306 etc.)
+                   $table->string('name')->unique();; // HSN code (e.g., 6810, 7306 etc.)
                    $table->text('description')->nullable(); // Optional description
                    $table->string('modified_by')->nullable(); // Username or editor name
                    $table->timestamps(); // created_at, updated_at

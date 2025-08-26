@@ -5,14 +5,15 @@ namespace App\Models\Product;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class ProductTemplate extends Model
+class Template extends Model
 {
     use HasFactory;
+    protected $table = 'prod_templates';
     protected $fillable = ['name', 'modified_by'];
 
-    public function productParameterConfigs()
+    public function parameterConfigs()
     {
-        return $this->hasMany(ProductParameterConfig::class);
+        return $this->hasMany(ParameterConfig::class);
     }
 
     public function products()

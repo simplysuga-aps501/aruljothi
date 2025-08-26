@@ -89,9 +89,10 @@ Route::middleware(['auth'])->group(function () {
 
         // 🧪 Units (used by AJAX modal)
         Route::post('/units', [UnitController::class, 'store'])->name('units.store');
+        Route::delete('/units/{id}', [UnitController::class, 'destroy'])->name('units.destroy');
 
-        // 🧾 HSN Codes (used by AJAX modal)
-        Route::post('/hsncodes', [HsncodeController::class, 'store'])->name('hsncodes.store');
+      Route::post('/hsncodes', [HsncodeController::class, 'store'])->name('hsncodes.store');
+      Route::delete('/hsncodes/{hsncode}', [HsncodeController::class, 'destroy'])->name('hsncodes.destroy');
 
         // 📋 Product Templates (optional - if you're managing templates)
         Route::resource('product-templates', ProductTemplateController::class)->only(['index', 'create', 'store', 'edit', 'update']);
