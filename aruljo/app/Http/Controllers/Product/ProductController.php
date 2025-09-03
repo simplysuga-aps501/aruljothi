@@ -63,7 +63,6 @@ public function getParameters($templateId)
               'unit_id' => 'nullable|exists:units,id',
               'hsncode_id' => 'nullable|exists:hsncodes,id',
               'selling_price' => 'nullable|numeric|min:0',
-              'manufacturing_cost' => 'nullable|numeric|min:0',
               'weight_kg' => 'nullable|numeric|min:0',
 
               // Parameters
@@ -89,7 +88,6 @@ public function getParameters($templateId)
                   'hsncode_id' => $validated['hsncode_id'] ?? null,
                   'stock_count' => 0,
                   'selling_price' => $validated['selling_price'] ?? 0,
-                  'manufacturing_cost' => $validated['manufacturing_cost'] ?? 0,
                   'weight_kg' => $validated['weight_kg'] ?? 0,
                   'modified_by' => auth()->id(),
               ]);
@@ -106,7 +104,6 @@ public function getParameters($templateId)
                   }
               }
 
-              // ✅ Store truck capacities (with & without body)
               // ✅ Store truck capacities (with & without body)
               if (!empty($validated['truck_capacities'])) {
                   foreach ($validated['truck_capacities'] as $truckId => $capacity) {
@@ -164,6 +161,85 @@ public function getParameters($templateId)
       }
   }
 
+   public function edit(Request $request, Product $product)
+   {
+
+       try {
+           $validated = $request->validate([
+               'edit_selling_price' => 'nullable|numeric|min:0',
+               'edit_weight_kg' => 'nullable|numeric|min:0',
+
+               'edit_truck_capacities' => 'nullable|array',
+               'edit_truck_capacities.*.with_body' => 'nullable|numeric|min:0',
+               'edit_truck_capacities.*.without_body' => 'nullable|numeric|min:0',
+           ]);
+
+           $product = DB::transaction(function () use ($validated, $product) {
+
+
+               $product->update([
+                   'selling_price' => $validated['edit_selling_price'] ?? $product->selling_price,
+                   'weight_kg' => $validated['edit_weight_kg'] ?? $product->weight_kg,
+                   'modified_by' => auth()->id(),
+               ]);
+
+               // Update truck capacities
+               if (!empty($validated['edit_truck_capacities'])) {
+                   foreach ($validated['edit_truck_capacities'] as $truckId => $capacity) {
+
+                       // WITH body
+                       if (isset($capacity['with_body'])) {
+                           $product->truckCapacities()->updateOrCreate(
+                               [
+                                   'truck_type_id' => $truckId,
+                                   'body_type' => 'with_body',
+                               ],
+                               [
+                                   'max_units' => $capacity['with_body'],
+                               ]
+                           );
+                       }
+
+                       // WITHOUT body
+                       if (isset($capacity['without_body'])) {
+                           $product->truckCapacities()->updateOrCreate(
+                               [
+                                   'truck_type_id' => $truckId,
+                                   'body_type' => 'without_body',
+                               ],
+                               [
+                                   'max_units' => $capacity['without_body'],
+                               ]
+                           );
+                       }
+                   }
+               }
+
+               return $product;
+           });
+
+           return response()->json([
+               'success' => true,
+               'message' => 'Product updated successfully.',
+               'product_id' => $product->id,
+           ]);
+
+       } catch (\Illuminate\Validation\ValidationException $e) {
+           return response()->json([
+               'success' => false,
+               'message' => $e->errors(),
+           ], 422);
+       } catch (\Throwable $e) {
+           \Log::error('Product Update Error: ' . $e->getMessage(), [
+               'trace' => $e->getTraceAsString()
+           ]);
+
+           return response()->json([
+               'success' => false,
+               'message' => 'Error updating product: ' . $e->getMessage(),
+           ], 500);
+       }
+   }
 
    public function destroy($id)
    {

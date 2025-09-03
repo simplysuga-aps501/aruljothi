@@ -143,7 +143,7 @@
                                                     <i class="fas fa-sticky-note"></i>
                                                 </a>
                                                 @role('admin')
-                                                    <i class="fas fa-trash text-danger" style="cursor:pointer; font-size:0.85rem; margin-left:8px;" 
+                                                    <i class="fas fa-trash text-danger" style="cursor:pointer; font-size:0.85rem; margin-left:8px;"
                                                         data-toggle="modal"
                                                         data-target="#deleteModal"
                                                         onclick="setDeleteAction('{{ route('leads.destroy', $lead->id) }}')"></i>
@@ -218,10 +218,12 @@
             new DataTable('#leads_table', {
                 responsive: true,
                 stateSave: true,
+                order: [],
                 // ordering: true, // allow sorting
                 columnControl: [['orderAsc', 'orderDesc', 'search']],
                 language: { emptyTable: "No leads available for this tab." },
-
+                pageLength: 25, // default selection
+                lengthMenu: [ [10, 25, 50, 100, -1], [10, 25, 50, 100, "All"] ],
                 stateSaveParams: function (settings, data) {
                     // Always reset ordering before saving state
                     data.order = [];

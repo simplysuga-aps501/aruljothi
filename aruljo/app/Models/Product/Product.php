@@ -17,10 +17,13 @@ class Product extends Model
         'sku',
         'name',
         'description',
-        'product_template_id',
+        'prod_template_id',
         'unit_id',
         'hsncode_id',
         'stock_count',
+        'selling_price',
+        'manufacturing_cost',
+        'weight_kg',
         'modified_by',
     ];
 
@@ -36,7 +39,7 @@ class Product extends Model
 
     public function template(): BelongsTo
     {
-        return $this->belongsTo(Template::class, 'template_id');
+        return $this->belongsTo(Template::class, 'prod_template_id');
     }
 
     public function parameterValues(): HasMany

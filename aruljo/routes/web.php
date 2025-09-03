@@ -101,6 +101,8 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/products/{id}', [ProductController::class, 'destroy'])->name('products.destroy');
 
         Route::get('/units', [UnitController::class, 'index']);
+        // PUT or PATCH route for editing product (selling price & weight only)
+        Route::put('/products/{product}/edit', [ProductController::class, 'edit'])->name('products.edit');
 
         /*
         |--------------------------------------------------------------------------

@@ -39,7 +39,6 @@ return new class extends Migration
 
             // ✅ New fields
             $table->decimal('selling_price', 10, 2)->default(0);      // Selling price
-            $table->decimal('manufacturing_cost', 10, 2)->default(0); // Manufacturing cost
             $table->decimal('weight_kg', 8, 2)->default(0);           // Weight per unit (kg)
 
             $table->unsignedBigInteger('modified_by')->nullable(); // User who last modified
