@@ -29,19 +29,8 @@
                             <input type="text" id="product_name" name="name" class="form-control" readonly>
                         </div>
 
-                        <div class="row mb-3">
-                            {{-- Unit --}}
-                            <div class="col-md-3">
-                                <label for="unit_id" class="form-label">Unit</label>
-                                <select id="unit_id" name="unit_id" class="form-control" required>
-                                    <option value="">-- Select Unit --</option>
-                                    @foreach ($units as $unit)
-                                        <option value="{{ $unit->id }}">{{ $unit->name }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-
-                            {{-- HSN Code --}}
+                        <div class="row mb-4">
+                           {{-- HSN Code --}}
                             <div class="col-md-3">
                                 <label for="hsncode_id" class="form-label">HSN Code</label>
                                 <select id="hsncode_id" name="hsncode_id" class="form-control" data-toggle="tooltip" required>
@@ -54,15 +43,33 @@
                                 </select>
                             </div>
 
-                            {{-- Selling Price --}}
-                            <div class="col-md-3">
-                                <label for="selling_price" class="form-label">Selling Price</label>
-                                <input type="number" step="0.01" min="0" id="selling_price" name="selling_price" class="form-control" required>
-                            </div>
+                            {{-- Quote Price --}}
+                           <div class="col-md-4">
+                               <label for="quote_price" class="form-label">
+                                   Quote Price
+                                   <i class="fas fa-info-circle text-primary"
+                                      data-toggle="tooltip"
+                                      data-placement="top"
+                                      title="Please enter the price for a single piece"></i>
+                               </label>
+                               <div class="input-group">
+                                   <input type="number" step="0.01" min="0" id="quote_price" name="quote_price"
+                                          class="form-control" placeholder="Enter price" required>
+                                   <div class="input-group-append">
+                                       <span class="input-group-text bg-light">NOS</span>
+                                   </div>
+                               </div>
+                           </div>
+
 
                             {{-- Weight --}}
-                            <div class="col-md-3">
-                                <label for="weight" class="form-label">Weight (kg)</label>
+                            <div class="col-md-4">
+                                <label for="weight" class="form-label">Weight (kg)
+                                     <i class="fas fa-info-circle text-primary"
+                                      data-toggle="tooltip"
+                                      data-placement="top"
+                                      title="Please enter the price for a single piece"></i>
+                                </label>
                                 <input type="number" step="0.01" min="0" id="weight" name="weight" class="form-control" required>
                             </div>
                         </div>
@@ -165,41 +172,46 @@
             $(this).attr('title', desc).tooltip('dispose').tooltip(); // refresh tooltip
         });
 
-        // ==================================================
-        // AUTO-GENERATE PRODUCT NAME
-        // ==================================================
-        $('#parameterFields').on('input change', '.param-input, .param-select, .param-unit', function () {
-            let parts = [];
+       // ==================================================
+       // AUTO-GENERATE PRODUCT NAME
+       // ==================================================
+       $('#parameterFields').on('input change', '.param-input, .param-select', function () {
+           let parts = [];
 
-            // From number inputs
-            $('#parameterFields .param-input').each(function () {
-                let val = $(this).val();
-                let unit = $(this).closest('.input-group').find('.param-unit').val();
-                let desc = $(this).attr('data-description');
-                if (val && unit && desc) {
-                    parts.push(`${val} ${unit} ${desc.toUpperCase().split(' ')[0]}`);
-                }
-            });
+           // From number inputs
+           $('#parameterFields .param-input[type="number"]').each(function () {
+               let val = $(this).val();
+               let unit = $(this).closest('.input-group').find('.param-unit').text().trim();
+               let desc = $(this).data('description');
+               if (val && desc) {
+                   if (unit) {
+                       parts.push(`${val} ${unit} ${desc.toUpperCase()}`);
+                   } else {
+                       parts.push(`${val} ${desc.toUpperCase()}`);
+                   }
+               }
+           });
 
-            // From dropdowns
-            $('#parameterFields .param-select').each(function () {
-                let val = $(this).val();
-                let desc = $(this).attr('data-description');
-                if (val && desc) {
-                    parts.push(`${val} ${desc.toUpperCase().split(' ')[0]}`);
-                } else if (val) {
-                    parts.push(val);
-                }
-            });
+           // From dropdowns
+           $('#parameterFields select.param-input').each(function () {
+               let val = $(this).val();
+               let desc = $(this).data('description');
+               if (val && desc) {
+                   parts.push(`${val} ${desc.toUpperCase()}`);
+               } else if (val) {
+                   parts.push(val);
+               }
+           });
 
-            // Add template name
-            let templateName = $('#product_template_id option:selected').text();
-            if (templateName) {
-                parts.push(`- ${templateName}`);
-            }
+           // Add template name at end
+           let templateName = $('#product_template_id option:selected').text();
+           if (templateName) {
+               parts.push(`- ${templateName}`);
+           }
 
-            $('#product_name').val(parts.join(' '));
-        });
+           $('#product_name').val(parts.join(' '));
+       });
+
 
         // ==================================================
         // CLEAR MODAL FORM
@@ -207,7 +219,7 @@
         $('#clearProductForm').on('click', function () {
             $('#addProductModal').find('form')[0].reset(); // reset form
             $('#parameterFields').empty(); // clear dynamic fields
-            $('#product_name, #selling_price, #weight').val('');
+            $('#product_name, #quote_price, #weight').val('');
             $('.truck-pipe-capacity').val('');
         });
 
@@ -221,32 +233,36 @@
             let unitId = $('#unit_id').val();
             let hsncodeId = $('#hsncode_id').val();
             let name = $('#product_name').val();
-            let sellingPrice = parseFloat($('#selling_price').val());
+            let quotePrice = parseFloat($('#quote_price').val());
             let weight = parseFloat($('#weight').val());
 
-            // Build parameters array
-            let parameters = [];
 
-            // Numeric input parameters
-            $('#parameterFields .param-input').each(function () {
-                let value = $(this).val();
-                let unit = $(this).closest('.input-group').find('.param-unit').val();
+            // Deduplicate parameters by parameter_id
+            let parametersMap = {};
+
+            // Numeric parameters
+            $('#parameterFields .param-input[type="number"]').each(function() {
                 let paramId = $(this).data('parameter-id');
-
+                let value = $(this).val();
+                let unit = $(this).closest('.input-group').find('.param-unit').text().trim(); // optional
                 if (paramId && value !== '') {
-                    parameters.push({ parameter_id: paramId, value, unit });
+                    parametersMap[paramId] = { parameter_id: paramId, value: value, unit: unit };
                 }
             });
 
-            // Dropdown parameters
-            $('#parameterFields .param-select').each(function () {
-                let value = $(this).val();
+            // Select parameters
+            $('#parameterFields .param-select').each(function() {
                 let paramId = $(this).data('parameter-id');
-
+                let value = $(this).val();
                 if (paramId && value !== '') {
-                    parameters.push({ parameter_id: paramId, value });
+                    parametersMap[paramId] = { parameter_id: paramId, value: value };
                 }
             });
+
+            // Convert map to array
+            let parameters = Object.values(parametersMap);
+
+
 
             // Truck capacities
             let truckCapacities = {};
@@ -264,7 +280,7 @@
                     truckCapacities[truckId][variant] = capacity;
                 }
             });
-
+            console.log(quotePrice);
             // Send data
             $.ajax({
                 url: '/products',
@@ -276,7 +292,7 @@
                     prod_template_id: productTemplateId,
                     unit_id: unitId,
                     hsncode_id: hsncodeId,
-                    selling_price: sellingPrice,
+                    quote_price: quotePrice,
                     weight_kg: weight,
                     parameters,
                     truck_capacities: truckCapacities
@@ -326,6 +342,12 @@
         if (optionObj.dependencies?.length) {
             let $lastInserted = $(this).closest('.col-md-3');
             optionObj.dependencies.forEach(dep => {
+                // Check if this parameter already exists in the DOM
+                let $existing = $(`#parameterFields [data-parameter-id="${dep.parameter.id}"]`);
+                if ($existing.length) {
+                    $existing.closest('.form-group').remove(); // remove duplicate
+                }
+
                 let html = generateParameterHTML(dep.parameter);
                 let $element = $(html).addClass(`dependent-of-${paramId}`);
                 $element.insertAfter($lastInserted);
@@ -338,31 +360,37 @@
     // PARAMETER RENDER FUNCTIONS
     // ==================================================
     function generateParameterHTML(param) {
-        let options = Array.isArray(param.options) ? param.options : [];
-        let units = Array.isArray(param.units) ? param.units : [];
-        let html = `<div class="col-md-3 col-12 mb-3"><label class="form-label">${param.name}</label>`;
+        let html = `<div class="form-group col-md-3">
+                        <label>${param.name}</label>`;
 
-        if (param.input_type === 'number') {
+            if (param.input_type === 'select') {
+                let options = Array.isArray(param.options) ? param.options : [];
+                html += `<select class="form-control param-input param-select"
+                                 data-parameter-id="${param.id}"
+                                 name="parameters[${param.id}][value]"
+                                 data-description="${param.description || ''}">
+                            <option value="">-- Select ${param.name} --</option>`;
+                options.forEach(option => {
+                    html += `<option value="${option.parameter_option}">${option.parameter_option}</option>`;
+                });
+                html += `</select>`;
+            }
+            else if (param.input_type === 'number') {
             html += `<div class="input-group">
-                        <input type="number" step="0.01" min="0" class="form-control param-input"
+                        <input type="number" step="0.01" min="0"
+                               class="form-control param-input"
                                data-parameter-id="${param.id}"
                                name="parameters[${param.id}][value]"
                                data-description="${param.description || ''}"
-                               placeholder="Enter ${param.name}" required>`;
-            html += `<select class="form-control param-unit">
-                        ${units.length ? units.map(u => `<option value="${u.name}">${u.name}</option>`).join('')
-                                       : '<option value="">-- No Units --</option>'}
-                     </select></div>`;
+                               placeholder="Enter ${param.name}" required>
+                        <div class="input-group-append">
+                            <span class="input-group-text bg-light param-unit">
+                                ${param.unit ? param.unit : ''}
+                            </span>
+                        </div>
+                     </div>`;
         }
-        else if (param.input_type === 'select') {
-            html += `<select class="form-control param-select"
-                           data-parameter-id="${param.id}"
-                           name="parameters[${param.id}][value]"
-                           data-description="${param.description || ''}" required>
-                        <option value="">-- Select --</option>
-                        ${options.map(opt => `<option value="${opt.parameter_option}">${opt.parameter_option}</option>`).join('')}
-                     </select>`;
-        }
+
         html += `</div>`;
         return html;
     }
@@ -373,7 +401,7 @@
             $('#parameterFields').append(generateParameterHTML(config.parameter));
         });
     }
-
+    /*
     // ==================================================
     // AUTO-CALCULATE TRUCK CAPACITY
     // ==================================================
@@ -395,8 +423,8 @@
     $('.truck-pipe-capacity').on('input', function () {
         $(this).data('userEdited', true);
     });
+    */
 
-    console.log("Partial script injected!");
 </script>
 @endpush
 

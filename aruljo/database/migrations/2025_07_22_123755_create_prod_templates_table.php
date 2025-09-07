@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('prod_templates', function (Blueprint $table) {
                     $table->id();
                     $table->string('name');
+                    $table->string('abbreviation', 10)->nullable();
                     $table->unsignedBigInteger('modified_by')->nullable();
                     $table->timestamps();
                 });

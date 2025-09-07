@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('products', function (Blueprint $table) {
             $table->id(); // BIGINT Primary Key
-            $table->string('sku'); // Stock keeping unit
+            $table->string('sku')->nullable();; // Stock keeping unit
             $table->string('name')->unique(); // Product name
             $table->text('description')->nullable(); // Optional product description
 
@@ -38,7 +38,7 @@ return new class extends Migration
             $table->integer('stock_count')->default(0); // Total stock quantity
 
             // ✅ New fields
-            $table->decimal('selling_price', 10, 2)->default(0);      // Selling price
+            $table->decimal('quote_price', 10, 2)->default(0);      // Selling price
             $table->decimal('weight_kg', 8, 2)->default(0);           // Weight per unit (kg)
 
             $table->unsignedBigInteger('modified_by')->nullable(); // User who last modified

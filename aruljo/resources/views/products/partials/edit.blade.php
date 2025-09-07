@@ -18,19 +18,35 @@
                             <input type="text" class="form-control" name="name" id="edit_product_name" readonly>
                         </div>
                         <div class="row mb-3">
+                            <!--Removing add unit because all the products should be viewed in NOS unit for inventory purposes
                             <div class="col-md-3">
                                  <label for="product_name">Unit</label>
                                  <input type="text" class="form-control" name="name" id="edit_unit_name" readonly>
                             </div>
-                            <div class="col-md-3">
+                            -->
+                            <div class="col-md-4">
                                 <label for="product_name">HSN Code</label>
                                 <input type="text" class="form-control" name="name" id="edit_hsncode_name" readonly>
                             </div>
-                            <div class="col-md-3">
-                                <label for="selling_price">Selling Price</label>
-                                <input type="number" step="0.01" min="0" class="form-control" name="edit_selling_price" id="edit_selling_price">
-                            </div>
-                            <div class="col-md-3">
+
+                            {{-- Quote Price --}}
+                           <div class="col-md-4">
+                               <label for="quote_price" class="form-label">
+                                   Quote Price
+                                   <i class="fas fa-info-circle text-primary"
+                                      data-toggle="tooltip"
+                                      data-placement="top"
+                                      title="Please enter the price for a single piece of the product"></i>
+                               </label>
+                               <div class="input-group">
+                                   <input type="number" step="0.01" min="0" id="edit_quote_price" name="edit_quote_price"
+                                          class="form-control" placeholder="Enter price" required>
+                                   <div class="input-group-append">
+                                       <span class="input-group-text bg-light">NOS</span>
+                                   </div>
+                               </div>
+                           </div>
+                            <div class="col-md-4">
                                 <label for="weight">Weight (kg)</label>
                                 <input type="number" step="0.01" min="0" class="form-control" name="edit_weight_kg" id="edit_weight_kg">
                             </div>
@@ -60,7 +76,7 @@
         let name = $el.attr('data-name');
         let unit = $el.attr('data-unit');
         let hsncode = $el.attr('data-hsncode');
-        let selling_price = $el.attr('data-selling_price');
+        let quote_price = $el.attr('data-quote_price');
         let manufacturing_cost = $el.attr('data-manufacturing_cost');
         let weight = $el.attr('data-weight');
         let truckCaps = JSON.parse($el.attr('data-truck_capacities') || '{}');
@@ -70,7 +86,7 @@
         $('#edit_product_name').val(name);
         $('#edit_unit_name').val(unit);
         $('#edit_hsncode_name').val(hsncode);
-        $('#edit_selling_price').val(selling_price);
+        $('#edit_quote_price').val(quote_price);
         $('#edit_weight_kg').val($(this).attr('data-weight'));
 
         let $container = $('#editTruckCapacities');
@@ -112,7 +128,7 @@
         $('#editProductForm').attr('action', '/products/' + id + '/edit');
         $('#editProductModal').modal('show');
     });
-
+    /*
     // Auto-calc capacities on weight change
     $(document).on('input', '#edit_weight_kg', function () {
         let weight = parseFloat($(this).val());
@@ -125,6 +141,7 @@
             }
         });
     });
+    */
     // AJAX submit for Edit Product Modal
     $('#editProductForm').on('submit', function(e) {
         e.preventDefault();
@@ -147,7 +164,7 @@
 
                     // Option 2: Update the table row dynamically (if you want)
                     // $('#productsTable').find('tr[data-id="' + res.product_id + '"]')
-                    //     .find('.selling-price-cell').text($('#edit_selling_price').val());
+                    //     .find('.selling-price-cell').text($('#edit_quote_price').val());
                 } else {
                     alert('Error: ' + JSON.stringify(res.message));
                 }

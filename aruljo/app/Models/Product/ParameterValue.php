@@ -31,11 +31,6 @@ class ParameterValue extends Model
         return $this->belongsTo(Parameter::class, 'prod_parameter_id');
     }
 
-    public function unit(): BelongsTo
-    {
-        return $this->belongsTo(Unit::class, 'unit_id');
-    }
-
     public function modifier(): BelongsTo
     {
         return $this->belongsTo(\App\Models\User::class, 'modified_by');

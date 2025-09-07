@@ -13,23 +13,40 @@ class ParameterOptionConfigSeeder extends Seeder
     {
         $now = Carbon::parse('2025-07-22 10:00:00');
 
-        // Notice we use 'parameter_name' instead of ID
         $options = [
-            ['parameter_name' => 'Shape', 'parameter_option' => 'Round'],
-            ['parameter_name' => 'Shape', 'parameter_option' => 'Square'],
-            ['parameter_name' => 'Cover', 'parameter_option' => 'With Lid'],
-            ['parameter_name' => 'Cover', 'parameter_option' => 'Without Lid'],
-            ['parameter_name' => 'Class', 'parameter_option' => 'NP2'],
-            ['parameter_name' => 'Class', 'parameter_option' => 'NP3'],
-            ['parameter_name' => 'Class', 'parameter_option' => 'NP4'],
-            ['parameter_name' => 'Pipe Type', 'parameter_option' => 'Plain'],
-            ['parameter_name' => 'Pipe Type', 'parameter_option' => 'Spygot'],
-            ['parameter_name' => 'Pipe Type', 'parameter_option' => 'Male Female'],
-            ['parameter_name' => 'Pipe Type', 'parameter_option' => 'Plain End With Separate Collar'],
-            ['parameter_name' => 'Handle', 'parameter_option' => 'With Handle'],
-            ['parameter_name' => 'Handle', 'parameter_option' => 'Without Handle'],
-            ['parameter_name' => 'Partition', 'parameter_option' => 'Two Halves'],
-            ['parameter_name' => 'Partition', 'parameter_option' => 'Single Piece'],
+            // Shape
+            ['parameter_name' => 'Shape', 'parameter_option' => 'Round',  'abbreviation' => 'RND'],
+            ['parameter_name' => 'Shape', 'parameter_option' => 'Square', 'abbreviation' => 'SQR'],
+
+            // Cover
+            ['parameter_name' => 'Cover', 'parameter_option' => 'With Lid',    'abbreviation' => 'LID'],
+            ['parameter_name' => 'Cover', 'parameter_option' => 'Without Lid', 'abbreviation' => null],
+
+            // Class (no abbreviations — keep same as option)
+            ['parameter_name' => 'Class', 'parameter_option' => 'NP2', 'abbreviation' => 'NP2'],
+            ['parameter_name' => 'Class', 'parameter_option' => 'NP3', 'abbreviation' => 'NP3'],
+            ['parameter_name' => 'Class', 'parameter_option' => 'NP4', 'abbreviation' => 'NP4'],
+
+            // Pipe Type
+            ['parameter_name' => 'Pipe Type', 'parameter_option' => 'Plain',                        'abbreviation' => 'PLN'],
+            ['parameter_name' => 'Pipe Type', 'parameter_option' => 'Spygot',                       'abbreviation' => 'SPG'],
+            ['parameter_name' => 'Pipe Type', 'parameter_option' => 'Male Female',                  'abbreviation' => 'MF'],
+            ['parameter_name' => 'Pipe Type', 'parameter_option' => 'Plain End With Separate Collar','abbreviation' => 'PEWC'],
+
+            // Handle
+            ['parameter_name' => 'Handle', 'parameter_option' => 'With Handle',    'abbreviation' => 'HDL'],
+            ['parameter_name' => 'Handle', 'parameter_option' => 'Without Handle', 'abbreviation' => null],
+
+            // Partition
+            ['parameter_name' => 'Partition', 'parameter_option' => 'Two Halves',   'abbreviation' => '2H'],
+            ['parameter_name' => 'Partition', 'parameter_option' => 'Single Piece', 'abbreviation' => '1P'],
+
+            // Strength for Manhole Cover
+            ['parameter_name' => 'Grade', 'parameter_option' => 'Medium Duty',      'abbreviation' => 'MD'],
+            ['parameter_name' => 'Grade', 'parameter_option' => 'Heavy Duty',       'abbreviation' => 'HD'],
+            ['parameter_name' => 'Grade', 'parameter_option' => 'Extra Heavy Duty', 'abbreviation' => 'EHD'],
+
+
         ];
 
         foreach ($options as $entry) {
@@ -38,10 +55,11 @@ class ParameterOptionConfigSeeder extends Seeder
             if ($parameter) {
                 ParameterOptionConfig::create([
                     'prod_parameter_id' => $parameter->id,
-                    'parameter_option'     => $entry['parameter_option'],
-                    'modified_by'          => null,
-                    'created_at'           => $now,
-                    'updated_at'           => $now,
+                    'parameter_option'  => $entry['parameter_option'],
+                    'abbreviation'      => $entry['abbreviation'],
+                    'modified_by'       => null,
+                    'created_at'        => $now,
+                    'updated_at'        => $now,
                 ]);
             }
         }

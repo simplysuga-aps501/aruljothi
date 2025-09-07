@@ -16,9 +16,11 @@ class ParameterConfigSeeder extends Seeder
             ['template' => 'offcut rcc pipe',     'parameters' => ['Diameter', 'Length', 'Class']],
             ['template' => 'chamber',    'parameters' => ['Shape', 'Cover']],
             ['template' => 'ring',       'parameters' => ['Diameter', 'Thickness', 'Height', 'Cover']],
-            ['template' => 'vtrough',    'parameters' => ['KV', 'Length', 'Thickness']],
+            ['template' => 'v trough',    'parameters' => ['Voltage', 'Len', 'Thickness']],
             ['template' => 'water tank', 'parameters' => ['Shape','Capacity', 'Class']],
             ['template' => 'cover',      'parameters' => ['Shape','Handle', 'Partition']],
+            ['template' => 'manhole cover',   'parameters' => ['MHC_Size', 'Grade']],
+
         ];
 
         // Build maps

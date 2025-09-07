@@ -10,11 +10,9 @@ use App\Models\Product\Hsncode;
 use App\Models\Product\ParameterConfig;
 use App\Models\Product\ParameterValue;
 use App\Models\Transport\TruckType;
-use App\Models\Transport\TruckCapacity;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-
 
 class ProductController extends Controller
 {
@@ -23,7 +21,7 @@ class ProductController extends Controller
      */
     public function index()
     {
-     return view('products.index', [
+        return view('products.index', [
             'products' => Product::with(['unit', 'hsncode'])->get(),
             'product_templates' => Template::all(),
             'units' => Unit::all(),
@@ -35,218 +33,263 @@ class ProductController extends Controller
     /**
      * Load parameters dynamically based on template
      */
-public function getParameters($templateId)
-{
-    $configs = ParameterConfig::with([
-        'parameter.options.dependencies.parameter.options',
-        'parameter.options.dependencies.parameter.units',
-        'parameter.units',
-    ])
-    ->where('prod_template_id', $templateId)
-    ->get();
+    public function getParameters($templateId)
+    {
+        $configs = ParameterConfig::with([
+            'parameter.options.dependencies.parameter.options',
+            // removed parameter.units relation (no separate table now)
+        ])
+        ->where('prod_template_id', $templateId)
+        ->get();
 
-    return response()->json([
-        'configs' => $configs,
-    ]);
-}
-
+        return response()->json([
+            'configs' => $configs,
+        ]);
+    }
 
     /**
      * Store a new product with its parameter values
      */
-   public function store(Request $request)
-  {
-      try {
-          $validated = $request->validate([
-              'name' => 'required|string|max:255|unique:products,name',
-              'prod_template_id' => 'nullable|exists:prod_templates,id',
-              'unit_id' => 'nullable|exists:units,id',
-              'hsncode_id' => 'nullable|exists:hsncodes,id',
-              'selling_price' => 'nullable|numeric|min:0',
-              'weight_kg' => 'nullable|numeric|min:0',
+    public function store(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'name' => 'required|string|max:255|unique:products,name',
+                'prod_template_id' => 'nullable|exists:prod_templates,id',
+                'unit_id' => 'nullable|exists:units,id',
+                'hsncode_id' => 'nullable|exists:hsncodes,id',
+                'quote_price' => 'nullable|numeric|min:0',
+                'weight_kg' => 'nullable|numeric|min:0',
+                'parameters' => 'nullable|array',
+                'parameters.*.parameter_id' => 'required|exists:prod_parameters,id',
+                'parameters.*.value' => 'required',
+                'truck_capacities' => 'nullable|array',
+                'truck_capacities.*.with_body' => 'nullable|numeric|min:0',
+                'truck_capacities.*.without_body' => 'nullable|numeric|min:0',
+            ]);
 
-              // Parameters
-              'parameters' => 'nullable|array',
-              'parameters.*.parameter_id' => 'required|exists:prod_parameters,id',
-              'parameters.*.value' => 'required',
-              'parameters.*.unit_id' => 'nullable|exists:prod_parameter_units,id',
+            Log::debug('✅ Validated product data', ['validated' => $validated]);
 
-              // Truck Capacities
-              'truck_capacities' => 'nullable|array',
-              'truck_capacities.*.with_body' => 'nullable|numeric|min:0',
-              'truck_capacities.*.without_body' => 'nullable|numeric|min:0',
-          ]);
+            $product = DB::transaction(function () use ($validated, $request) {
+                // Create product
+                $product = Product::create([
+                    'name'            => strtoupper($validated['name']),
+                    'description'     => $request->input('description', ''),
+                    'prod_template_id'=> $validated['prod_template_id'] ?? null,
+                    'unit_id'         => $validated['unit_id'] ?? null,
+                    'hsncode_id'      => $validated['hsncode_id'] ?? null,
+                    'stock_count'     => 0,
+                    'quote_price'     => $validated['quote_price'] ?? 0,
+                    'weight_kg'       => $validated['weight_kg'] ?? 0,
+                    'modified_by'     => auth()->id(),
+                ]);
 
-          $product = DB::transaction(function () use ($validated, $request) {
-              // ✅ Create product
-              $product = Product::create([
-                  'name' => strtoupper($validated['name']),
-                  'sku' => 'PRD-' . strtoupper(uniqid()),
-                  'description' => $request->input('description', ''),
-                  'prod_template_id' => $validated['prod_template_id'] ?? null,
-                  'unit_id' => $validated['unit_id'] ?? null,
-                  'hsncode_id' => $validated['hsncode_id'] ?? null,
-                  'stock_count' => 0,
-                  'selling_price' => $validated['selling_price'] ?? 0,
-                  'weight_kg' => $validated['weight_kg'] ?? 0,
-                  'modified_by' => auth()->id(),
-              ]);
+                Log::debug('✅ Created Product', ['product_id' => $product->id, 'name' => $product->name]);
 
-              // ✅ Store parameter values
-              if (!empty($validated['parameters'])) {
-                  foreach ($validated['parameters'] as $param) {
-                      $product->parameterValues()->create([
-                          'prod_parameter_id' => $param['parameter_id'],
-                          'value' => $param['value'],
-                          'unit_id' => $param['unit_id'] ?? null,
-                          'modified_by' => auth()->id(),
-                      ]);
-                  }
-              }
+                // Save parameter values
+                $savedParams = [];
+                if (!empty($validated['parameters'])) {
+                    foreach ($validated['parameters'] as $param) {
+                        $pv = $product->parameterValues()->create([
+                            'prod_parameter_id' => $param['parameter_id'],
+                            'value'             => $param['value'],
+                            'modified_by'       => auth()->id(),
+                        ]);
+                        $savedParams[] = $pv;
+                        Log::debug('📝 Parameter saved', [
+                            'parameter_id' => $param['parameter_id'],
+                            'value' => $param['value'],
+                            'pv_id' => $pv->id
+                        ]);
+                    }
+                }
 
-              // ✅ Store truck capacities (with & without body)
-              if (!empty($validated['truck_capacities'])) {
-                  foreach ($validated['truck_capacities'] as $truckId => $capacity) {
+                // Save truck capacities
+                if (!empty($validated['truck_capacities'])) {
+                    foreach ($validated['truck_capacities'] as $truckId => $capacity) {
+                        if (!empty($capacity['with_body'])) {
+                            $tc = $product->truckCapacities()->updateOrCreate(
+                                ['truck_type_id' => $truckId, 'body_type' => 'with_body'],
+                                ['max_units' => $capacity['with_body']]
+                            );
+                            Log::debug('🚚 Truck capacity saved (with body)', ['truck_id' => $truckId, 'capacity' => $capacity['with_body'], 'tc_id' => $tc->id]);
+                        }
+                        if (!empty($capacity['without_body'])) {
+                            $tc = $product->truckCapacities()->updateOrCreate(
+                                ['truck_type_id' => $truckId, 'body_type' => 'without_body'],
+                                ['max_units' => $capacity['without_body']]
+                            );
+                            Log::debug('🚚 Truck capacity saved (without body)', ['truck_id' => $truckId, 'capacity' => $capacity['without_body'], 'tc_id' => $tc->id]);
+                        }
+                    }
+                }
 
-                      // Save WITH body only if > 0
-                      if (!empty($capacity['with_body'])) {
-                          $product->truckCapacities()->updateOrCreate(
-                              [
-                                  'truck_type_id' => $truckId,
-                                  'body_type' => 'with_body',
-                              ],
-                              [
-                                  'max_units' => $capacity['with_body'],
-                              ]
-                          );
+                // Build SKU
+                $skuParts = [];
+                if ($product->template && $product->template->abbreviation) {
+                    $skuParts[] = strtoupper($product->template->abbreviation);
+                }
+
+                $paramModels = \App\Models\Product\Parameter::with('options')
+                    ->whereIn('id', collect($validated['parameters'] ?? [])->pluck('parameter_id'))
+                    ->get();
+
+                $seenParams = [];
+                foreach ($validated['parameters'] ?? [] as $param) {
+                    if (in_array($param['parameter_id'], $seenParams)) continue;
+                    $seenParams[] = $param['parameter_id'];
+
+                    $pModel = $paramModels->firstWhere('id', $param['parameter_id']);
+                    if (!$pModel) {
+                        Log::debug('❌ Parameter model not found', ['param' => $param]);
+                        continue;
+                    }
+
+                    Log::debug('🔍 Processing parameter', [
+                        'id' => $pModel->id,
+                        'name' => $pModel->name,
+                        'type' => $pModel->input_type,
+                        'value' => $param['value']
+                    ]);
+
+                    if ($pModel->input_type === 'number') {
+                        $abbr = $pModel->abbreviation ?: '';
+                        $part = strtoupper($param['value'] . $abbr);
+                        Log::debug('➡️ Number SKU part', ['part' => $part]);
+                        $skuParts[] = $part;
+                        Log::debug('Inside number');
+
+                    } elseif ($pModel->input_type === 'select') {
+                          $opt  = $pModel->options->firstWhere('parameter_option', $param['value']);
+                          $abbr = $opt && $opt->abbreviation ? $opt->abbreviation : null;
+
+                          // Skip if abbreviation is null or empty
+                          if (!$abbr) {
+                              Log::debug('Skipping SKU part because abbreviation is null', ['option' => $param['value']]);
+                              continue;
+                          }
+
+                          $part = strtoupper($abbr);
+                          $skuParts[] = $part;
+
+                          Log::debug('➡️ Select SKU part', [
+                              'option' => $param['value'],
+                              'abbr'   => $abbr,
+                              'part'   => $part
+                          ]);
+                          Log::debug('Inside select');
                       }
 
-                      // Save WITHOUT body only if > 0
-                      if (!empty($capacity['without_body'])) {
-                          $product->truckCapacities()->updateOrCreate(
-                              [
-                                  'truck_type_id' => $truckId,
-                                  'body_type' => 'without_body',
-                              ],
-                              [
-                                  'max_units' => $capacity['without_body'],
-                              ]
-                          );
-                      }
-                  }
-              }
-              return $product;
-          });
+                }
 
-          return response()->json([
-              'success' => true,
-              'message' => 'Product created successfully.',
-              'product_id' => $product->id,
-          ]);
+                $sku = implode('-', $skuParts);
+                $product->update(['sku' => $sku]);
+                Log::debug('🏷 Final SKU', ['sku' => $sku, 'product_id' => $product->id]);
 
-      } catch (\Illuminate\Validation\ValidationException $e) {
-          return response()->json([
-              'success' => false,
-              'message' => $e->errors(),
-          ], 422);
-      } catch (\Throwable $e) {
-          \Log::error('Product Create Error: ' . $e->getMessage(), [
-              'trace' => $e->getTraceAsString()
-          ]);
+                return $product;
+            });
 
-          return response()->json([
-              'success' => false,
-              'message' => 'Error creating product: ' . $e->getMessage(),
-          ], 500);
-      }
-  }
+            return response()->json([
+                'success' => true,
+                'message' => 'Product created successfully.',
+                'product_id' => $product->id,
+            ]);
 
-   public function edit(Request $request, Product $product)
-   {
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->errors(),
+            ], 422);
+        } catch (\Throwable $e) {
+            Log::error('Product Create Error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
 
-       try {
-           $validated = $request->validate([
-               'edit_selling_price' => 'nullable|numeric|min:0',
-               'edit_weight_kg' => 'nullable|numeric|min:0',
-
-               'edit_truck_capacities' => 'nullable|array',
-               'edit_truck_capacities.*.with_body' => 'nullable|numeric|min:0',
-               'edit_truck_capacities.*.without_body' => 'nullable|numeric|min:0',
-           ]);
-
-           $product = DB::transaction(function () use ($validated, $product) {
-
-
-               $product->update([
-                   'selling_price' => $validated['edit_selling_price'] ?? $product->selling_price,
-                   'weight_kg' => $validated['edit_weight_kg'] ?? $product->weight_kg,
-                   'modified_by' => auth()->id(),
-               ]);
-
-               // Update truck capacities
-               if (!empty($validated['edit_truck_capacities'])) {
-                   foreach ($validated['edit_truck_capacities'] as $truckId => $capacity) {
-
-                       // WITH body
-                       if (isset($capacity['with_body'])) {
-                           $product->truckCapacities()->updateOrCreate(
-                               [
-                                   'truck_type_id' => $truckId,
-                                   'body_type' => 'with_body',
-                               ],
-                               [
-                                   'max_units' => $capacity['with_body'],
-                               ]
-                           );
-                       }
-
-                       // WITHOUT body
-                       if (isset($capacity['without_body'])) {
-                           $product->truckCapacities()->updateOrCreate(
-                               [
-                                   'truck_type_id' => $truckId,
-                                   'body_type' => 'without_body',
-                               ],
-                               [
-                                   'max_units' => $capacity['without_body'],
-                               ]
-                           );
-                       }
-                   }
-               }
-
-               return $product;
-           });
-
-           return response()->json([
-               'success' => true,
-               'message' => 'Product updated successfully.',
-               'product_id' => $product->id,
-           ]);
-
-       } catch (\Illuminate\Validation\ValidationException $e) {
-           return response()->json([
-               'success' => false,
-               'message' => $e->errors(),
-           ], 422);
-       } catch (\Throwable $e) {
-           \Log::error('Product Update Error: ' . $e->getMessage(), [
-               'trace' => $e->getTraceAsString()
-           ]);
-
-           return response()->json([
-               'success' => false,
-               'message' => 'Error updating product: ' . $e->getMessage(),
-           ], 500);
-       }
-   }
-
-   public function destroy($id)
-   {
-       Product::findOrFail($id)->delete();
-       return redirect()->route('products.index')->with('success', 'Product deleted successfully.');
-   }
+            return response()->json([
+                'success' => false,
+                'message' => 'Error creating product: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
 
 
 
+    public function edit(Request $request, Product $product)
+    {
+        try {
+            $validated = $request->validate([
+                'edit_quote_price' => 'nullable|numeric|min:0',
+                'edit_weight_kg' => 'nullable|numeric|min:0',
+
+                'edit_truck_capacities' => 'nullable|array',
+                'edit_truck_capacities.*.with_body' => 'nullable|numeric|min:0',
+                'edit_truck_capacities.*.without_body' => 'nullable|numeric|min:0',
+            ]);
+
+            $product = DB::transaction(function () use ($validated, $product) {
+                $product->update([
+                    'quote_price' => $validated['edit_quote_price'] ?? $product->quote_price,
+                    'weight_kg' => $validated['edit_weight_kg'] ?? $product->weight_kg,
+                    'modified_by' => auth()->id(),
+                ]);
+
+                if (!empty($validated['edit_truck_capacities'])) {
+                    foreach ($validated['edit_truck_capacities'] as $truckId => $capacity) {
+                        if (isset($capacity['with_body'])) {
+                            $product->truckCapacities()->updateOrCreate(
+                                [
+                                    'truck_type_id' => $truckId,
+                                    'body_type' => 'with_body',
+                                ],
+                                [
+                                    'max_units' => $capacity['with_body'],
+                                ]
+                            );
+                        }
+
+                        if (isset($capacity['without_body'])) {
+                            $product->truckCapacities()->updateOrCreate(
+                                [
+                                    'truck_type_id' => $truckId,
+                                    'body_type' => 'without_body',
+                                ],
+                                [
+                                    'max_units' => $capacity['without_body'],
+                                ]
+                            );
+                        }
+                    }
+                }
+
+                return $product;
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Product updated successfully.',
+                'product_id' => $product->id,
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->errors(),
+            ], 422);
+        } catch (\Throwable $e) {
+            Log::error('Product Update Error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error updating product: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function destroy($id)
+    {
+        Product::findOrFail($id)->delete();
+        return redirect()->route('products.index')->with('success', 'Product deleted successfully.');
+    }
 }

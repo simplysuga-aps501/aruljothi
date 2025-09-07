@@ -14,8 +14,6 @@ class DatabaseSeeder extends Seeder
     {
        $this->call(templateSeeder::class);
        $this->call(ParameterSeeder::class);
-       $this->call(ParameterUnitSeeder::class);
-       $this->call(ParameterUnitConfigSeeder::class);
        $this->call(ParameterOptionConfigSeeder::class);
        $this->call(ParameterConfigSeeder::class);
        $this->call(ParameterOptionDependenciesSeeder::class);

@@ -24,9 +24,11 @@
     {{-- Action Buttons --}}
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div class="btn-group">
+            <!--Removing add unit because all the products should be viewed in NOS unit for inventory purposes
             <button class="btn btn-outline-primary" data-toggle="modal" data-target="#addUnitModal">
                 <i class="fas fa-balance-scale"></i> Add Unit
             </button>
+            -->
             <button class="btn btn-outline-secondary" data-toggle="modal" data-target="#addHSNCodeModal">
                 <i class="fas fa-barcode"></i> Add HSN Code
             </button>
@@ -46,8 +48,8 @@
             <thead>
                 <tr>
                     <th>S. No.</th>
+                    <th>SKU</th>
                     <th>Product</th>
-                    <th>Name</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -55,23 +57,26 @@
             @foreach ($products as $product)
             <tr>
                 <td>{{ $loop->iteration }}</td>
-                <td>{{ strtoupper($product->template->name ?? '') }}</td>
                 <td>
                     <a href="#"
                        class="edit-product"
+                       title="{{ $product->name }}"
                        data-id="{{ $product->id }}"
                        data-name="{{ $product->name }}"
-                       data-unit="{{ $product->unit->name}}"
+                       data-sku="{{ $product->sku }}"
+                       data-unit="NOS"
                        data-hsncode="{{ $product->hsncode->name}}"
-                       data-selling_price="{{ $product->selling_price }}"
+                       data-quote_price="{{ $product->quote_price }}"
                        data-manufacturing_cost="{{ $product->manufacturing_cost }}"
                        data-weight="{{ $product->weight_kg }}"
                        data-truck_capacities='@json($product->truckCapacities->mapWithKeys(function($tc) {
                            return [$tc->truck_type_id . "_" . $tc->body_type => $tc->max_units];
                        }))'>
-                        {{ $product->name }}
+                        {{ $product->sku }}
                     </a>
                 </td>
+            <td>{{ strtoupper($product->template->name ?? '') }}</td>
+
                 <td>
                     <div class="btn-group btn-group-sm">
                         <x-adminlte-button theme="outline-danger" icon="fas fa-trash"
@@ -88,7 +93,8 @@
 
 @include('products.partials.create')
 @include('products.partials.edit')
-@include('products.partials.unit')
+<!--Removing add unit because all the products should be viewed in NOS unit for inventory purposes-->
+<!--@include('products.partials.unit')-->
 @include('products.partials.hsn')
 @include('products.partials.delete')
 @stop

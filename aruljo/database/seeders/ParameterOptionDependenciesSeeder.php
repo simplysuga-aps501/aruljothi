@@ -21,7 +21,7 @@ class ParameterOptionDependenciesSeeder extends Seeder
         // Define dependencies using names
         $dependencies = [
             ['option' => 'Round',  'requires' => ['Diameter', 'Thickness','Height']],
-            ['option' => 'Square', 'requires' => ['Length', 'Width', 'Height']],
+            ['option' => 'Square', 'requires' => ['Size', 'Height']],
             ['option' => 'With Lid', 'requires' => ['Handle', 'Partition']],
         ];
 

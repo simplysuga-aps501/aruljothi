@@ -21,7 +21,7 @@ class Product extends Model
         'unit_id',
         'hsncode_id',
         'stock_count',
-        'selling_price',
+        'quote_price',
         'manufacturing_cost',
         'weight_kg',
         'modified_by',

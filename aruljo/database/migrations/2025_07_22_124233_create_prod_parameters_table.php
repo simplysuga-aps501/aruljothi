@@ -15,6 +15,8 @@ return new class extends Migration
                     $table->id();
                     $table->string('name');
                     $table->string('description')->nullable();
+                    $table->string('abbreviation', 20)->nullable();
+                    $table->string('unit', 20)->nullable();
                     $table->enum('input_type', ['select', 'number'])->default('select');
                     $table->unsignedBigInteger('modified_by')->nullable();
                     $table->timestamps();

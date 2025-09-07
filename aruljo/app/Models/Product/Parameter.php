@@ -19,16 +19,6 @@ class Parameter extends Model
         'modified_by'
     ];
 
-    public function units()
-    {
-        return $this->belongsToMany(
-            ParameterUnit::class,
-            'prod_parameter_unit_configs',
-            'prod_parameter_id',
-            'prod_parameter_unit_id'
-        );
-    }
-
     public function options()
     {
         return $this->hasMany(ParameterOptionConfig::class, 'prod_parameter_id');
