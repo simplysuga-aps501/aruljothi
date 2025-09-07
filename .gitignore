@@ -17,6 +17,7 @@ aruljo/yarn-error.log
 aruljo/.fleet
 aruljo/.idea
 aruljo/.vscode
+.DS_Store
 # Ignore everything in the storage directory
 aruljo/storage/*
 
