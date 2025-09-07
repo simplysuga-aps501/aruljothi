@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html data-theme="custom_light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link href="./output.css" rel="stylesheet" />
+
+    <!-- Google fonts import  -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <!-- All fonts single link -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Doto:wght@100..900&family=Faculty+Glyphic&family=Merriweather:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400;1,700;1,900&family=Monomakh&family=Outfit:wght@100..900&family=Quicksand:wght@300..700&family=Titillium+Web:ital,wght@0,200;0,300;0,400;0,600;0,700;0,900;1,200;1,300;1,400;1,600;1,700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Dummy Image link in case needed  -->
+    <!-- https://cdn.easyfrontend.com/pictures/portfolio/portfolio6.jpg -->
+
+    <!-- Tabler fonts for icons -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css"
+    />
+
+    <!-- Google Icons -->
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=neurology"
+    />
+
+    <style>
+      .ezy__portfolio8 {
+        /* Bootstrap variables */
+        --bs-body-color: #252d39;
+        --bs-body-bg: #dddddd;
+
+        /* Easy Frontend variables */
+        --ezy-theme-color: rgb(13, 110, 253);
+        --ezy-theme-color-rgb: 13, 110, 253;
+        --ezy-item-bg: #ffffff;
+        --ezy-item-shadow: 0px 4px 44px rgba(159, 190, 218, 0.17);
+
+        background-color: var(--bs-body-bg);
+        overflow: hidden;
+        padding: 60px 0;
+      }
+
+      @media (min-width: 768px) {
+        .ezy__portfolio8 {
+          padding: 100px 0;
+        }
+      }
+
+      /* Gray Block Style */
+      .gray .ezy__portfolio8,
+      .ezy__portfolio8.gray {
+        /* Bootstrap variables */
+        --bs-body-bg: rgb(246, 246, 246);
+
+        /* Easy Frontend variables */
+        --ezy-item-bg: #f6f6f6;
+        --ezy-item-shadow: 0px 4px 44px rgba(186, 155, 155, 0.17);
+      }
+
+      /* Dark Gray Block Style */
+      .dark-gray .ezy__portfolio8,
+      .ezy__portfolio8.dark-gray {
+        /* Bootstrap variables */
+        --bs-body-color: #ffffff;
+        --bs-body-bg: rgb(30, 39, 53);
+
+        /* Easy Frontend variables */
+        --ezy-item-bg: #222f3e;
+        --ezy-item-shadow: none;
+      }
+
+      /* Dark Block Style */
+      .dark .ezy__portfolio8,
+      .ezy__portfolio8.dark {
+        /* Bootstrap variables */
+        --bs-body-color: #ffffff;
+        --bs-body-bg: rgb(11, 23, 39);
+
+        /* Easy Frontend variables */
+        --ezy-item-bg: #162231;
+        --ezy-item-shadow: none;
+      }
+
+      .ezy__portfolio8-heading {
+        font-weight: bold;
+        font-size: 25px;
+        line-height: 25px;
+        color: var(--bs-body-color);
+      }
+
+      @media (min-width: 768px) {
+        .ezy__portfolio8-heading {
+          font-size: 45px;
+          line-height: 45px;
+        }
+      }
+
+      .ezy__portfolio8-sub-heading {
+        font-size: 16px;
+        line-height: 22px;
+        color: var(--bs-body-color);
+      }
+
+      .ezy__portfolio8-item {
+        background-color: var(--ezy-item-bg);
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: var(--ezy-item-shadow);
+        transition: transform 0.25s ease-in-out;
+      }
+
+      .ezy__portfolio8-item:hover {
+        transform: translateY(-5px);
+      }
+
+      .ezy__portfolio8-banner {
+        border-radius: 10px;
+      }
+
+      .ezy__portfolio8-list
+        [class*="col-"]:nth-of-type(1n)
+        .ezy__portfolio8-banner {
+        background-color: #c5e8e2;
+      }
+
+      .ezy__portfolio8-list
+        [class*="col-"]:nth-of-type(2n)
+        .ezy__portfolio8-banner {
+        background-color: #b6cbf4;
+      }
+
+      .ezy__portfolio8-list
+        [class*="col-"]:nth-of-type(3n)
+        .ezy__portfolio8-banner {
+        background-color: #fcc4c4;
+      }
+
+      .ezy__portfolio8-banner img {
+        border-radius: 10px;
+        margin-bottom: -50px;
+      }
+
+      .ezy__portfolio8-content {
+        margin-top: 50px;
+      }
+
+      .ezy__portfolio8-content * {
+        color: var(--bs-body-color);
+      }
+
+      .ezy__portfolio8-btn {
+        padding: 7px 20px;
+        min-width: 120px;
+        border-color: var(--ezy-theme-color);
+      }
+
+      .ezy__portfolio8-btn:hover {
+        color: #fff;
+        background-color: var(--ezy-theme-color);
+        border-color: var(--ezy-theme-color);
+      }
+    </style>
+  </head>
+  <body>
+    <!-- navbar -->
+
+    <div class="navbar bg-primary text-base-content">
+      <!-- <button class="btn btn-ghost text-xl">daisyUI</button> -->
+      <div class="navbar bg-base-100">
+        <div class="navbar-start">
+          <div class="dropdown">
+            <div tabindex="0" role="button" class="btn btn-ghost lg:hidden">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M4 6h16M4 12h8m-8 6h16"
+                />
+              </svg>
+            </div>
+            <ul
+              tabindex="0"
+              class="menu menu-sm dropdown-content bg-base-100 rounded-box z-[1] mt-3 w-52 p-2 shadow"
+            >
+              <li><a href="./index.html">Home</a></li>
+              <li><a href="./aboutus.html">About</a></li>
+              <li>
+                <a>Products</a>
+                <ul class="p-2">
+                  <li><a>Pipes</a></li>
+                  <!-- <li><a>Projects</a></li> -->
+                </ul>
+              </li>
+              <li><a href="./clients.html">Clients</a></li>
+              <!-- <li><a href="./contact_us.html">Contact Us</a></li> -->
+            </ul>
+          </div>
+          <a class="btn btn-ghost text-xl"> Aruljothi Pipes</a>
+        </div>
+        <div class="navbar-center hidden lg:flex">
+          <ul class="menu menu-horizontal px-1">
+            <li><a href="./index.html">Home</a></li>
+            <li><a href="./aboutus.html">About</a></li>
+            <li>
+              <details>
+                <summary>Products</summary>
+                <ul class="p-2">
+                  <li><a>Pipes</a></li>
+                  <!-- <li><a>Projects</a></li> -->
+                </ul>
+              </details>
+            </li>
+            <li><a href="./clients.html">Clients</a></li>
+            <li><a href="./contact_us.html">Contact Us</a></li>
+          </ul>
+        </div>
+        <div class="navbar-end"></div>
+      </div>
+    </div>
+
+    <!-- Product Section starts -->
+    <section
+      class="ezy__portfolio8 light py-14 md:py-24 bg-white dark:bg-[#0b1727] text-slate-800 dark:text-white"
+    >
+      <div class="container px-4 mx-auto">
+        <div class="grid grid-cols-12 justify-center mb-6 md:mb-12">
+          <div class="col-span-12 lg:col-span-6 lg:col-start-4 text-center">
+            <h2
+              class="text-3xl md:text-[45px] underline underline-offset-4 decoration-2 font-Merriweather mb-6"
+            >
+              Our Products
+            </h2>
+            <p class="mb-2 text-2xl font-Titillium">This is what we do</p>
+          </div>
+        </div>
+
+        <div
+          class="grid grid-cols-6 gap-6 gap-y-8 lg:gap-y-0 max-w-7xl mx-auto"
+        >
+          <!-- Card1 -->
+          <div class="col-span-6 md:col-span-3 lg:col-span-2">
+            <div
+              class="relative bg-white shadow-xl dark:bg-slate-800 hover:-translate-y-1 mt-6 duration-300 rounded-xl"
+            >
+              <div
+                class="bg-green-100 flex rounded-xl p-6 lg:p-12 pt-0 lg:pt-0 relative"
+              >
+                <!-- src="https://cdn.easyfrontend.com/pictures/portfolio/portfolio6.jpg"  -->
+                <img
+                  src="../assets/rcc-pipe.webp"
+                  alt="Solid Blocks Stones"
+                  class="w-full h-56 -mb-16 mt-12 rounded-xl border border-stone-500"
+                />
+              </div>
+              <div class="p-6 lg:p-12 mt-8 lg:-mt-2">
+                <h4 class="text-2xl font-medium mb-4">RCC Pipes</h4>
+                <p class="opacity-50 mb-0">
+                  RCC pipe is a superb quality material, which is used for water
+                  drainage, sewerage applications. In farm sector, it is
+                  employed for fast irrigation purpose. It is manufactured using
+                  advanced cutting-edge technology.
+                </p>
+                <button
+                  class="px-5 py-2 rounded border border-blue-600 hover:text-white hover:bg-blue-600 duration-300 mt-6"
+                >
+                  Details
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card2 -->
+          <div class="col-span-6 md:col-span-3 lg:col-span-2">
+            <div
+              class="bg-white shadow-xl dark:bg-slate-800 hover:-translate-y-1 mt-6 duration-300 rounded-xl mb-12"
+            >
+              <div
+                class="bg-blue-100 flex rounded-xl p-6 lg:p-12 pt-0 lg:pt-0 relative"
+              >
+                <img
+                  src="../assets/RCC_HalfCut_Pipes.jpg"
+                  alt=""
+                  class="w-full h-56 -mb-16 mt-12 rounded-xl border border-stone-500"
+                />
+              </div>
+              <div class="p-6 lg:p-12 mt-8 lg:-mt-2">
+                <h4 class="text-2xl font-medium mb-4">Half Cut Pipes</h4>
+                <p class="opacity-50 mb-0">
+                  Hlaf cut Pipes are made in accordance with the set market
+                  standards by using in class grade raw materials like stone
+                  aggregate, cement and steel. Half Round Pipes are extensively
+                  used for drinking water mains and irrigation water mains, lift
+                  irrigation schemes and pressure water lines etc.
+                </p>
+                <button
+                  class="px-5 py-2 rounded border border-blue-600 hover:text-white hover:bg-blue-600 duration-300 mt-6"
+                >
+                  Details
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card3 -->
+          <div class="col-span-6 md:col-span-3 lg:col-span-2">
+            <div
+              class="bg-white shadow-xl dark:bg-slate-800 hover:-translate-y-1 mt-6 duration-300 rounded-xl mb-12"
+            >
+              <div
+                class="bg-red-100 flex rounded-xl p-6 lg:p-12 pt-0 lg:pt-0 relative"
+              >
+                <img
+                  src="../assets/v_Through.jpg"
+                  alt=""
+                  class="w-full h-56 -mb-16 mt-12 rounded-xl border border-stone-500"
+                />
+              </div>
+              <div class="p-6 lg:p-12 mt-8 lg:-mt-2">
+                <h4 class="text-2xl font-medium mb-4">V Throughs</h4>
+                <p class="opacity-50 mb-0">
+                  RCC V Troughs are made from reinforced cement concrete, which
+                  provides exceptional strength and durability. This ensures
+                  that the troughs can withstand heavy loads in adverse weather
+                  conditions.
+                </p>
+                <button
+                  class="px-5 py-2 rounded border border-blue-600 hover:text-white hover:bg-blue-600 duration-300 mt-6"
+                >
+                  Details
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card4 -->
+          <div class="col-span-6 md:col-span-3 lg:col-span-2">
+            <div
+              class="relative bg-white shadow-xl dark:bg-slate-800 hover:-translate-y-1 mt-6 duration-300 rounded-xl"
+            >
+              <div
+                class="bg-green-100 flex justify-center rounded-xl p-6 lg:p-12 pt-0 lg:pt-0 relative"
+              >
+                <img
+                  src="../assets/Septic_Tank.jpg"
+                  alt=""
+                  class="w-auto h-56 -mb-16 mt-12 rounded-xl border border-stone-500"
+                />
+              </div>
+              <div class="p-6 lg:p-12 mt-8 lg:-mt-2">
+                <h4 class="text-2xl font-medium mb-4">Septic Tanks</h4>
+                <p class="opacity-50 mb-0">
+                  These tanks are used where there is no availability of
+                  underground drainage facilities for flushed type of water
+                  closets. These readymade septic tanks are made of reinforced
+                  concrete cement consists of 3 chambers, 2 manholes inlet and
+                  outlet. These tanks are eco-friendly, easy to install. Most
+                  ideal for row houses, Apartments, Commercial.
+                </p>
+                <button
+                  class="px-5 py-2 rounded border border-blue-600 hover:text-white hover:bg-blue-600 duration-300 mt-6"
+                >
+                  Details
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card5 -->
+          <div class="col-span-6 md:col-span-3 lg:col-span-2">
+            <div
+              class="bg-white shadow-xl dark:bg-slate-800 hover:-translate-y-1 mt-6 duration-300 rounded-xl mb-12"
+            >
+              <div
+                class="bg-blue-100 flex rounded-xl p-6 lg:p-12 pt-0 lg:pt-0 relative"
+              >
+                <img
+                  src="../assets/Water_Storage_Tank.jpg"
+                  alt=""
+                  class="w-full h-56 -mb-16 mt-12 rounded-xl border border-stone-500"
+                />
+              </div>
+              <div class="p-6 lg:p-12 mt-8 lg:-mt-2">
+                <h4 class="text-2xl font-medium mb-4">Water Tanks</h4>
+                <p class="opacity-50 mb-0">
+                  RCC water tanks are constructed for storing water. Precast
+                  Tanks made by casting concrete using a mould in a controlled
+                  environment. This method of casting helps in creating a
+                  monolithic seamless tank with a joint-free structure which
+                  prevents any leakage and mixing of potable water with sewage
+                  and rainwater. These tanks require low maintenance and help to
+                  store clean water and lasts for a lifetime.
+                </p>
+                <button
+                  class="px-5 py-2 rounded border border-blue-600 hover:text-white hover:bg-blue-600 duration-300 mt-6"
+                >
+                  Details
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card6 -->
+          <div class="col-span-6 md:col-span-3 lg:col-span-2">
+            <div
+              class="bg-white shadow-xl dark:bg-slate-800 hover:-translate-y-1 mt-6 duration-300 rounded-xl mb-12"
+            >
+              <div
+                class="bg-red-100 flex rounded-xl p-6 lg:p-12 pt-0 lg:pt-0 relative"
+              >
+                <img
+                  src="../assets/Paver_Block.jpg"
+                  alt=""
+                  class="w-full h-56 -mb-16 mt-12 rounded-xl border border-stone-500"
+                />
+              </div>
+              <div class="p-6 lg:p-12 mt-8 lg:-mt-2">
+                <h4 class="text-2xl font-medium mb-4">Paver Block</h4>
+                <p class="opacity-50 mb-0">
+                  Paver blocks have been specifically designed for the paving
+                  applications. They allow better sewerage and are more
+                  sustainable, owing to its implausible porous nature. Their
+                  installation and removal are easy and simple.
+                </p>
+                <button
+                  class="px-5 py-2 rounded border border-blue-600 hover:text-white hover:bg-blue-600 duration-300 mt-6"
+                >
+                  Details
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card7 -->
+          <div class="col-span-6 md:col-span-3 lg:col-span-2">
+            <div
+              class="bg-white shadow-xl dark:bg-slate-800 hover:-translate-y-1 mt-6 duration-300 rounded-xl mb-12"
+            >
+              <div
+                class="bg-blue-100 flex rounded-xl p-6 lg:p-12 pt-0 lg:pt-0 relative"
+              >
+                <img
+                  src="../assets/Concrete_Solid_Block.jpg"
+                  alt=""
+                  class="w-full h-56 -mb-16 mt-12 rounded-xl border border-stone-500"
+                />
+              </div>
+              <div class="p-6 lg:p-12 mt-8 lg:-mt-2">
+                <h4 class="text-2xl font-medium mb-4">Solid Blocks</h4>
+                <p class="opacity-50 mb-0">
+                  Solid blocks, also known as concrete blocks or cinder blocks,
+                  are commonly used building materials in construction for
+                  load-bearing walls, retaining walls, and foundations. Solid
+                  blocks are durable, fire-resistant, and have good thermal
+                  insulation properties, making them ideal for use in a variety
+                  of construction projects.
+                </p>
+                <button
+                  class="px-5 py-2 rounded border border-blue-600 hover:text-white hover:bg-blue-600 duration-300 mt-6"
+                >
+                  Details
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card8 -->
+          <div class="col-span-6 md:col-span-3 lg:col-span-2">
+            <div
+              class="bg-white shadow-xl dark:bg-slate-800 hover:-translate-y-1 mt-6 duration-300 rounded-xl mb-12"
+            >
+              <div
+                class="bg-red-100 flex rounded-xl p-6 lg:p-12 pt-0 lg:pt-0 relative"
+              >
+                <img
+                  src="../assets/Concrete_Hollow_Blocks.jpg"
+                  alt=""
+                  class="w-full h-56 -mb-16 mt-12 rounded-xl border border-stone-500"
+                />
+              </div>
+              <div class="p-6 lg:p-12 mt-8 lg:-mt-2">
+                <h4 class="text-2xl font-medium mb-4">Hollow Block</h4>
+                <p class="opacity-50 mb-0">
+                  These 6-inch solid concrete blocks are designed for durability
+                  and strength, making them ideal for a variety of construction
+                  projects. Their uniform size ensures easy handling and precise
+                  stacking, making them suitable for both residential and
+                  commercial applications. Whether used for foundations, walls,
+                  or landscaping, these concrete blocks offer a reliable
+                  solution for any building need.
+                </p>
+                <button
+                  class="px-5 py-2 rounded border border-blue-600 hover:text-white hover:bg-blue-600 duration-300 mt-6"
+                >
+                  Details
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card9 -->
+          <div class="col-span-6 md:col-span-3 lg:col-span-2">
+            <div
+              class="bg-white shadow-xl dark:bg-slate-800 hover:-translate-y-1 mt-6 duration-300 rounded-xl mb-12"
+            >
+              <div
+                class="bg-blue-100 flex rounded-xl p-6 lg:p-12 pt-0 lg:pt-0 relative"
+              >
+                <img
+                  src="../assets/Boundary_Wall.jpg"
+                  alt=""
+                  class="w-full h-56 -mb-16 mt-12 rounded-xl border border-stone-500"
+                />
+              </div>
+              <div class="p-6 lg:p-12 mt-8 lg:-mt-2">
+                <h4 class="text-2xl font-medium mb-4">Boundary Wall</h4>
+                <p class="opacity-50 mb-0">
+                  Boundary wall is an immovable part of property. It looks
+                  appealing and has high strength. it provides high safety and
+                  security to the connected building structure.
+                </p>
+                <button
+                  class="px-5 py-2 rounded border border-blue-600 hover:text-white hover:bg-blue-600 duration-300 mt-6"
+                >
+                  Details
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card10 -->
+          <div class="col-span-6 md:col-span-3 lg:col-span-2">
+            <div
+              class="bg-white shadow-xl dark:bg-slate-800 hover:-translate-y-1 mt-6 duration-300 rounded-xl mb-12"
+            >
+              <div
+                class="bg-red-100 flex rounded-xl p-6 lg:p-12 pt-0 lg:pt-0 relative"
+              >
+                <img
+                  src="../assets/Kerb_Stone1.jpg"
+                  alt=""
+                  class="w-full h-56 -mb-16 mt-12 rounded-xl border border-stone-500"
+                />
+              </div>
+              <div class="p-6 lg:p-12 mt-8 lg:-mt-2">
+                <h4 class="text-2xl font-medium mb-4">Kerb Stone</h4>
+                <p class="opacity-50 mb-0">
+                  Grey Kerb Stone is able to create a separation and visual
+                  delineation of walkways. It is to deflect the traffic back on
+                  to the carriage way. It is easy to install and avail in many
+                  frames.
+                </p>
+                <button
+                  class="px-5 py-2 rounded border border-blue-600 hover:text-white hover:bg-blue-600 duration-300 mt-6"
+                >
+                  Details
+                </button>
+              </div>
+            </div>
+          </div>
+          <!-- Card10 Ends  -->
+
+          <!-- Card11 -->
+          <div class="col-span-6 md:col-span-3 lg:col-span-2">
+            <div
+              class="bg-white shadow-xl dark:bg-slate-800 hover:-translate-y-1 mt-6 duration-300 rounded-xl mb-12"
+            >
+              <div
+                class="bg-blue-100 flex rounded-xl p-6 lg:p-12 pt-0 lg:pt-0 relative"
+              >
+                <img
+                  src="../assets/RCC_Chambers.jpg"
+                  alt=""
+                  class="w-full h-56 -mb-16 mt-12 rounded-xl border border-stone-500"
+                />
+              </div>
+              <div class="p-6 lg:p-12 mt-8 lg:-mt-2">
+                <h4 class="text-2xl font-medium mb-4">Precast Chambers</h4>
+                <p class="opacity-50 mb-0">
+                  Earth pit chamber protects the Earth Rod connection and makes
+                  it available for inspection. They are used in order to secure
+                  protection for all earthing terminations and ensure easy
+                  access for routine testing of electrical earths. They provide
+                  secure and user-friendly accesses.
+                </p>
+                <button
+                  class="px-5 py-2 rounded border border-blue-600 hover:text-white hover:bg-blue-600 duration-300 mt-6"
+                >
+                  Details
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card12 -->
+          <div class="col-span-6 md:col-span-3 lg:col-span-2">
+            <div
+              class="bg-white shadow-xl dark:bg-slate-800 hover:-translate-y-1 mt-6 duration-300 rounded-xl mb-12"
+            >
+              <div
+                class="bg-red-100 flex rounded-xl p-6 lg:p-12 pt-0 lg:pt-0 relative"
+              >
+                <img
+                  src="../assets/Rcc_Manhole_Cover2.jpg"
+                  alt=""
+                  class="w-full h-56 -mb-16 mt-12 rounded-xl border border-stone-500"
+                />
+              </div>
+              <div class="p-6 lg:p-12 mt-8 lg:-mt-2">
+                <h4 class="text-2xl font-medium mb-4">Manhole Covers</h4>
+                <p class="opacity-50 mb-0">
+                  We are associating in the export of manhole covers with great
+                  toughness and anti-corrosive features. They are considered
+                  good options for water treatment plants, drainage systems and
+                  irrigation systems.
+                </p>
+                <button
+                  class="px-5 py-2 rounded border border-blue-600 hover:text-white hover:bg-blue-600 duration-300 mt-6"
+                >
+                  Details
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card13 -->
+          <div class="col-span-6 md:col-span-3 lg:col-span-2">
+            <div
+              class="bg-white shadow-xl dark:bg-slate-800 hover:-translate-y-1 mt-6 duration-300 rounded-xl mb-12"
+            >
+              <div
+                class="bg-blue-100 flex rounded-xl p-6 lg:p-12 pt-0 lg:pt-0 relative"
+              >
+                <img
+                  src="../assets/Cement_Pillar.jpg"
+                  alt=""
+                  class="w-full h-56 -mb-16 mt-12 rounded-xl border border-stone-500"
+                />
+              </div>
+              <div class="p-6 lg:p-12 mt-8 lg:-mt-2">
+                <h4 class="text-2xl font-medium mb-4">Cement Pillars</h4>
+                <p class="opacity-50 mb-0">
+                  Designed to enhance the aesthetics and structural strength of
+                  your balconies, terraces, and staircases. Our balusters are
+                  crafted from premium-grade cement and reinforced with steel,
+                  ensuring superior durability and a long lifespan. Resistant to
+                  corrosion, rust, and other environmental factors, ensuring
+                  minimal upkeep. Used in Residential Balconies • Stair Railings
+                  • Terrace Boundaries • Garden and Patios.
+                </p>
+                <button
+                  class="px-5 py-2 rounded border border-blue-600 hover:text-white hover:bg-blue-600 duration-300 mt-6"
+                >
+                  Details
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card14 -->
+          <div class="col-span-6 md:col-span-3 lg:col-span-2">
+            <div
+              class="bg-white shadow-xl dark:bg-slate-800 hover:-translate-y-1 mt-6 duration-300 rounded-xl mb-12"
+            >
+              <div
+                class="bg-red-100 flex rounded-xl p-6 lg:p-12 pt-0 lg:pt-0 relative"
+              >
+                <img
+                  src="../assets/UShape_Drain.jpg"
+                  alt=""
+                  class="w-full h-56 -mb-16 mt-12 rounded-xl border border-stone-500"
+                />
+              </div>
+              <div class="p-6 lg:p-12 mt-8 lg:-mt-2">
+                <h4 class="text-2xl font-medium mb-4">
+                  Precast U Shaped Drain
+                </h4>
+                <p class="opacity-50 mb-0">
+                  Underground drainage pipes ensure that no water drain gets
+                  entry into the gardens and field. The pipes have great
+                  strength and are resistant to water, soil, weather
+                  fluctuations.
+                </p>
+                <button
+                  class="px-5 py-2 rounded border border-blue-600 hover:text-white hover:bg-blue-600 duration-300 mt-6"
+                >
+                  Details
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card15 -->
+          <div class="col-span-6 md:col-span-3 lg:col-span-2">
+            <div
+              class="bg-white shadow-xl dark:bg-slate-800 hover:-translate-y-1 mt-6 duration-300 rounded-xl mb-12"
+            >
+              <div
+                class="bg-blue-100 flex rounded-xl p-6 lg:p-12 pt-0 lg:pt-0 relative"
+              >
+                <img
+                  src="../assets/Concrete_Bench.jpg"
+                  alt=""
+                  class="w-full h-56 -mb-16 mt-12 rounded-xl border border-stone-500"
+                />
+              </div>
+              <div class="p-6 lg:p-12 mt-8 lg:-mt-2">
+                <h4 class="text-2xl font-medium mb-4">RCC Bench</h4>
+                <p class="opacity-50 mb-0">
+                  RCC Bench is fabricated by using fine quality concrete and
+                  other allied materials to make them highly study in nature.
+                  Its perfect for outdoor. is suitable to install in gardens,
+                  parks as well as street for sitting purpose.
+                </p>
+                <button
+                  class="px-5 py-2 rounded border border-blue-600 hover:text-white hover:bg-blue-600 duration-300 mt-6"
+                >
+                  Details
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card16 -->
+          <!-- <div class="col-span-6 md:col-span-3 lg:col-span-2">
+            <div
+              class="bg-white shadow-xl dark:bg-slate-800 hover:-translate-y-1 mt-6 duration-300 rounded-xl mb-12"
+            >
+              <div
+                class="bg-red-100 flex rounded-xl p-6 lg:p-12 pt-0 lg:pt-0 relative"
+              >
+                <img
+                  src="../assets/Square _Fencing_Poles.jpg"
+                  alt=""
+                  class="w-full h-56 -mb-16 mt-12 rounded-xl  border border-stone-500"
+                />
+              </div>
+              <div class="p-6 lg:p-12 mt-8 lg:-mt-2">
+                <h4 class="text-2xl font-medium mb-4">Fencing Poles</h4>
+                <p class="opacity-50 mb-0">
+                  Vitae bibendum egestas magna sit elit non.
+                </p>
+                <button
+                  class="px-5 py-2 rounded border border-blue-600 hover:text-white hover:bg-blue-600 duration-300 mt-6"
+                >
+                  Details
+                </button>
+              </div>
+            </div>
+          </div> -->
+
+          <!-- Card17 -->
+          <div class="col-span-6 md:col-span-3 lg:col-span-2">
+            <div
+              class="bg-white shadow-xl dark:bg-slate-800 hover:-translate-y-1 mt-6 duration-300 rounded-xl mb-12"
+            >
+              <div
+                class="bg-blue-100 flex rounded-xl p-6 lg:p-12 pt-0 lg:pt-0 relative"
+              >
+                <img
+                  src="../assets/Kilometer_Stone.jpg"
+                  alt=""
+                  class="w-full h-56 -mb-16 mt-12 rounded-xl border border-stone-500"
+                />
+              </div>
+              <div class="p-6 lg:p-12 mt-8 lg:-mt-2">
+                <h4 class="text-2xl font-medium mb-4">Kilometer Stone</h4>
+                <p class="opacity-50 mb-0">
+                  Stones are the solid concrete structure with high-quality
+                  reinforcement. Owing to the flawless quality and excellent
+                  mechanical strength of these Stones, these are widely used in
+                  bus stands, road highways, and petrol pumps. The Stones are
+                  typically located at the side of the road or in a median.
+                </p>
+                <button
+                  class="px-5 py-2 rounded border border-blue-600 hover:text-white hover:bg-blue-600 duration-300 mt-6"
+                >
+                  Details
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Product Section Ends -->
+
+    <footer
+      class="footer flex flex-col items-center justify-between md:flex-row md:max-lg:flex-wrap md:max-lg:justify-center bg-base-200 text-base-content p-10"
+    >
+      <!--  -->
+      <div class="card bg-[#EAFAEA] w-72 shadow-xl">
+        <div class="card-body">
+          <h2
+            class="card-title font-Titillium text-[#780C28] underline underline-offset-4"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="icon icon-tabler icons-tabler-outline icon-tabler-map-pin"
+            >
+              <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+              <path d="M9 11a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" />
+              <path
+                d="M17.657 16.657l-4.243 4.243a2 2 0 0 1 -2.827 0l-4.244 -4.243a8 8 0 1 1 11.314 0z"
+              />
+            </svg>
+            Address
+          </h2>
+          <div class="address1 font-medium text-[#6E8E59] mt-1">
+            <i class="ti ti-crane text-[#780C28] text-2xl mr-2"></i> 4/448,
+            Anaipudhur, Gudalur East Village, Paramathi, Karur-639111
+          </div>
+          <hr />
+          <div class="address2 font-medium text-[#6E8E59]">
+            <i
+              class="ti ti-building-factory-2 text-[#780C28] text-2xl mr-2"
+            ></i>
+            102/4, Balakumar Nagar, Vellampondi, Dharapuram, Tirupur-639291
+          </div>
+        </div>
+      </div>
+
+      <!-- md:max-lg:h-[17rem] -->
+      <div class="card bg-[#EAFAEA] md:max-lg:w-72 w-56 h-52 shadow-xl">
+        <div class="card-body">
+          <h2
+            class="card-title font-Titillium text-[#780C28] underline underline-offset-4"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="icon icon-tabler icons-tabler-outline icon-tabler-building-estate"
+            >
+              <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+              <path d="M3 21h18" />
+              <path d="M19 21v-4" />
+              <path
+                d="M19 17a2 2 0 0 0 2 -2v-2a2 2 0 1 0 -4 0v2a2 2 0 0 0 2 2z"
+              />
+              <path d="M14 21v-14a3 3 0 0 0 -3 -3h-4a3 3 0 0 0 -3 3v14" />
+              <path d="M9 17v4" />
+              <path d="M8 13h2" />
+              <path d="M8 9h2" />
+            </svg>
+            Office Nos
+          </h2>
+          <p class="font-medium text-[#6E8E59] mt-1">
+            <i class="ti ti-device-landline-phone text-[#780C28] text-xl"></i>
+            +91 63838 27769 <br />
+            <i class="ti ti-device-landline-phone text-[#780C28] text-xl"></i>
+            +91 63837 42004 <br />
+            <i class="ti ti-device-landline-phone text-[#780C28] text-xl"></i>
+            +91 96985 97941
+          </p>
+        </div>
+      </div>
+
+      <!-- md:max-lg:h-[17rem] -->
+      <div class="card bg-[#EAFAEA] md:max-lg:w-72 w-56 h-52 shadow-xl">
+        <div class="card-body">
+          <h2
+            class="card-title font-Titillium text-[#780C28] underline underline-offset-4"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="icon icon-tabler icons-tabler-outline icon-tabler-desk"
+            >
+              <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+              <path d="M3 6h18" />
+              <path d="M4 6v13" />
+              <path d="M20 19v-13" />
+              <path d="M4 10h16" />
+              <path d="M15 6v8a2 2 0 0 0 2 2h3" />
+            </svg>
+            For Enquiries
+          </h2>
+          <p class="font-medium text-[#6E8E59] mt-1">
+            <i class="ti ti-message-2-question text-[#780C28] text-xl"></i> Enq:
+            99444 99267 <br />
+            <i class="ti ti-user text-[#780C28] text-xl"></i>
+            Owner: 73737 38363
+          </p>
+        </div>
+      </div>
+
+      <!-- md:max-lg:h-[17rem] -->
+      <div class="card bg-[#EAFAEA] md:max-lg:w-72 w-56 h-52 shadow-xl">
+        <div class="card-body">
+          <h2
+            class="card-title font-Titillium text-[#780C28] underline underline-offset-4"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="icon icon-tabler icons-tabler-outline icon-tabler-building-factory"
+            >
+              <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+              <path
+                d="M4 21c1.147 -4.02 1.983 -8.027 2 -12h6c.017 3.973 .853 7.98 2 12"
+              />
+              <path d="M12.5 13h4.5c.025 2.612 .894 5.296 2 8" />
+              <path
+                d="M9 5a2.4 2.4 0 0 1 2 -1a2.4 2.4 0 0 1 2 1a2.4 2.4 0 0 0 2 1a2.4 2.4 0 0 0 2 -1a2.4 2.4 0 0 1 2 -1a2.4 2.4 0 0 1 2 1"
+              />
+              <path d="M3 21l19 0" />
+            </svg>
+            Factory Staffs
+          </h2>
+          <p class="font-medium text-[#6E8E59] mt-1">
+            <i class="ti ti-phone-ringing text-[#780C28] text-xl"></i>
+            +91 79046 98804 <br />
+            <i class="ti ti-phone-ringing text-[#780C28] text-xl"></i> +91 86108
+            73605 <br />
+            <i class="ti ti-phone-ringing text-[#780C28] text-xl"></i> +91 95856
+            59925 <br />
+            <i class="ti ti-phone-ringing text-[#780C28] text-xl"></i> +91 80987
+            14227
+          </p>
+        </div>
+      </div>
+    </footer>
+    <footer
+      class="footer bg-base-200 text-base-content border-base-300 border-t px-10 py-4"
+    >
+      <aside class="grid-flow-col items-center">
+        <img src="../assets/sewage.svg" alt="" />
+        <p class="font-Merriweather text-lg">
+          Aruljothi Pipeworks Ltd.
+          <br />
+          Uninterrupted Water
+        </p>
+      </aside>
+
+      <nav class="md:place-self-center md:justify-self-end">
+        <div>
+          <a class="text-xl lg:text-2xl font-Merriweather">
+            <!-- <i class="ti ti-mail"></i> -->
+            <i class="ti ti-mail text-[#780C28] md:mr-1"></i>
+            aruljothi.pipeworks@gmail.com
+          </a>
+        </div>
+      </nav>
+    </footer>
+  </body>
+</html>
