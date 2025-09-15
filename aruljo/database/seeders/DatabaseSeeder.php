@@ -12,7 +12,7 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-       $this->call(templateSeeder::class);
+       $this->call(TemplateSeeder::class);
        $this->call(ParameterSeeder::class);
        $this->call(ParameterOptionConfigSeeder::class);
        $this->call(ParameterConfigSeeder::class);
