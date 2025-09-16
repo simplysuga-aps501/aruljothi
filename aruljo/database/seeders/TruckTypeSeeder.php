@@ -7,20 +7,37 @@ use Illuminate\Support\Facades\DB;
 
 class TruckTypeSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        $truckTypes = [
-            ['name' => '3 Ton',  'capacity_kg' => 3000,  'description' => ''],
-            ['name' => '6 Ton',  'capacity_kg' => 6000,  'description' => ''],
-            ['name' => '10 Ton', 'capacity_kg' => 10000, 'description' => ''],
-            ['name' => '12 Ton', 'capacity_kg' => 12000, 'description' => ''],
-            ['name' => '17 Ton', 'capacity_kg' => 17000, 'description' => ''],
-            ['name' => '23 Ton', 'capacity_kg' => 23000, 'description' => ''],
+        // Map existing capacities to new names
+        $updates = [
+            3000  => 'Mini Door',
+            6000  => '6 Wheel Eicher',
+            10000 => '6 Wheel',
+            12000 => 'Bharath Benz',
+            17000 => '10 Wheel Taurus',
+            23000 => '12 Wheel',
         ];
 
-        DB::table('tp_truck_types')->insert($truckTypes);
+        foreach ($updates as $capacity => $name) {
+            DB::table('tp_truck_types')->where('capacity_kg', $capacity)->update([
+                'name'       => $name,
+                'updated_at' => now(),
+            ]);
+        }
+
+        // Insert new truck types (only if they don't exist)
+        $newTrucks = [
+            ['capacity_kg' => 25000, 'name' => '14 Wheel'],
+            ['capacity_kg' => 25000, 'name' => 'Trailor'],
+            ['capacity_kg' => 27000, 'name' => '16 Wheel'],
+        ];
+
+        foreach ($newTrucks as $truck) {
+            DB::table('tp_truck_types')->updateOrInsert(
+                ['capacity_kg' => $truck['capacity_kg'], 'name' => $truck['name']],
+                ['created_at' => now(), 'updated_at' => now()]
+            );
+        }
     }
 }
