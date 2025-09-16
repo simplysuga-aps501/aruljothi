@@ -64,8 +64,8 @@ class ProductController extends Controller
                 'parameters.*.parameter_id' => 'required|exists:prod_parameters,id',
                 'parameters.*.value' => 'required',
                 'truck_capacities' => 'nullable|array',
-                'truck_capacities.*.with_body' => 'nullable|numeric|min:0',
-                'truck_capacities.*.without_body' => 'nullable|numeric|min:0',
+                'truck_capacities.*.truck' => 'nullable|numeric|min:0',
+                'truck_capacities.*.open_body_truck' => 'nullable|numeric|min:0',
             ]);
 
             Log::debug('✅ Validated product data', ['validated' => $validated]);
@@ -107,19 +107,19 @@ class ProductController extends Controller
                 // Save truck capacities
                 if (!empty($validated['truck_capacities'])) {
                     foreach ($validated['truck_capacities'] as $truckId => $capacity) {
-                        if (!empty($capacity['with_body'])) {
+                        if (!empty($capacity['truck'])) {
                             $tc = $product->truckCapacities()->updateOrCreate(
-                                ['truck_type_id' => $truckId, 'body_type' => 'with_body'],
-                                ['max_units' => $capacity['with_body']]
+                                ['truck_type_id' => $truckId, 'body_type' => 'truck'],
+                                ['max_units' => $capacity['truck']]
                             );
-                            Log::debug('🚚 Truck capacity saved (with body)', ['truck_id' => $truckId, 'capacity' => $capacity['with_body'], 'tc_id' => $tc->id]);
+                            Log::debug('🚚 Truck capacity saved (with body)', ['truck_id' => $truckId, 'capacity' => $capacity['truck'], 'tc_id' => $tc->id]);
                         }
-                        if (!empty($capacity['without_body'])) {
+                        if (!empty($capacity['open_body_truck'])) {
                             $tc = $product->truckCapacities()->updateOrCreate(
-                                ['truck_type_id' => $truckId, 'body_type' => 'without_body'],
-                                ['max_units' => $capacity['without_body']]
+                                ['truck_type_id' => $truckId, 'body_type' => 'open_body_truck'],
+                                ['max_units' => $capacity['open_body_truck']]
                             );
-                            Log::debug('🚚 Truck capacity saved (without body)', ['truck_id' => $truckId, 'capacity' => $capacity['without_body'], 'tc_id' => $tc->id]);
+                            Log::debug('🚚 Truck capacity saved (without body)', ['truck_id' => $truckId, 'capacity' => $capacity['open_body_truck'], 'tc_id' => $tc->id]);
                         }
                     }
                 }
@@ -222,8 +222,8 @@ class ProductController extends Controller
                 'edit_weight_kg' => 'nullable|numeric|min:0',
 
                 'edit_truck_capacities' => 'nullable|array',
-                'edit_truck_capacities.*.with_body' => 'nullable|numeric|min:0',
-                'edit_truck_capacities.*.without_body' => 'nullable|numeric|min:0',
+                'edit_truck_capacities.*.truck' => 'nullable|numeric|min:0',
+                'edit_truck_capacities.*.open_body_truck' => 'nullable|numeric|min:0',
             ]);
 
             $product = DB::transaction(function () use ($validated, $product) {
@@ -235,26 +235,26 @@ class ProductController extends Controller
 
                 if (!empty($validated['edit_truck_capacities'])) {
                     foreach ($validated['edit_truck_capacities'] as $truckId => $capacity) {
-                        if (isset($capacity['with_body'])) {
+                        if (isset($capacity['truck'])) {
                             $product->truckCapacities()->updateOrCreate(
                                 [
                                     'truck_type_id' => $truckId,
-                                    'body_type' => 'with_body',
+                                    'body_type' => 'truck',
                                 ],
                                 [
-                                    'max_units' => $capacity['with_body'],
+                                    'max_units' => $capacity['truck'],
                                 ]
                             );
                         }
 
-                        if (isset($capacity['without_body'])) {
+                        if (isset($capacity['open_body_truck'])) {
                             $product->truckCapacities()->updateOrCreate(
                                 [
                                     'truck_type_id' => $truckId,
-                                    'body_type' => 'without_body',
+                                    'body_type' => 'open_body_truck',
                                 ],
                                 [
-                                    'max_units' => $capacity['without_body'],
+                                    'max_units' => $capacity['open_body_truck'],
                                 ]
                             );
                         }

@@ -102,20 +102,20 @@
                      <div class="card-body p-2">
                          <div class="row">
                              <div class="col-6">
-                                 <label class="small text-success">With Body</label>
+                                 <label class="small text-success">Truck</label>
                                  <input type="number" step="1" min="0"
                                      class="form-control form-control-sm truck-pipe-capacity"
                                      data-capacity="{{ $truck->capacity_kg }}"
-                                     name="edit_truck_capacities[{{ $truck->id }}][with_body]"
-                                     value="${truckCaps['{{ $truck->id }}_with_body'] || 0}">
+                                     name="edit_truck_capacities[{{ $truck->id }}][truck]"
+                                     value="${truckCaps['{{ $truck->id }}_truck'] || 0}">
                              </div>
                              <div class="col-6">
-                                 <label class="small text-danger">Without Body</label>
+                                 <label class="small text-danger">Open Body Truck</label>
                                  <input type="number" step="1" min="0"
                                      class="form-control form-control-sm truck-pipe-capacity"
                                      data-capacity="{{ $truck->capacity_kg }}"
-                                     name="edit_truck_capacities[{{ $truck->id }}][without_body]"
-                                     value="${truckCaps['{{ $truck->id }}_without_body'] || 0}">
+                                     name="edit_truck_capacities[{{ $truck->id }}][open_body_truck]"
+                                     value="${truckCaps['{{ $truck->id }}_open_body_truck'] || 0}">
                              </div>
                          </div>
                      </div>

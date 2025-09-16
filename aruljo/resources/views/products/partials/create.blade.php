@@ -31,7 +31,7 @@
 
                         <div class="row mb-4">
                            {{-- HSN Code --}}
-                            <div class="col-md-3">
+                            <div class="col-md-4">
                                 <label for="hsncode_id" class="form-label">HSN Code</label>
                                 <select id="hsncode_id" name="hsncode_id" class="form-control" data-toggle="tooltip" required>
                                     <option value="">-- Select HSN Code --</option>
@@ -78,30 +78,30 @@
                             <div class="row mb-3">
                                 @foreach($truck_types->chunk(2) as $truckGroup)
                                     @foreach($truckGroup as $truck)
-                                        <div class="col-md-6 mb-3">
+                                        <div class="col-md-4 mb-3">
                                             <div class="card p-2">
                                                 <div class="card-header p-1">
                                                     <strong>{{ $truck->name }} ({{ $truck->capacity_kg }} kg)</strong>
                                                 </div>
                                                 <div class="card-body p-2">
                                                     <div class="row">
-                                                        <!-- With Body -->
+                                                        <!-- Truck -->
                                                         <div class="col-6">
-                                                            <label class="small text-success">With Body</label>
+                                                            <label class="small text-success">Truck</label>
                                                             <input type="number" step="1" min="0"
                                                                    class="form-control form-control-sm truck-pipe-capacity"
                                                                    data-capacity="{{ $truck->capacity_kg }}"
-                                                                   name="truck_pipe_capacity[{{ $truck->id }}][with_body]"
+                                                                   name="truck_pipe_capacity[{{ $truck->id }}][truck]"
                                                                    placeholder="Units" required>
                                                         </div>
 
-                                                        <!-- Without Body -->
+                                                        <!-- Open Body Truck -->
                                                         <div class="col-6">
-                                                            <label class="small text-danger">Without Body</label>
+                                                            <label class="small text-danger">Open Body Truck</label>
                                                             <input type="number" step="1" min="0"
                                                                    class="form-control form-control-sm truck-pipe-capacity"
                                                                    data-capacity="{{ $truck->capacity_kg }}"
-                                                                   name="truck_pipe_capacity[{{ $truck->id }}][without_body]"
+                                                                   name="truck_pipe_capacity[{{ $truck->id }}][open_body_truck]"
                                                                    placeholder="Units" required>
                                                         </div>
                                                     </div>
@@ -268,7 +268,7 @@
             let truckCapacities = {};
             $('.truck-pipe-capacity').each(function () {
                 let name = $(this).attr('name');
-                let match = name.match(/truck_pipe_capacity\[(\d+)\]\[(with_body|without_body)\]/);
+                let match = name.match(/truck_pipe_capacity\[(\d+)\]\[(truck|open_body_truck)\]/);
                 if (match) {
                     let truckId = match[1];
                     let variant = match[2];

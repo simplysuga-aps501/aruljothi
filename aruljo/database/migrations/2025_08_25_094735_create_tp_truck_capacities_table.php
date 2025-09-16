@@ -20,7 +20,7 @@ return new class extends Migration
                   ->cascadeOnDelete();
 
             // New column for body type
-            $table->enum('body_type', ['with_body', 'without_body']);
+            $table->enum('body_type', ['truck', 'open_body_truck']);
 
             $table->integer('max_units')->default(0);
 
