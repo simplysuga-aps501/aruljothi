@@ -33,4 +33,18 @@ class TruckCapacity extends Model
     {
         return $this->belongsTo(TruckType::class, 'truck_type_id');
     }
+    //Return truck types from schema
+    public static function getBodyTypes(): array
+    {
+        $type = \DB::selectOne("SHOW COLUMNS FROM tp_truck_capacities WHERE Field = 'body_type'")->Type;
+
+        preg_match("/^enum\((.*)\)$/", $type, $matches);
+
+        $enum = str_getcsv($matches[1], ',', "'");
+
+        // just return the raw enum values
+        return $enum;
+    }
+
+
 }

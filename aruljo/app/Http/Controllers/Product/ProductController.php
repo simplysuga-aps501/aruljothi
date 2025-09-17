@@ -10,6 +10,7 @@ use App\Models\Product\Hsncode;
 use App\Models\Product\ParameterConfig;
 use App\Models\Product\ParameterValue;
 use App\Models\Transport\TruckType;
+use App\Models\Transport\TruckCapacity;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -27,6 +28,7 @@ class ProductController extends Controller
             'units' => Unit::all(),
             'hsncodes' => Hsncode::all(),
             'truck_types' => TruckType::all(),
+            'body_types' =>TruckCapacity::getBodyTypes(),
         ]);
     }
 

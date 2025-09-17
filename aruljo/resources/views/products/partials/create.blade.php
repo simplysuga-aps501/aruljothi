@@ -73,6 +73,10 @@
                                 <input type="number" step="0.01" min="0" id="weight" name="weight" class="form-control" required>
                             </div>
                         </div>
+                        @foreach($body_types as $bodyType)
+                                <label>{{$bodyType}}</label>
+                        @endforeach
+
                         <div class="mb-4">
                             <h5 class="mb-3">🚚 Truck Capacity</h5>
                             <div class="row mb-3">
@@ -85,25 +89,22 @@
                                                 </div>
                                                 <div class="card-body p-2">
                                                     <div class="row">
-                                                        <!-- Truck -->
-                                                        <div class="col-6">
-                                                            <label class="small text-success">Truck</label>
-                                                            <input type="number" step="1" min="0"
-                                                                   class="form-control form-control-sm truck-pipe-capacity"
-                                                                   data-capacity="{{ $truck->capacity_kg }}"
-                                                                   name="truck_pipe_capacity[{{ $truck->id }}][truck]"
-                                                                   placeholder="Units" required>
-                                                        </div>
+                                                        @php
+                                                           $colors = ['text-success','text-danger', 'text-primary', 'text-warning', 'text-info', 'text-secondary'];
+                                                       @endphp
 
-                                                        <!-- Open Body Truck -->
+                                                       @foreach($body_types as $index => $bodyType)
                                                         <div class="col-6">
-                                                            <label class="small text-danger">Open Body Truck</label>
+                                                           <label class="small {{ $colors[$index % count($colors)] }}">
+                                                               {{ ucwords(str_replace('_', ' ', $bodyType)) }}
+                                                           </label>
                                                             <input type="number" step="1" min="0"
                                                                    class="form-control form-control-sm truck-pipe-capacity"
                                                                    data-capacity="{{ $truck->capacity_kg }}"
-                                                                   name="truck_pipe_capacity[{{ $truck->id }}][open_body_truck]"
+                                                                   name="truck_pipe_capacity[{{ $truck->id }}][{{$bodyType}}]"
                                                                    placeholder="Units" required>
                                                         </div>
+                                                        @endforeach
                                                     </div>
                                                 </div>
                                             </div>

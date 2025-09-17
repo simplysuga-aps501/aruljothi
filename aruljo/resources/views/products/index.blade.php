@@ -69,6 +69,7 @@
                        data-quote_price="{{ $product->quote_price }}"
                        data-manufacturing_cost="{{ $product->manufacturing_cost }}"
                        data-weight="{{ $product->weight_kg }}"
+                       data-body_types='@json($body_types)'
                        data-truck_capacities='@json($product->truckCapacities->mapWithKeys(function($tc) {
                            return [$tc->truck_type_id . "_" . $tc->body_type => $tc->max_units];
                        }))'>
