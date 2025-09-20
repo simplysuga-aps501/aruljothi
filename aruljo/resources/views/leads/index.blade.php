@@ -179,6 +179,7 @@
 
         </div>
     </section>
+@include('leads.partials.edit')
 @stop
 
 @section('css')
@@ -191,6 +192,9 @@
     <!--Select2 Tags JS-->
     <link rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/bootstrap-multiselect@1.1.0/dist/css/bootstrap-multiselect.css">
+    <!--Auto Complete-->
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+
 
     <style>
         .lead-row {
@@ -208,8 +212,6 @@
 
 @section('js')
 
-    @include('leads.partials.edit-modal')
-
     <!--Datatable JS-->
     <script src="https://cdn.datatables.net/2.3.2/js/dataTables.js"></script>
     <script src="https://cdn.datatables.net/responsive/3.0.4/js/dataTables.responsive.js"></script>
@@ -219,6 +221,10 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap-multiselect@1.1.0/dist/js/bootstrap-multiselect.min.js"></script>
     <!--Validation-->
     <script src="https://cdn.jsdelivr.net/jquery.validation/1.19.5/jquery.validate.min.js"></script>
+
+    <!--Auto Complete-->
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+
     @include('leads.partials.shared-js')
     <script>
         $(document).ready(function() {
@@ -267,143 +273,7 @@
             document.getElementById('deleteForm').setAttribute('action', actionUrl);
         }
 
-        function initTagMultiselect() {
-            $('#tags').multiselect('destroy').multiselect({
-                includeSelectAllOption: true,
-                buttonWidth: '100%',
-                nonSelectedText: 'Select Tags',
-                numberDisplayed: 2,
-                enableFiltering: true,
-                enableCaseInsensitiveFiltering: true
-            });
-        }
 
-        //Edit Modal
-        $(document).on('click', '.open-edit-lead-modal', function() {
-            const leadId = $(this).data('lead-id');
-            const currentTab = new URLSearchParams(window.location.search).get('tab') || 'active';
-            $.ajax({
-                url: `/leads/${leadId}/edit?tab=${currentTab}`,
-                method: 'GET',
-                success: function(data) {
-                    $('#editLeadForm').attr('action', `/leads/${leadId}?tab=${currentTab}`);
-                    // Fill form fields using correct names from DB and modal
-                    $('#editLeadModal input[name="buyer_name"]').val(data.buyer_name);
-                    $('#editLeadModal input[name="buyer_contact"]').val(data.buyer_contact);
-                    $('#editLeadModal input[name="lead_date"]').val(data.lead_date);
-                    $('#editLeadModal input[name="buyer_location"]').val(data.buyer_location);
-                    $('#editLeadModal select[name="platform"]').val(data.platform);
-                    $('#editLeadModal input[name="platform_keyword"]').val(data.platform_keyword);
-                    $('#editLeadModal textarea[name="product_detail"]').val(data.product_detail);
-                    $('#editLeadModal input[name="delivery_location"]').val(data.delivery_location);
-                    $('#editLeadModal input[name="expected_delivery_date"]').val(data
-                        .expected_delivery_date);
-                    $('#editLeadModal input[name="follow_up_date"]').val(data.follow_up_date);
-                    $('#editLeadModal select[name="status"]').val(data.status);
-                    $('#editLeadModal select[name="assigned_to"]').val(data.assigned_to);
-                    $('#editLeadModal textarea[name="past_remarks"]').val(data.past_remarks.join('\n'));
-                    $('#editLeadModal input[name="current_remark"]').val('');
-                    // Clear any previous selection
-                    $('#editLeadModal select[name="tags[]"]').val([]);
-
-                    // Set the selected tags from response (data.tags should be an array of strings)
-                    $('#editLeadModal select[name="tags[]"]').val(data.tags);
-
-                    // Rebuild multiselect with the selection
-                    initTagMultiselect();
-
-                    // Show modal
-                    $('#editLeadModal').modal('show');
-                },
-                error: function() {
-                    alert('Failed to load lead data.');
-                }
-            });
-        });
-        // When modal is fully shown, initialize the tag dropdown
-        $('#editLeadModal').on('shown.bs.modal', function() {
-            initTagMultiselect();
-            initDaysCalculation(this);
-        });
-
-        $('#editLeadForm').validate({
-            rules: {
-                platform: {
-                    required: true
-                },
-                lead_date: {
-                    required: true,
-                    date: true
-                },
-                platform_keyword: {
-                    required: true
-                },
-                buyer_name: {
-                    required: true
-                },
-                buyer_contact: {
-                    required: true,
-                    digits: true,
-                    minlength: 10,
-                    maxlength: 15
-                },
-                buyer_location: {
-                    required: true
-                },
-                product_detail: {
-                    required: true
-                },
-                delivery_location: {
-                    required: true
-                },
-                expected_delivery_date: {
-                    required: true,
-                    date: true
-                },
-                follow_up_date: {
-                    required: true,
-                    date: true
-                },
-                status: {
-                    required: true
-                },
-                assigned_to: {
-                    required: true
-                },
-                current_remark: {
-                    required: true
-                },
-                'tags[]': {
-                    required: true
-                }
-            },
-            messages: {
-                buyer_contact: {
-                    digits: "Enter only numbers",
-                    minlength: "Minimum 10 digits",
-                    maxlength: "Maximum 15 digits"
-                },
-                'tags[]': {
-                    required: "Please select at least one tag"
-                }
-            },
-            errorElement: 'span',
-            errorClass: 'invalid-feedback',
-            highlight: function(element) {
-                $(element).closest('.form-group, .mb-3').addClass('has-error');
-                $(element).addClass('is-invalid');
-            },
-            unhighlight: function(element) {
-                $(element).closest('.form-group, .mb-3').removeClass('has-error');
-                $(element).removeClass('is-invalid');
-            },
-            errorPlacement: function(error, element) {
-                if (element.attr("name") === "tags[]") {
-                    error.insertAfter($('#tags').closest('.form-group, .mb-3'));
-                } else {
-                    error.insertAfter(element);
-                }
-            }
-        });
     </script>
+    @stack('scripts');
 @stop

@@ -8,6 +8,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UserRoleController;
+use App\Http\Controllers\DistanceController;
 use App\Http\Controllers\Product\ProductController;
 use App\Http\Controllers\Product\UnitController;
 use App\Http\Controllers\Product\HsncodeController;
@@ -104,6 +105,10 @@ Route::middleware(['auth'])->group(function () {
         // PUT or PATCH route for editing product (selling price & weight only)
         Route::put('/products/{product}/edit', [ProductController::class, 'edit'])->name('products.edit');
 
+        //Distance
+                Route::get('/api/distance/by-pincode', [DistanceController::class, 'byPincode'])->name('distance.byPincode');
+                Route::get('/distance/calc', [DistanceController::class, 'calc'])
+                   ->name('distance.calc');
         /*
         |--------------------------------------------------------------------------
         | Admin Routes

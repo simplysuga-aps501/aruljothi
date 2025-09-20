@@ -2,14 +2,15 @@
 
 @section('title', 'Create Lead')
 
+{{-- ============================ PAGE HEADER ============================ --}}
 @section('content_header')
-    <div class="d-flex justify-content-between align-items-center">
-        <h1 class="m-0 text-dark">Create Lead</h1>
-        <ol class="breadcrumb float-sm-right">
-            <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Home</a></li>
-            <li class="breadcrumb-item active">Create Lead</li>
-        </ol>
-    </div>
+<div class="d-flex justify-content-between align-items-center">
+    <h1 class="m-0 text-dark">Create Lead</h1>
+    <ol class="breadcrumb float-sm-right">
+        <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Home</a></li>
+        <li class="breadcrumb-item active">Create Lead</li>
+    </ol>
+</div>
 @stop
 
 @section('content')
@@ -17,6 +18,7 @@
   <div class="container-fluid">
     <div class="card card-primary">
 
+      {{-- ============================ FLASH MESSAGES ============================ --}}
       @if(session('success'))
         <div class="alert alert-success m-3">{{ session('success') }}</div>
       @endif
@@ -31,14 +33,16 @@
         </div>
       @endif
 
+      {{-- ============================ FORM START ============================ --}}
       <form action="{{ route('leads.store') }}" method="POST" onsubmit="return validateForm();">
         @csrf
 
         <div class="card-body">
           <div class="row">
 
-           <!-- Platform -->
-           <div class="form-group col-md-4">
+            {{-- ============================ BASIC INFO ============================ --}}
+            <!-- Platform -->
+            <div class="form-group col-md-4">
                <label>Platform <span class="text-danger">*</span></label>
                <select name="platform" class="form-control" required>
                    <option value="">Select</option>
@@ -46,7 +50,7 @@
                        <option value="{{ $platform }}" @selected(old('platform') === $platform)>{{ $platform }}</option>
                    @endforeach
                </select>
-           </div>
+            </div>
 
             <!-- Lead Date -->
             <div class="form-group col-md-4">
@@ -56,12 +60,11 @@
                      class="form-control" required>
             </div>
 
-            <!-- Platform Keyword -->
+            <!-- Item Searched -->
             <div class="form-group col-md-4">
               <label>Item Searched</label>
               <input type="text" name="platform_keyword" value="{{ old('platform_keyword') }}" class="form-control"
-                     maxlength="100"
-                     pattern="^[a-zA-Z0-9\s,.-]+$">
+                     maxlength="100" pattern="^[a-zA-Z0-9\s,.-]+$">
             </div>
 
             <!-- Buyer Name -->
@@ -84,30 +87,66 @@
                      pattern="[6-9]{1}[0-9]{9}"
                      title="Valid 10-digit number starting with 6-9" required>
             </div>
+         {{-- ============================ LOCATION & DISTANCE ============================ --}}
+                    <!-- Buyer Pincode -->
+                    <div class="form-group col-md-4">
+                        <label>Enter Pincode</label>
+                        <input type="text" id="pincode_input" name="pincode" maxlength="6"
+                               class="form-control"
+                               oninput="this.value=this.value.replace(/[^0-9]/g,'');">
+                        <input type="hidden" name="buyer_location_id" class="buyer_location_id" id="buyer_location_id">
+                    </div>
 
-            <!-- Buyer Location -->
-            <div class="form-group col-md-4">
-              <label>Buyer Location</label>
-              <input type="text" name="buyer_location" value="{{ old('buyer_location') }}" class="form-control"
-                     minlength="3" maxlength="100"
-                     pattern="^[a-zA-Z0-9\s,.-]+$">
+                    <!-- Buyer Location -->
+                    <div class="form-group col-md-8">
+                        <label>Buyer Location</label>
+                        <input type="text" name="buyer_location" id="buyer_location" class="form-control" placeholder="Buyer location will appear here" readonly>
+                    </div>
+
+                    <!-- Distance Calculation Result -->
+                    <div class="form-group col-md-4">
+                        <label>Distance from Mfg Unit</label>
+                        <input type="text" name="distance_result" id="distance_result"
+                               class="form-control"
+                               placeholder="Distance will appear here"
+                               readonly
+                               style="background-color: #d1ecf1; color: #0c5460;"> <!-- light blue bg, readable text -->
+                        <!-- Loader -->
+                        <div id="loader" class="text-center my-1" style="display:none;">
+                            <i class="fas fa-spinner fa-spin fa-lg text-primary"></i>
+                            <p class="mt-1 mb-0" style="font-size: 0.8rem;">Calculating...</p>
+                        </div>
+                    </div>
+
+            {{-- ============================ PRODUCTS ============================ --}}
+            <div class="form-group col-md-12 product-pills-container">
+                <label>Products</label>
+                <div class="row mb-2 g-2">
+                    <div class="col-md-8">
+                        <input type="text" class="form-control product-search" placeholder="Type product name">
+                    </div>
+                    <div class="col-md-2">
+                        <input type="number" class="form-control product-qty" placeholder="Qty" min="1">
+                    </div>
+                    <div class="col-md-2">
+                        <button type="button" class="btn btn-primary w-100 product-add">Add</button>
+                    </div>
+                </div>
+
+                <!-- Error Alert -->
+                <div class="alert alert-danger product-alert d-none" role="alert"></div>
+
+                <!-- Pills Container -->
+                <div class="product-pills mb-2"
+                     style="border:1px solid #d2d6de; padding:10px; border-radius:5px;"></div>
+
+                <!-- Hidden textarea for storing product list -->
+                <textarea name="product_detail" class="d-none product-detail" rows="2">{{ old('product_detail') }}</textarea>
             </div>
 
-            <!-- Product Detail -->
-            <div class="form-group col-md-12">
-              <label>Product Details (Name; Quantity; Price/Unit)</label>
-              <textarea name="product_detail" rows="2" class="form-control"
-                        maxlength="300">{{ old('product_detail') }}</textarea>
-            </div>
 
-            <!-- Delivery Location -->
-            <div class="form-group col-md-4">
-              <label>Delivery Location</label>
-              <input type="text" name="delivery_location" value="{{ old('delivery_location') }}" class="form-control"
-              minlength="3" maxlength="100"
-              pattern="^[a-zA-Z0-9\s,.-]+$">
-            </div>
 
+            {{-- ============================ DELIVERY & FOLLOW-UP ============================ --}}
             <!-- Expected Delivery Date -->
             <div class="form-group col-md-4">
                 <label>Expected Delivery Date</label>
@@ -130,7 +169,7 @@
                 <small id="followup_days_left" class="form-text text-muted"></small>
             </div>
 
-
+            {{-- ============================ STATUS & ASSIGNMENT ============================ --}}
             <!-- Status -->
             <div class="form-group col-md-4">
               <label>Status</label>
@@ -146,8 +185,7 @@
               <label>Assigned To</label>
               <select name="assigned_to" class="form-control">
                @foreach($users as $user)
-                 <option value="{{ $user->name }}"
-                   @selected(old('assigned_to', auth()->id()) == $user->id)>
+                 <option value="{{ $user->name }}" @selected(old('assigned_to', auth()->id()) == $user->id)>
                    {{ $user->name }}
                  </option>
                @endforeach
@@ -164,19 +202,19 @@
                 </select>
             </div>
 
-            <!-- Current Remark -->
+            {{-- ============================ REMARK ============================ --}}
             <div class="form-group col-md-12">
               <label for="current_remark">Current Remark <span class="text-danger">*</span></label>
               <textarea name="current_remark" id="current_remark"
-                        rows="2"
-                        class="form-control"
+                        rows="2" class="form-control"
                         maxlength="1000"
-                        placeholder="Add your remark..."
-                        required
+                        placeholder="Add your remark..." required
                         style="resize: vertical;"></textarea>
             </div>
           </div>
         </div>
+
+        {{-- ============================ ACTION BUTTONS ============================ --}}
         <div class="form-group row mt-2 px-4">
             <div class="col-12 col-md-6 mb-2 mb-md-0">
                 <a href="{{ route('leads.index') }}" class="btn btn-secondary btn-block">
@@ -189,80 +227,63 @@
             </div>
         </div>
      </form>
+     {{-- ============================ FORM END ============================ --}}
     </div>
   </div>
 </section>
 @stop
-@section('css')
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-multiselect@1.1.0/dist/css/bootstrap-multiselect.css">
-    <style>
-        .multiselect-container > li > a,
-        .multiselect-container > li.multiselect-group label,
-        .multiselect-container > li.multiselect-all label,
-        .btn-group > .multiselect{
-            text-align: left !important;
-        }
 
-    </style>
+{{-- ============================ STYLES ============================ --}}
+@section('css')
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-multiselect@1.1.0/dist/css/bootstrap-multiselect.css">
+<link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+<style>
+    /* Multiselect styling */
+    .multiselect-container > li > a,
+    .multiselect-container > li.multiselect-group label,
+    .multiselect-container > li.multiselect-all label,
+    .btn-group > .multiselect {
+        text-align: left !important;
+    }
+
+    /* Pills for products */
+    .product_pills .badge {
+        display: inline-block;
+        margin-bottom: 5px;
+        padding: 8px 12px;
+        font-size: 1rem;
+        border-radius: 0.5rem;
+    }
+</style>
 @stop
 
+{{-- ============================ JAVASCRIPT ============================ --}}
 @section('js')
-    <!--Multiselect-->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap-multiselect@1.1.0/dist/js/bootstrap-multiselect.min.js"></script>
-    <!--Validation-->
-    <script src="https://cdn.jsdelivr.net/jquery.validation/1.19.5/jquery.validate.min.js"></script>
+<script src="https://code.jquery.com/ui/1.13.2/jquery-ui.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap-multiselect@1.1.0/dist/js/bootstrap-multiselect.min.js"></script>
+<script src="https://cdn.jsdelivr.net/jquery.validation/1.19.5/jquery.validate.min.js"></script>
 
-    @include('leads.partials.shared-js')
-    <script>
-      function validateForm() {
-        const buyerName = document.getElementById('buyer_name').value.trim();
-        const contact = document.getElementById('buyer_contact').value.trim();
-        const leadDate = document.getElementById('lead_date').value;
-        const now = new Date();
-        const inputDate = new Date(leadDate);
+@include('leads.partials.shared-js')
 
-        if (buyerName.length < 3 || buyerName.length > 100) {
-          alert("Buyer Name must be between 3 and 100 characters.");
-          return false;
-        }
+<script>
+$(document).ready(function() {
+    var products = @json($products->pluck('name'));
 
-        if (!/^[6-9][0-9]{9}$/.test(contact)) {
-          alert("Enter a valid 10-digit Indian contact number.");
-          return false;
-        }
+    // Autocomplete
+    $(".product-search").autocomplete({ source: products, minLength: 1 });
 
-        if (inputDate > now) {
-          alert("Lead date cannot be in the future.");
-          return false;
-        }
+    // Product pills
+    initProductPills(".product-pills-container", products);
 
-        return true;
-      }
+    // Tag multiselect
+    initTagMultiselect();
 
-      document.addEventListener('DOMContentLoaded', () => {
+    // Delivery/followup days
+    initDaysCalculation();
 
-        const now = new Date();
-        const pad = (n) => n.toString().padStart(2, '0');
-        const localDateTime = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
-        const leadInput = document.getElementById('lead_date');
-        if (leadInput) {
-          leadInput.max = localDateTime;
-        }
-      });
-      function initTagMultiselect() {
-          $('#tags').multiselect('destroy').multiselect({
-              includeSelectAllOption: true,
-              buttonWidth: '100%',
-              nonSelectedText: 'Select Tags',
-              numberDisplayed: 2,
-              enableFiltering: true,
-              enableCaseInsensitiveFiltering: true
-          });
-      }
+    // Pincode autocomplete
+    initPincodeAutocomplete("#pincode_input", "#buyer_location", "#buyer_location_id", "#distance_result", "#loader");
+});
 
-      $(document).ready(function() {
-          initTagMultiselect();
-          initDaysCalculation();
-      });
-    </script>
+</script>
 @stop

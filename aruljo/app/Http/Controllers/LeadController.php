@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Lead;
+use App\Models\LeadProductMap;
 use App\Models\User;
+use App\Models\Product\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -26,58 +28,89 @@ class LeadController extends Controller
         $platforms = config('platforms.list');
         // Remove "Justdial" only in create
         $platforms = array_filter($platforms, fn($p) => $p !== 'Justdial');
-        return view('leads.create', compact('users', 'tags', 'platforms'));
+
+        // Fetch all products for autocomplete
+        $products = Product::all();
+
+        return view('leads.create', compact('users', 'tags', 'platforms', 'products'));
     }
 
     /**
      * Store a newly created lead.
      */
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'platform' => 'required|string',
-            'lead_date' => 'required|date',
-            'buyer_name' => 'required|string',
-            'buyer_location' => 'nullable|string',
-            'buyer_contact' => ['required', 'regex:/^[6-9]\d{9}$/'],
-            'platform_keyword' => 'nullable|string',
-            'product_detail' => 'nullable|string',
-            'delivery_location' => 'nullable|string',
-            'expected_delivery_date' => 'nullable|date|after_or_equal:today',
-            'follow_up_date' => 'nullable|date|after_or_equal:today',
-            'status' => ['required', Rule::in($this->allowedStatuses())],
-            'assigned_to' => 'nullable|string',
-            'current_remark' => 'nullable|string|max:500',
-            'tags' => 'nullable|array',
-            'tags.*' => 'string',
-        ]);
+public function store(Request $request)
+{
+    $validated = $request->validate([
+        'platform' => 'required|string',
+        'lead_date' => 'required|date',
+        'buyer_name' => 'required|string',
+        'buyer_location' => 'nullable|string',
+        'buyer_contact' => ['required', 'regex:/^[6-9]\d{9}$/'],
+        'platform_keyword' => 'nullable|string',
+        'product_detail' => 'nullable|string', // this comes from pills
+        'delivery_location' => 'nullable|string',
+        'expected_delivery_date' => 'nullable|date|after_or_equal:today',
+        'follow_up_date' => 'nullable|date|after_or_equal:today',
+        'status' => ['required', Rule::in($this->allowedStatuses())],
+        'assigned_to' => 'nullable|string',
+        'current_remark' => 'nullable|string|max:500',
+        'tags' => 'nullable|array',
+        'tags.*' => 'string',
+    ]);
 
-        $validated['assigned_to'] = $validated['assigned_to'] ?? Auth::user()->name;
+    $validated['assigned_to'] = $validated['assigned_to'] ?? Auth::user()->name;
 
-        $user = Auth::user()->name;
-        $timestamp = now()->format('d M Y, h:i A');
+    $user = Auth::user()->name;
+    $timestamp = now()->format('d M Y, h:i A');
 
-        if (!empty($validated['assigned_to']) && $validated['assigned_to'] !== $user) {
-            $remarkText = "assigned to {$validated['assigned_to']}";
-        } else {
-            $remarkText = "created the lead";
-        }
-
-        if ($request->filled('current_remark')) {
-            $remarkText .= " — {$request->current_remark}";
-        }
-
-        $lead = new Lead(collect($validated)->except(['current_remark', 'tags'])->toArray());
-        $lead->remarks = "{$user} ({$timestamp}): {$remarkText}";
-        $lead->save();
-
-        if ($request->has('tags')) {
-            $validTags = Tag::whereIn('name->en', $request->tags)->get();
-            $lead->syncTags($validTags);
-        }
-
-        return redirect()->route('leads.index')->with('success', 'Lead added successfully!');
+    if (!empty($validated['assigned_to']) && $validated['assigned_to'] !== $user) {
+        $remarkText = "assigned to {$validated['assigned_to']}";
+    } else {
+        $remarkText = "created the lead";
     }
+
+    if ($request->filled('current_remark')) {
+        $remarkText .= " — {$request->current_remark}";
+    }
+
+    $lead = new Lead(collect($validated)->except(['current_remark', 'tags', 'product_detail'])->toArray());
+    $lead->remarks = "{$user} ({$timestamp}): {$remarkText}";
+    $lead->save();
+
+    // Sync tags
+    if ($request->has('tags')) {
+        $validTags = Tag::whereIn('name->en', $request->tags)->get();
+        $lead->syncTags($validTags);
+    }
+
+    // Handle product mapping
+    if ($request->filled('product_detail')) {
+        $products = explode('~|~', $request->product_detail); // pills are separated by ;
+        $allProductsWithQty = [];
+
+        foreach ($products as $prod) {
+            $parts = explode(',', $prod); // name, qty
+            $name = trim($parts[0]);
+            $qty = isset($parts[1]) ? (int)trim($parts[1]) : 1;
+
+            $product = Product::where('name', $name)->first();
+            if ($product) {
+                // Attach to lead with quantity
+                $lead->products()->attach($product->id, ['quantity' => $qty]);
+
+                // Save as "name,qty"
+                $allProductsWithQty[] = "{$name},{$qty}";
+            }
+        }
+
+        // Store in lead's product_detail column
+        $lead->product_detail = implode('~|~', $allProductsWithQty);
+        $lead->save();
+    }
+
+    return redirect()->route('leads.index')->with('success', 'Lead added successfully!');
+}
+
 
     /**
      * Display a listing of the leads.
@@ -85,6 +118,7 @@ class LeadController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
+        $products = Product::all();
         $tab = $request->get('tab', 'active');
         $today = now()->toDateString();
 
@@ -190,7 +224,7 @@ class LeadController extends Controller
         }
 
        return view('leads.index', compact(
-            'leads', 'users', 'currentUser', 'tab', 'statuses', 'platforms', 'allTags','isEuser'));
+            'leads', 'users', 'currentUser', 'tab', 'statuses', 'platforms', 'allTags','isEuser','products'));
     }
 
 
@@ -199,6 +233,32 @@ class LeadController extends Controller
      */
     public function edit(Lead $lead)
     {
+        // 1️⃣ Extract pincode from buyer_location
+        preg_match('/\d{6}$/', $lead->buyer_location, $matches);
+        $pincode = $matches[0] ?? null;
+
+        // 2️⃣ Get location_id from pincodes table
+        $locationId = null;
+        if ($pincode) {
+            $location = DB::table('distance_pincodes')->where('pincode', $pincode)->first();
+            $locationId = $location ? $location->id : null;
+        }
+
+        // 3️⃣ Fetch distance from distance_cache table
+        $distanceResult = null;
+        $mfgUnitId = 38821; // Replace with your factory location id
+        if ($locationId) {
+            $distance = DB::table('distance_cache')
+                ->where('from_location_id', $mfgUnitId)
+                ->where('to_location_id', $locationId)
+                ->first();
+
+            if ($distance) {
+                $distanceResult = "{$distance->distance_km} km ({$distance->duration_minutes} mins)";
+            }
+        }
+
+        // 4️⃣ Return JSON for modal
         return response()->json([
             'id' => $lead->id,
             'buyer_name' => $lead->buyer_name,
@@ -206,8 +266,11 @@ class LeadController extends Controller
             'lead_date' => $lead->lead_date,
             'platform' => $lead->platform,
             'platform_keyword' => $lead->platform_keyword,
-            'product_detail' => $lead->product_detail,
+            'product_detail' => explode('~|~', $lead->product_detail ?? ''),
             'buyer_location' => $lead->buyer_location,
+            'pincode' => $pincode,
+            'buyer_location_id' => $locationId,
+            'distance_result' => $distanceResult,
             'delivery_location' => $lead->delivery_location,
             'expected_delivery_date' => $lead->expected_delivery_date,
             'follow_up_date' => $lead->follow_up_date,
@@ -218,6 +281,7 @@ class LeadController extends Controller
             'tags' => $lead->tags->pluck('name')->toArray(),
         ]);
     }
+
 
     /**
      * Update lead details.
