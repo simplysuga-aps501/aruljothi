@@ -95,16 +95,30 @@
                     fgroup-class="mb-3" readonly :value="old('buyer_location')"/>
             </div>
 
-            {{-- Distance --}}
-            <div class="col-md-4">
-                <x-adminlte-input name="distance_result" label="Distance from Mfg Unit" placeholder="Distance will appear here"
-                    fgroup-class="mb-3" readonly :value="old('distance_result')"
-                    style="background-color: #d1ecf1; color: #0c5460;"/>
-                <div id="loader" class="text-center my-1" style="display:none;">
-                    <i class="fas fa-spinner fa-spin fa-lg text-primary"></i>
-                    <p class="mt-1 mb-0" style="font-size: 0.8rem;">Calculating...</p>
-                </div>
-            </div>
+           {{-- Distance & Duration --}}
+           <div class="col-md-4">
+               <label for="distance" class="text-dark">Distance from Mfg Unit</label>
+               <div class="input-group mb-3">
+                   {{-- Distance --}}
+                   <input type="text" id="distance_km" name="distance_km" placeholder="Distance"
+                       class="form-control editable-field" readonly
+                       value="{{ old('distance_km') ?? '' }}" style="background-color: #d1ecf1; color: #0c5460;">
+                   <span class="input-group-text">km</span>
+
+                   {{-- Duration --}}
+                   <input type="text" id="duration_minutes" name="duration_minutes" placeholder="Duration"
+                       class="form-control editable-field" readonly
+                       value="{{ old('duration_minutes') ?? '' }}" style="background-color: #d1ecf1; color: #0c5460;">
+                   <span class="input-group-text">mins</span>
+               </div>
+                <!-- Shared Alert Container -->
+                <div class="distance-alert text-danger small" style="display:none;"></div>
+               <div id="loader" class="text-center my-1" style="display:none;">
+                   <i class="fas fa-spinner fa-spin fa-lg text-primary"></i>
+                   <p class="mt-1 mb-0" style="font-size: 0.8rem;">Calculating...</p>
+               </div>
+
+           </div>
 
             {{-- Products --}}
             <div class="col-md-12 product-pills-container">
@@ -203,6 +217,26 @@
 @section('css')
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-multiselect@1.1.0/dist/css/bootstrap-multiselect.css">
 <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+    <style>
+    .product-pills .pill
+    {
+        display: inline-flex;
+        align-items: center;
+        justify-content: space-between; /* Push icon to the right */
+        max-width: 100%;
+        word-break: break-word;
+        white-space: normal;
+        padding: 5px 10px;
+        margin: 3px;
+    }
+
+    .product-pills .pill i
+    {
+        margin-left: 8px;
+        cursor: pointer;
+        flex-shrink: 0; /* Prevent icon from shrinking */
+    }
+    </style>
 @stop
 
 @section('js')
@@ -218,7 +252,8 @@ $(document).ready(function() {
     initProductPills(".product-pills-container", products);
     initTagMultiselect();
     initDaysCalculation();
-    initPincodeAutocomplete("#pincode_input", "#buyer_location", "#buyer_location_id", "#distance_result", "#loader");
+    initPincodeAutocomplete("#pincode_input", "#buyer_location", "#buyer_location_id", "#distance_km","#duration_minutes","#loader");
+    initDistanceDurationEditable();
 });
 </script>
 @stop

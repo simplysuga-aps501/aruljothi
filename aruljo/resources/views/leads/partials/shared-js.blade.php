@@ -63,7 +63,7 @@
                 });
                 if (exists) return showProductError(alertBox, "This product already added.");
 
-                var pill = $('<span class="badge badge-info mr-1 mb-1">' + name + ' , ' + qty +
+                var pill = $('<span class="pill badge badge-info mr-1 mb-1">' + name + ' , ' + qty +
                              ' <i class="fas fa-times ml-1" style="cursor:pointer;"></i></span>');
                 pill.find('i').click(function () {
                     pill.remove();
@@ -85,7 +85,7 @@
                     var name = parts[0].trim();
                     var qty  = (parts[1] || "").trim();
 
-                    var pill = $('<span class="badge badge-info mr-1 mb-1">' + name + ' , ' + qty +
+                    var pill = $('<span class=" pill badge badge-info mr-1 mb-1">' + name + ' , ' + qty +
                                  ' <i class="fas fa-times ml-1" style="cursor:pointer;"></i></span>');
                     pill.find('i').click(function () {
                         pill.remove();
@@ -130,17 +130,17 @@
         pincodeInput,
         buyerLocation,
         buyerLocationId,
-        distanceResult,
+        distanceInput,
+        durationInput,
         loader,
-        appendToTarget = "body") {
-
+        appendToTarget = "body"
+    ) {
         let stateCache = '',
             districtCache = '';
 
         // Inline error element
         let $error = $('<div class="text-danger small mt-1" style="display:none;"></div>');
         $(pincodeInput).closest('.form-group').append($error);
-
 
         let opts = {
             minLength: 6,
@@ -161,13 +161,14 @@
                                         id: data.ids[index]
                                     };
                                 }));
-                                $error.hide(); // hide error if places found
+                                $error.hide();
                             } else {
                                 response([]);
                                 $error.text("Invalid pincode! Please enter a valid pincode.").show();
                                 $(buyerLocation).val('');
                                 $(buyerLocationId).val('');
-                                $(distanceResult).val('');
+                                $(distanceInput).val('');
+                                $(durationInput).val('');
                                 $(loader).hide();
                             }
                         },
@@ -176,7 +177,8 @@
                             $error.text("Error fetching pincode info.").show();
                             $(buyerLocation).val('');
                             $(buyerLocationId).val('');
-                            $(distanceResult).val('');
+                            $(distanceInput).val('');
+                            $(durationInput).val('');
                             $(loader).hide();
                         }
                     });
@@ -190,7 +192,8 @@
                     $(pincodeInput).val('');
                     $(buyerLocation).val('');
                     $(buyerLocationId).val('');
-                    $(distanceResult).val('');
+                    $(distanceInput).val('');
+                    $(durationInput).val('');
                     $(loader).hide();
                     return false;
                 }
@@ -203,20 +206,27 @@
                 $(buyerLocationId).val(ui.item.id);
 
                 $(loader).show();
-                $(distanceResult).addClass('d-none').val('');
+                $(distanceInput).val('');
+                $(durationInput).val('');
 
                 $.get('{{ route('distance.calc') }}', { to_id: ui.item.id })
                     .done(function(data) {
                         $(loader).hide();
-                        $(distanceResult).removeClass('d-none')
-                            .val(data.distance_km ?
-                                `${Math.round(parseFloat(data.distance_km))} km (${data.duration_minutes} mins)` :
-                                "Could not calculate distance.");
-                        $error.hide(); // hide error if successful
+                        if (data.distance_km != null && data.duration_minutes != null) {
+                            $(distanceInput).val(Math.round(parseFloat(data.distance_km)));
+                            $(durationInput).val(Math.round(parseFloat(data.duration_minutes)));
+                            $error.hide();
+                        } else {
+                            $(distanceInput).val('');
+                            $(durationInput).val('');
+                            $error.text("Could not calculate distance.").show();
+                        }
                     })
                     .fail(function() {
                         $(loader).hide();
-                        $(distanceResult).removeClass('d-none').val("Error fetching distance.");
+                        $(distanceInput).val('');
+                        $(durationInput).val('');
+                        $error.text("Error fetching distance.").show();
                     });
             }
         };
@@ -232,11 +242,37 @@
             if ($(this).val().trim() === "") {
                 $(buyerLocation).val("");
                 $(buyerLocationId).val("");
-                $(distanceResult).val("");
+                $(distanceInput).val("");
+                $(durationInput).val("");
                 $(loader).hide();
                 $error.hide();
             }
         });
     }
+    function initDistanceDurationEditable() {
+        $('.editable-field').off('dblclick').on('dblclick', function() {
+            const inputGroup = $(this).closest('.input-group');
+            const modal = $(this).closest('.modal, body'); // works for modal or page
+            const pincodeInput = modal.find('.pincode-input').first();
+            const $alertDiv = inputGroup.siblings('.distance-alert');
+
+            if (!$alertDiv.length) return;
+
+            if (!pincodeInput.val().trim()) {
+                $alertDiv.text('Please enter a pincode first.').show();
+                setTimeout(() => $alertDiv.fadeOut(), 3000);
+                return;
+            }
+
+            $(this).prop('readonly', false).focus();
+            $(this).css('background-color', '#ffffff'); // white while editing
+        });
+
+        $('.editable-field').off('blur').on('blur', function() {
+            $(this).prop('readonly', true);
+            $(this).css('background-color', '#d1ecf1'); // blue when readonly
+        });
+    }
+
 
 </script>

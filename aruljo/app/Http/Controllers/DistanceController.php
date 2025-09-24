@@ -57,63 +57,64 @@ class DistanceController extends Controller
         return null;
     }
 
-    public function calc(Request $request)
-    {
-        $toId = $request->to_id;
+   public function calc(Request $request)
+   {
+       $toId = $request->to_id;
 
-        // 1️⃣ Get 'from' location by name instead of hardcoding ID
-        $fromLocation = DistancePincode::where('place', 'Chinnadharapuram')->first();
+       // Get 'from' location by name
+       $fromLocation = DistancePincode::where('place', 'Chinnadharapuram')->first();
 
-        if (!$fromLocation) {
-            return response()->json(['error' => 'Origin location not found'], 404);
-        }
+       if (!$fromLocation) {
+           return response()->json(['error' => 'Origin location not found'], 404);
+       }
 
-        $fromId = $fromLocation->id;
+       $fromId = $fromLocation->id;
 
-        // 2️⃣ Check cache
-        $cache = DistanceCache::where('from_location_id', $fromId)
-            ->where('to_location_id', $toId)
-            ->first();
+       // Check cache
+       $cache = DistanceCache::where('from_location_id', $fromId)
+           ->where('to_location_id', $toId)
+           ->first();
 
-        if ($cache && $cache->last_updated && strtotime($cache->last_updated) > strtotime('-7 days')) {
-            return response()->json([
-                'distance_km' => $cache->distance_km,
-                'duration_minutes' => $cache->duration_minutes,
-                'cached' => true
-            ]);
-        }
+       if ($cache) {
+           // If user manually updated, always use cached value
+           if ($cache->user_update || ($cache->last_updated && strtotime($cache->last_updated) > strtotime('-60 days'))) {
+               return response()->json([
+                   'distance_km' => $cache->distance_km,
+                   'duration_minutes' => $cache->duration_minutes,
+                   'cached' => true,
+                   'user_updated' => (bool) $cache->user_update
+               ]);
+           }
+       }
 
-        // 3️⃣ Fetch coordinates
-        $from = $fromLocation;
-        $to = DistancePincode::find($toId);
+       // Fetch coordinates if cache missing or outdated
+       $to = DistancePincode::find($toId);
+       if (!$to) {
+           return response()->json(['error' => 'Destination location not found'], 404);
+       }
 
-        if (!$to) {
-            return response()->json(['error' => 'Destination location not found'], 404);
-        }
+       $result = $this->getDistance(
+           $fromLocation->latitude,
+           $fromLocation->longitude,
+           $to->latitude,
+           $to->longitude
+       );
 
-        // 4️⃣ Call OSRM API
-        $result = $this->getDistance(
-            $from->latitude,
-            $from->longitude,
-            $to->latitude,
-            $to->longitude
-        );
+       if ($result) {
+           // Save/update cache
+           DistanceCache::updateOrCreate(
+               ['from_location_id' => $fromId, 'to_location_id' => $toId],
+               [
+                   'distance_km' => $result['distance_km'],
+                   'duration_minutes' => $result['duration_minutes'],
+                   'last_updated' => now()
+               ]
+           );
 
-        if ($result) {
-            // 5️⃣ Save/update cache
-            DistanceCache::updateOrCreate(
-                ['from_location_id' => $fromId, 'to_location_id' => $toId],
-                [
-                    'distance_km' => $result['distance_km'],
-                    'duration_minutes' => $result['duration_minutes'],
-                    'last_updated' => now()
-                ]
-            );
+           return response()->json($result);
+       }
 
-            return response()->json($result);
-        }
-
-        return response()->json(['error' => 'Could not fetch distance'], 500);
-    }
+       return response()->json(['error' => 'Could not fetch distance'], 500);
+   }
 
 }

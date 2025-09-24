@@ -207,6 +207,25 @@
         .btn-group>.multiselect {
             text-align: left !important;
         }
+        .product-pills .pill {
+            display: inline-flex;
+            align-items: center;
+            justify-content: space-between; /* Push icon to the right */
+            max-width: 100%;
+            word-break: break-word;
+            white-space: normal;
+            padding: 5px 10px;
+            margin: 3px;
+        }
+
+        .product-pills .pill i {
+            margin-left: 8px;
+            cursor: pointer;
+            flex-shrink: 0; /* Prevent icon from shrinking */
+        }
+
+
+
     </style>
 @stop
 
