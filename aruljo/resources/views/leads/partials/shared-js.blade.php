@@ -125,7 +125,7 @@
     }
 
     /* ---------------- PINCODE → LOCATION + DISTANCE ---------------- */
-    /* ---------------- PINCODE → LOCATION + DISTANCE ---------------- */
+
     function initPincodeAutocomplete(
         pincodeInput,
         buyerLocation,
@@ -139,7 +139,8 @@
 
         // Inline error element
         let $error = $('<div class="text-danger small mt-1" style="display:none;"></div>');
-        $(pincodeInput).after($error);
+        $(pincodeInput).closest('.form-group').append($error);
+
 
         let opts = {
             minLength: 6,

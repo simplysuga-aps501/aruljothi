@@ -48,9 +48,10 @@ class DistanceController extends Controller
                 $duration = $data['routes'][0]['duration'];
 
                 return [
-                    'distance_km' => round($km),
-                    'duration_minutes' => round($duration / 60),
+                    'distance_km'      => (int) round($km, 0, PHP_ROUND_HALF_UP),
+                    'duration_minutes' => (int) round($duration / 60, 0, PHP_ROUND_HALF_UP),
                 ];
+
             }
         }
         return null;

@@ -254,7 +254,11 @@ public function store(Request $request)
                 ->first();
 
             if ($distance) {
-                $distanceResult = "{$distance->distance_km} km ({$distance->duration_minutes} mins)";
+                $distanceResult = sprintf(
+                    "%d km (%d mins)",
+                    round($distance->distance_km, 0, PHP_ROUND_HALF_UP),
+                    round($distance->duration_minutes, 0, PHP_ROUND_HALF_UP)
+                );
             }
         }
 

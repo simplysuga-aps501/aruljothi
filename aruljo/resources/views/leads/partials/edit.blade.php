@@ -5,6 +5,8 @@
             @csrf
             @method('PUT')
             <div class="modal-content">
+
+                <!-- ============================ MODAL HEADER ============================ -->
                 <div class="modal-header">
                     <h5 class="modal-title">Edit Lead</h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
@@ -12,8 +14,10 @@
                     </button>
                 </div>
 
+                <!-- ============================ MODAL BODY ============================ -->
                 <div class="modal-body">
                     <div class="row">
+
                         <!-- Platform -->
                         <div class="col-md-4">
                             <x-adminlte-select name="platform" label="Platform" fgroup-class="mb-3" required>
@@ -29,7 +33,7 @@
                             <x-adminlte-input name="lead_date" label="Lead Date" type="datetime-local" fgroup-class="mb-3" required />
                         </div>
 
-                        <!-- Platform Keyword -->
+                        <!-- Item Searched -->
                         <div class="col-md-4">
                             <x-adminlte-input name="platform_keyword" label="Item Searched" placeholder="Item Searched" fgroup-class="mb-3" />
                         </div>
@@ -48,7 +52,10 @@
                         <!-- Buyer Pincode -->
                         <div class="col-md-4">
                             <x-adminlte-input name="pincode" label="Enter Pincode" placeholder="Enter Pincode"
-                                              fgroup-class="mb-3" maxlength="6" id="edit_pincode_input" class="pincode-input"/>
+                                fgroup-class="mb-3" maxlength="6"
+                                id="edit_pincode_input" class="pincode-input"
+                                type="text"
+                                oninput="this.value=this.value.replace(/[^0-9]/g,'');" />
                             <input type="hidden" name="buyer_location_id" id="edit_buyer_location_id" class="buyer_location_id">
                         </div>
 
@@ -70,8 +77,8 @@
                             </div>
                         </div>
 
-                        {{-- ============================ PRODUCTS ============================ --}}
-                        <div class="form-group col-md-12 product-pills-container">
+                        <!-- ============================ PRODUCTS ============================ -->
+                        <div class="col-md-12 product-pills-container">
                             <label>Products</label>
                             <div class="row mb-2 g-2">
                                 <div class="col-md-8">
@@ -89,8 +96,7 @@
                             <div class="alert alert-danger product-alert d-none" role="alert"></div>
 
                             <!-- Pills Container -->
-                            <div class="product-pills mb-2"
-                                 style="border:1px solid #d2d6de; padding:10px; border-radius:5px;"></div>
+                            <div class="product-pills mb-2" style="border:1px solid #d2d6de; padding:10px; border-radius:5px;"></div>
 
                             <!-- Hidden textarea for storing product list -->
                             <textarea name="product_detail" class="d-none product-detail" rows="2">{{ old('product_detail') }}</textarea>
@@ -109,9 +115,9 @@
                             <small id="edit_delivery_days_left" class="text-muted"></small>
                         </div>
 
-                        <!-- Followup Date -->
+                        <!-- Follow-up Date -->
                         <div class="col-md-4">
-                            <x-adminlte-input name="follow_up_date" label="Followup Date"
+                            <x-adminlte-input name="follow_up_date" label="Follow-up Date"
                                               type="date" min="{{ date('Y-m-d') }}" data-output="edit_followup_days_left"
                                               fgroup-class="mb-3" />
                             <small id="edit_followup_days_left" class="text-muted"></small>
@@ -155,11 +161,13 @@
 
                         <!-- Past Remarks -->
                         <div class="col-md-12">
-                            <x-adminlte-textarea name="past_remarks" label="Past Remarks" rows=4 fgroup-class="mb-3" disabled />
+                            <x-adminlte-textarea name="past_remarks" label="Past Remarks" rows="4" fgroup-class="mb-3" disabled />
                         </div>
+
                     </div>
                 </div>
 
+                <!-- ============================ MODAL FOOTER ============================ -->
                 <div class="modal-footer">
                     <x-adminlte-button type="submit" label="Update Lead" theme="primary" />
                 </div>
@@ -176,21 +184,18 @@ $(document).ready(function() {
     // Open modal with AJAX
     $(document).on('click', '.open-edit-lead-modal', function () {
         const leadId = $(this).data('lead-id');
+        const modal = $('#editLeadModal');
+        const form = $('#editLeadForm');
 
         // ===== RESET MODAL =====
-            const modal = $('#editLeadModal');
-            modal.find('input:not([type=hidden]), select, textarea').val('');
-            modal.find('.product-pills').empty();
-            modal.find('.product-alert').addClass('d-none').text('');
-
+        modal.find('input:not([type=hidden]), select, textarea').val('');
+        modal.find('.product-pills').empty();
+        modal.find('.product-alert').addClass('d-none').text('');
 
         $.get(`/leads/${leadId}/edit`, function(data) {
-            const modal = $('#editLeadModal');
-            const form = $('#editLeadForm');
-
             form.attr('action', `/leads/${leadId}`);
 
-            // Fill fields
+            // ===== FILL FIELDS =====
             modal.find('input[name="buyer_name"]').val(data.buyer_name);
             modal.find('input[name="buyer_contact"]').val(data.buyer_contact);
             modal.find('input[name="lead_date"]').val(data.lead_date);
@@ -209,37 +214,16 @@ $(document).ready(function() {
             modal.find('select[name="tags[]"]').val(data.tags);
 
             // Product detail
-            if (Array.isArray(data.product_detail)) {
-            console.log("product_detail",data.product_detail);
-                modal.find('textarea[name="product_detail"]').val(data.product_detail.join('\n'));
-            } else {
-                modal.find('textarea[name="product_detail"]').val(data.product_detail || '');
-            }
+            modal.find('textarea[name="product_detail"]').val(Array.isArray(data.product_detail) ? data.product_detail.join('\n') : data.product_detail || '');
 
+            // Past remarks
+            modal.find('textarea[name="past_remarks"]').val(Array.isArray(data.past_remarks) ? data.past_remarks.join('\n') : data.past_remarks || '');
 
-            // Past remarks (array → line breaks)
-            if (Array.isArray(data.past_remarks)) {
-                modal.find('textarea[name="past_remarks"]').val(data.past_remarks.join('\n'));
-            } else {
-                modal.find('textarea[name="past_remarks"]').val(data.past_remarks || '');
-            }
-
-
-            // Init pills and autocomplete
+            // ===== INIT SCRIPTS =====
             initProductPills(".product-pills-container", products);
-            modal.find('.product-search').autocomplete({
-                source: products,
-                minLength: 1,
-                appendTo: "#editLeadModal"
-            });
-
-
-            // Tags multiselect
+            modal.find('.product-search').autocomplete({ source: products, minLength: 1, appendTo: "#editLeadModal" });
             initTagMultiselect(modal.find('#tags'));
-
-            // Delivery/followup days
             initDaysCalculation(modal);
-
             initPincodeAutocomplete(
                 "#edit_pincode_input",
                 "#edit_buyer_location",
@@ -248,6 +232,7 @@ $(document).ready(function() {
                 "#edit_loader",
                 "#editLeadModal"
             );
+
             modal.modal('show');
         });
     });
