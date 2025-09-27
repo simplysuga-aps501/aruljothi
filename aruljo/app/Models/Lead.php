@@ -25,6 +25,7 @@ class Lead extends Model implements AuditableContract
         'platform_keyword',
         'product_detail',
         'delivery_location',
+        'delivery_location_id',
         'expected_delivery_date',
         'remarks',
         'follow_up_date',

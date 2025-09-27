@@ -49,48 +49,11 @@
                                               required pattern="[0-9]{10}" title="Enter a valid 10-digit phone number" />
                         </div>
 
-                        <!-- Buyer Pincode -->
+                        <!-- Buyer Location -->
                         <div class="col-md-4">
-                            <x-adminlte-input name="pincode" label="Enter Pincode" placeholder="Enter Pincode"
-                                fgroup-class="mb-3" maxlength="6"
-                                id="edit_pincode_input" class="pincode-input"
-                                type="text"
-                                oninput="this.value=this.value.replace(/[^0-9]/g,'');" />
-                            <input type="hidden" name="buyer_location_id" id="edit_buyer_location_id" class="buyer_location_id">
+                            <x-adminlte-input name="buyer_location" id="edit_buyer_location" class="buyer_location" label="Buyer Location" fgroup-class="mb-3" />
                         </div>
 
-                        <!-- Buyer Location (auto-filled) -->
-                        <div class="col-md-8">
-                            <x-adminlte-input name="buyer_location" label="Buyer Location"
-                                              placeholder="Buyer location will appear here"
-                                              fgroup-class="mb-3" id="edit_buyer_location" readonly />
-                        </div>
-
-                        <!-- Distance & Duration -->
-                        <div class="col-md-4">
-                            <label for="edit_distance" class="text-dark">Distance from Mfg Unit</label>
-                            <div class="input-group mb-3">
-                                {{-- Distance --}}
-                                <input type="text" id="edit_distance" name="distance_km" placeholder="Distance"
-                                       class="form-control editable-field" readonly
-                                       value="{{ old('distance_km', $lead->distance ?? '') }}"
-                                       style="background-color: #d1ecf1; color: #0c5460;">
-                                <span class="input-group-text">km</span>
-
-                                {{-- Duration --}}
-                                <input type="text" id="edit_duration" name="duration_minutes" placeholder="Duration"
-                                       class="form-control editable-field" readonly
-                                       value="{{ old('duration_minutes', $lead->duration ?? '') }}"
-                                       style="background-color: #d1ecf1; color: #0c5460;">
-                                <span class="input-group-text">mins</span>
-                            </div>
-                            <!-- Shared Alert Container -->
-                            <div class="distance-alert text-danger small" style="display:none;"></div>
-                            <div id="edit_loader" class="text-center my-1" style="display:none;">
-                                <i class="fas fa-spinner fa-spin fa-lg text-primary"></i>
-                                <p class="mt-1 mb-0" style="font-size: 0.8rem;">Calculating...</p>
-                            </div>
-                        </div>
 
                         <!-- ============================ PRODUCTS ============================ -->
                         <div class="col-md-12 product-pills-container">
@@ -118,9 +81,49 @@
                             <textarea name="product_detail" class="d-none product-detail" rows="2">{{ old('product_detail') }}</textarea>
                         </div>
 
-                        <!-- Delivery Location -->
+                        <!-- ============================ Delivery Location ============================ -->
+
                         <div class="col-md-4">
-                            <x-adminlte-input name="delivery_location" label="Delivery Location" fgroup-class="mb-3" />
+                            <x-adminlte-input name="pincode" label="Enter Pincode" placeholder="Enter Pincode"
+                                fgroup-class="mb-3" maxlength="6"
+                                id="edit_pincode_input" class="pincode_input"
+                                type="text"
+                                oninput="this.value=this.value.replace(/[^0-9]/g,'');" />
+                            <input type="hidden" name="delivery_location_id" id="edit_delivery_location_id" class="delivery_location_id">
+                        </div>
+
+                        <!-- Buyer Location (auto-filled) -->
+                        <div class="col-md-8">
+                            <x-adminlte-input name="delivery_location" class="delivery_location" label="Delivery Location"
+                                              placeholder="Delivery location will appear here"
+                                              fgroup-class="mb-3" id="edit_delivery_location" readonly />
+                        </div>
+
+                        <!-- Distance & Duration -->
+                        <div class="col-md-4">
+                            <label for="edit_distance" class="text-dark">Distance from Mfg Unit</label>
+                            <div class="input-group mb-3">
+                                {{-- Distance --}}
+                                <input type="text" id="edit_distance_km" name="distance_km" placeholder="Distance"
+                                       class="form-control editable_field distance_km" readonly
+                                       value="{{ old('distance_km', $lead->distance ?? '') }}"
+                                       style="background-color: #d1ecf1; color: #0c5460;">
+                                <span class="input-group-text">km</span>
+
+                                {{-- Duration --}}
+                                <input type="text" id="edit_duration_minutes" name="duration_minutes" placeholder="Duration"
+                                       class="form-control editable_field duration_minutes" readonly
+                                       value="{{ old('duration_minutes', $lead->duration ?? '') }}"
+                                       style="background-color: #d1ecf1; color: #0c5460;">
+                                <span class="input-group-text">mins</span>
+                            </div>
+
+                            <!-- Shared Alert Container -->
+                            <div class="distance_alert text-danger" style="display:none;"></div>
+                            <div id="edit_loader" class="loader text-center my-1" style="display:none;">
+                                <i class="fas fa-spinner fa-spin fa-lg text-primary"></i>
+                                <p class="mt-1 mb-0" style="font-size: 0.8rem;">Calculating...</p>
+                            </div>
                         </div>
 
                         <!-- Expected Delivery Date -->
@@ -216,13 +219,13 @@ $(document).ready(function() {
             modal.find('input[name="buyer_contact"]').val(data.buyer_contact);
             modal.find('input[name="lead_date"]').val(data.lead_date);
             modal.find('input[name="pincode"]').val(data.pincode);
-            modal.find('#edit_buyer_location_id').val(data.buyer_location_id);
             modal.find('#edit_buyer_location').val(data.buyer_location);
-            modal.find('#edit_distance').val(data.distance_km);
-            modal.find('#edit_duration').val(data.duration_minutes);
+            modal.find('#edit_distance_km').val(data.distance_km);
+            modal.find('#edit_duration_minutes').val(data.duration_minutes);
             modal.find('select[name="platform"]').val(data.platform);
             modal.find('input[name="platform_keyword"]').val(data.platform_keyword);
             modal.find('input[name="delivery_location"]').val(data.delivery_location);
+            modal.find('input[name="delivery_location_id"]').val(data.delivery_location_id);
             modal.find('input[name="expected_delivery_date"]').val(data.expected_delivery_date);
             modal.find('input[name="follow_up_date"]').val(data.follow_up_date);
             modal.find('select[name="status"]').val(data.status);
@@ -242,15 +245,14 @@ $(document).ready(function() {
             initTagMultiselect(modal.find('#tags'));
             initDaysCalculation(modal);
             initPincodeAutocomplete(
-                "#edit_pincode_input",
-                "#edit_buyer_location",
-                "#edit_buyer_location_id",
-                "#edit_distance",
-                "#edit_duration",
-                "#edit_loader",
-                "#editLeadModal"
-            );
-
+                            "#edit_pincode_input",
+                            "#edit_delivery_location",
+                            "#edit_delivery_location_id",
+                            "#edit_distance_km",
+                            "#edit_duration_minutes",
+                            "#edit_loader",
+                            "#editLeadModal"
+                        );
             modal.modal('show');
         });
     });

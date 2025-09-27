@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\DistancePincode;
 use App\Models\DistanceCache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 
 class DistanceController extends Controller
@@ -14,7 +15,6 @@ class DistanceController extends Controller
     public function byPincode(Request $request)
     {
         $pincode = $request->pincode;
-
         $records = DistancePincode::where('pincode', $pincode)->get();
 
         if ($records->isEmpty()) {

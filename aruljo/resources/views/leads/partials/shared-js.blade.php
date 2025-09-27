@@ -79,7 +79,8 @@
             // Rebuild pills from textarea
             var existing = textarea.val();
             if (existing) {
-                var items = existing.split(/~\|~|\n/);
+                var items = existing.split('~|~');
+                console.log(items);
                 items.forEach(function (item) {
                     var parts = item.split(",");
                     var name = parts[0].trim();
@@ -126,7 +127,7 @@
 
     /* ---------------- PINCODE → LOCATION + DISTANCE ---------------- */
 
-    function initPincodeAutocomplete(
+function initPincodeAutocomplete(
         pincodeInput,
         buyerLocation,
         buyerLocationId,
@@ -250,11 +251,11 @@
         });
     }
     function initDistanceDurationEditable() {
-        $('.editable-field').off('dblclick').on('dblclick', function() {
+        $('.editable_field').off('dblclick').on('dblclick', function() {
             const inputGroup = $(this).closest('.input-group');
             const modal = $(this).closest('.modal, body'); // works for modal or page
-            const pincodeInput = modal.find('.pincode-input').first();
-            const $alertDiv = inputGroup.siblings('.distance-alert');
+            const pincodeInput = modal.find('.pincode_input').first();
+            const $alertDiv = inputGroup.siblings('.distance_alert');
 
             if (!$alertDiv.length) return;
 
@@ -268,7 +269,7 @@
             $(this).css('background-color', '#ffffff'); // white while editing
         });
 
-        $('.editable-field').off('blur').on('blur', function() {
+        $('.editable_field').off('blur').on('blur', function() {
             $(this).prop('readonly', true);
             $(this).css('background-color', '#d1ecf1'); // blue when readonly
         });

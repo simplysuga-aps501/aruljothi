@@ -13,6 +13,8 @@ use Spatie\Tags\Tag;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\DistanceController;
+use Illuminate\Support\Facades\Log;
+
 
 class LeadController extends Controller
 {
@@ -42,6 +44,7 @@ class LeadController extends Controller
 
     public function store(Request $request)
         {
+            Log::info('Lead form submitted', $request->all());
             $validated = $request->validate([
                 'platform' => 'required|string',
                 'lead_date' => 'required|date',
@@ -50,7 +53,7 @@ class LeadController extends Controller
                 'buyer_contact' => ['required', 'regex:/^[6-9]\d{9}$/'],
                 'platform_keyword' => 'nullable|string',
                 'product_detail' => 'nullable|string',
-                'delivery_location' => 'nullable|string',
+                'delivery_location_id' => 'nullable|exists:distance_pincodes,id',
                 'expected_delivery_date' => 'nullable|date|after_or_equal:today',
                 'follow_up_date' => 'nullable|date|after_or_equal:today',
                 'status' => ['required', Rule::in($this->allowedStatuses())],
@@ -97,7 +100,7 @@ class LeadController extends Controller
             }
 
             // ---------------- Update Distance Cache ----------------
-            $toId = $request->buyer_location_id ?? null;
+            $toId = $request->delivery_location_id ?? null;
             $submittedDistance = $request->distance_km ?? null;
             $submittedDuration = $request->duration_minutes ?? null;
 
@@ -240,33 +243,36 @@ class LeadController extends Controller
      */
     public function edit(Lead $lead)
     {
-        // 1️⃣ Extract pincode from buyer_location
-        preg_match('/\d{6}$/', $lead->buyer_location, $matches);
-        $pincode = $matches[0] ?? null;
+        $locationId = $lead->delivery_location_id;
 
-        // 2️⃣ Get location_id from pincodes table
-        $locationId = null;
-        if ($pincode) {
-            $location = DB::table('distance_pincodes')->where('pincode', $pincode)->first();
-            $locationId = $location ? $location->id : null;
-        }
+        $distance_km = null;
+        $duration_minutes = null;
+        $pincode = null;
+        $fullLocation = null;
 
-        // 3️⃣ Fetch distance from distance_cache table
-        $distanceResult = null;
-        $mfgUnitId = 38821; // Replace with your factory location id
         if ($locationId) {
-            $distance = DB::table('distance_cache')
-                ->where('from_location_id', $mfgUnitId)
-                ->where('to_location_id', $locationId)
-                ->first();
+            // Fetch location details directly from distance_pincodes
+            $location = DB::table('distance_pincodes')->where('id', $locationId)->first();
 
-        if ($distance) {
-                $distance_km = round($distance->distance_km, 0, PHP_ROUND_HALF_UP);
-                $duration_minutes = round($distance->duration_minutes, 0, PHP_ROUND_HALF_UP);
+            if ($location) {
+                $pincode = $location->pincode;
+
+                // Build the full location string: place,district,state-pincode
+                $fullLocation = "{$location->place}, {$location->district}, {$location->state}-{$location->pincode}";
+
+                // Fetch distance & duration from cache using to_location_id
+                $cache = DB::table('distance_cache')
+                    ->where('to_location_id', $locationId)
+                    ->latest('last_updated')
+                    ->first();
+
+                if ($cache) {
+                    $distance_km = round($cache->distance_km, 0, PHP_ROUND_HALF_UP);
+                    $duration_minutes = round($cache->duration_minutes, 0, PHP_ROUND_HALF_UP);
+                }
             }
         }
 
-        // 4️⃣ Return JSON for modal
         return response()->json([
             'id' => $lead->id,
             'buyer_name' => $lead->buyer_name,
@@ -274,13 +280,13 @@ class LeadController extends Controller
             'lead_date' => $lead->lead_date,
             'platform' => $lead->platform,
             'platform_keyword' => $lead->platform_keyword,
-            'product_detail' => explode('~|~', $lead->product_detail ?? ''),
+            'product_detail' => $lead->product_detail,
             'buyer_location' => $lead->buyer_location,
             'pincode' => $pincode,
-            'buyer_location_id' => $locationId,
+            'delivery_location_id' => $locationId,
             'distance_km' => $distance_km,
             'duration_minutes' => $duration_minutes,
-            'delivery_location' => $lead->delivery_location,
+            'delivery_location' => $fullLocation,
             'expected_delivery_date' => $lead->expected_delivery_date,
             'follow_up_date' => $lead->follow_up_date,
             'status' => $lead->status,
@@ -297,6 +303,7 @@ class LeadController extends Controller
      */
     public function update(Request $request, $id)
         {
+            Log::info('Lead update form submitted', $request->all());
             $lead = Lead::findOrFail($id);
             $validated = $request->validate([
                 'platform' => 'required|string',
@@ -306,7 +313,7 @@ class LeadController extends Controller
                 'buyer_contact' => ['required', 'regex:/^[6-9]\d{9}$/'],
                 'platform_keyword' => 'nullable|string',
                 'product_detail' => 'nullable|string',
-                'delivery_location' => 'nullable|string',
+                'delivery_location_id' => 'nullable|exists:distance_pincodes,id',
                 'expected_delivery_date' => 'nullable|date|after_or_equal:today',
                 'follow_up_date' => 'nullable|date|after_or_equal:today',
                 'status' => ['required', Rule::in($this->allowedStatuses())],
@@ -347,7 +354,7 @@ class LeadController extends Controller
             $lead->syncTags($validTags);
 
             // ---------------- Update Distance Cache ----------------
-            $toId = $request->buyer_location_id ?? null;
+            $toId = $request->delivery_location_id ?? null;
             $submittedDistance = $request->distance_km ?? null;
             $submittedDuration = $request->duration_minutes ?? null;
 
