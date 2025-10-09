@@ -1,5 +1,6 @@
 <!-- Edit Lead Modal -->
-<div class="modal fade" id="editLeadModal" tabindex="-1" role="dialog" aria-labelledby="editLeadModalLabel" aria-hidden="true">
+<div class="modal fade" id="editLeadModal" tabindex="-1" role="dialog" aria-labelledby="editLeadModalLabel"
+    aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
         <form id="editLeadForm" method="POST" action="">
             @csrf
@@ -22,7 +23,7 @@
                         <div class="col-md-4">
                             <x-adminlte-select name="platform" label="Platform" fgroup-class="mb-3" required>
                                 <option value="">Select Platform</option>
-                                @foreach($platforms as $platform)
+                                @foreach ($platforms as $platform)
                                     <option value="{{ $platform }}">{{ $platform }}</option>
                                 @endforeach
                             </x-adminlte-select>
@@ -30,28 +31,33 @@
 
                         <!-- Lead Date -->
                         <div class="col-md-4">
-                            <x-adminlte-input name="lead_date" label="Lead Date" type="datetime-local" fgroup-class="mb-3" required />
+                            <x-adminlte-input name="lead_date" label="Lead Date" type="datetime-local"
+                                fgroup-class="mb-3" required />
                         </div>
 
                         <!-- Item Searched -->
                         <div class="col-md-4">
-                            <x-adminlte-input name="platform_keyword" label="Item Searched" placeholder="Item Searched" fgroup-class="mb-3" />
+                            <x-adminlte-input name="platform_keyword" label="Item Searched" placeholder="Item Searched"
+                                fgroup-class="mb-3" />
                         </div>
 
                         <!-- Buyer Name -->
                         <div class="col-md-4">
-                            <x-adminlte-input name="buyer_name" label="Buyer Name" placeholder="Name" fgroup-class="mb-3" required />
+                            <x-adminlte-input name="buyer_name" label="Buyer Name" placeholder="Name"
+                                fgroup-class="mb-3" required />
                         </div>
 
                         <!-- Buyer Contact -->
                         <div class="col-md-4">
-                            <x-adminlte-input name="buyer_contact" label="Buyer Contact" placeholder="Phone" fgroup-class="mb-3"
-                                              required pattern="[0-9]{10}" title="Enter a valid 10-digit phone number" />
+                            <x-adminlte-input name="buyer_contact" label="Buyer Contact" placeholder="Phone"
+                                fgroup-class="mb-3" required pattern="[0-9]{10}"
+                                title="Enter a valid 10-digit phone number" />
                         </div>
 
                         <!-- Buyer Location -->
                         <div class="col-md-4">
-                            <x-adminlte-input name="buyer_location" id="edit_buyer_location" class="buyer_location" label="Buyer Location" fgroup-class="mb-3" />
+                            <x-adminlte-input name="buyer_location" id="edit_buyer_location" class="buyer_location"
+                                label="Buyer Location" fgroup-class="mb-3" />
                         </div>
 
 
@@ -60,10 +66,12 @@
                             <label>Products</label>
                             <div class="row mb-2 g-2">
                                 <div class="col-md-8">
-                                    <input type="text" class="form-control product-search" placeholder="Type product name">
+                                    <input type="text" class="form-control product-search"
+                                        placeholder="Type product name">
                                 </div>
                                 <div class="col-md-2">
-                                    <input type="number" class="form-control product-qty" placeholder="Qty" min="1">
+                                    <input type="number" class="form-control product-qty" placeholder="Qty"
+                                        min="1">
                                 </div>
                                 <div class="col-md-2">
                                     <button type="button" class="btn btn-primary w-100 product-add">Add</button>
@@ -74,7 +82,9 @@
                             <div class="alert alert-danger product-alert d-none" role="alert"></div>
 
                             <!-- Pills Container -->
-                          <div class="product-pills mb-2 p-2" style="border:1px solid #d2d6de; border-radius:5px; display:flex; flex-wrap:wrap; gap:5px;"></div>
+                            <div class="product-pills mb-2 p-2"
+                                style="border:1px solid #d2d6de; border-radius:5px; display:flex; flex-wrap:wrap; gap:5px;">
+                            </div>
 
 
                             <!-- Hidden textarea for storing product list -->
@@ -83,20 +93,19 @@
 
                         <!-- ============================ Delivery Location ============================ -->
 
-                        <div class="col-md-4">
+                        <div class="col-md-2">
                             <x-adminlte-input name="pincode" label="Enter Pincode" placeholder="Enter Pincode"
-                                fgroup-class="mb-3" maxlength="6"
-                                id="edit_pincode_input" class="pincode_input"
-                                type="text"
-                                oninput="this.value=this.value.replace(/[^0-9]/g,'');" />
-                            <input type="hidden" name="delivery_location_id" id="edit_delivery_location_id" class="delivery_location_id">
+                                fgroup-class="mb-3" maxlength="6" id="edit_pincode_input" class="pincode_input"
+                                type="text" oninput="this.value=this.value.replace(/[^0-9]/g,'');" />
+                            <input type="hidden" name="delivery_location_id" id="edit_delivery_location_id"
+                                class="delivery_location_id">
                         </div>
 
-                        <!-- Buyer Location (auto-filled) -->
-                        <div class="col-md-8">
-                            <x-adminlte-input name="delivery_location" class="delivery_location" label="Delivery Location"
-                                              placeholder="Delivery location will appear here"
-                                              fgroup-class="mb-3" id="edit_delivery_location" readonly />
+                        <!-- Delivery Location (auto-filled) -->
+                        <div class="col-md-6">
+                            <x-adminlte-input name="delivery_location" class="delivery_location"
+                                label="Delivery Location" placeholder="Delivery location will appear here"
+                                fgroup-class="mb-3" id="edit_delivery_location" readonly />
                         </div>
 
                         <!-- Distance & Duration -->
@@ -104,17 +113,17 @@
                             <label for="edit_distance" class="text-dark">Distance from Mfg Unit</label>
                             <div class="input-group mb-3">
                                 {{-- Distance --}}
-                                <input type="text" id="edit_distance_km" name="distance_km" placeholder="Distance"
-                                       class="form-control editable_field distance_km" readonly
-                                       value="{{ old('distance_km', $lead->distance ?? '') }}"
-                                       style="background-color: #d1ecf1; color: #0c5460;">
+                                <input type="text" id="edit_distance_km" name="distance_km"
+                                    placeholder="Distance" class="form-control editable_field distance_km" readonly
+                                    value="{{ old('distance_km', $lead->distance ?? '') }}"
+                                    style="background-color: #d1ecf1; color: #0c5460;">
                                 <span class="input-group-text">km</span>
 
                                 {{-- Duration --}}
-                                <input type="text" id="edit_duration_minutes" name="duration_minutes" placeholder="Duration"
-                                       class="form-control editable_field duration_minutes" readonly
-                                       value="{{ old('duration_minutes', $lead->duration ?? '') }}"
-                                       style="background-color: #d1ecf1; color: #0c5460;">
+                                <input type="text" id="edit_duration_minutes" name="duration_minutes"
+                                    placeholder="Duration" class="form-control editable_field duration_minutes"
+                                    readonly value="{{ old('duration_minutes', $lead->duration ?? '') }}"
+                                    style="background-color: #d1ecf1; color: #0c5460;">
                                 <span class="input-group-text">mins</span>
                             </div>
 
@@ -125,20 +134,70 @@
                                 <p class="mt-1 mb-0" style="font-size: 0.8rem;">Calculating...</p>
                             </div>
                         </div>
+                        {{-- Transport Quote Section --}}
 
+                        <!-- Draft Quote Button -->
+                        <div class="col-md-2">
+                            <label>&nbsp;</label>
+                            <button type="button" class="btn btn-primary w-100" id="calculate_quote_btn">
+                                <i class="fas fa-calculator"></i> Dft Quote
+                            </button>
+                        </div>
+
+                        <!-- Truck Type -->
+                        <div class="col-md-4">
+                            <x-adminlte-input name="suggested_truck_type" label="Truck Type" placeholder="Truck Type"
+                                fgroup-class="mb-3" readonly id="suggested_truck_type" />
+                        </div>
+
+                        <!-- Number of Trucks -->
+                        <div class="col-md-2">
+                            <x-adminlte-input name="suggested_num_trucks" label="No of Trucks"
+                                placeholder="No of Trucks" fgroup-class="mb-3" readonly id="suggested_num_trucks" />
+                        </div>
+
+                        <!-- Estimated Cost -->
+                        <div class="col-md-4">
+                            <label for="estimated_cost">Estimated Cost (₹)</label>
+                            <div class="input-group mb-3">
+                                <input type="text" id="estimated_cost" name="estimated_cost" class="form-control"
+                                    placeholder="Estimated Cost" readonly>
+                                <div class="input-group-append">
+                                    <span id="toggle_calc_details" class="input-group-text" style="cursor:pointer;"
+                                        title="View calculation details">
+                                        <i class="fas fa-info-circle text-muted"></i>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Collapsible Calculation Details -->
+                        <div class="col-12 mt-2">
+                            <div class="card card-info collapse-card" id="calcDetailsCollapse" style="display:none;">
+                                <div class="card-header py-2">
+                                    <h5 class="card-title mb-0">
+                                        <i class="fas fa-calculator mr-2"></i> Quote Calculation Details
+                                    </h5>
+                                </div>
+                                <div class="card-body" id="calcDetailsBody"
+                                    style="font-size:0.95rem; line-height:1.5; background:#f8f9fa;">
+                                    <p>No details available yet.</p>
+                                </div>
+                            </div>
+                        </div>
                         <!-- Expected Delivery Date -->
                         <div class="col-md-4">
                             <x-adminlte-input name="expected_delivery_date" label="Expected Delivery Date"
-                                              type="date" min="{{ date('Y-m-d') }}" data-output="edit_delivery_days_left"
-                                              fgroup-class="mb-3" />
+                                type="date" min="{{ date('Y-m-d') }}" data-output="edit_delivery_days_left"
+                                fgroup-class="mb-3" />
                             <small id="edit_delivery_days_left" class="text-muted"></small>
                         </div>
 
                         <!-- Follow-up Date -->
                         <div class="col-md-4">
-                            <x-adminlte-input name="follow_up_date" label="Follow-up Date"
-                                              type="date" min="{{ date('Y-m-d') }}" data-output="edit_followup_days_left"
-                                              fgroup-class="mb-3" />
+                            <x-adminlte-input name="follow_up_date" label="Follow-up Date" type="date"
+                                min="{{ date('Y-m-d') }}" data-output="edit_followup_days_left"
+                                fgroup-class="mb-3" />
                             <small id="edit_followup_days_left" class="text-muted"></small>
                         </div>
 
@@ -146,7 +205,7 @@
                         <div class="col-md-4">
                             <x-adminlte-select name="status" label="Status" fgroup-class="mb-3" required>
                                 <option value="">Select Status</option>
-                                @foreach($statuses as $status)
+                                @foreach ($statuses as $status)
                                     <option value="{{ $status }}">{{ $status }}</option>
                                 @endforeach
                             </x-adminlte-select>
@@ -156,7 +215,7 @@
                         <div class="col-md-4">
                             <x-adminlte-select name="assigned_to" label="Assigned To" fgroup-class="mb-3">
                                 <option value="">Select User</option>
-                                @foreach($users as $user)
+                                @foreach ($users as $user)
                                     <option value="{{ $user->name }}">{{ $user->name }}</option>
                                 @endforeach
                             </x-adminlte-select>
@@ -166,7 +225,7 @@
                         <div class="col-md-4">
                             <label for="tags" class="text-dark">Tags</label>
                             <select id="tags" name="tags[]" multiple class="form-control">
-                                @foreach($allTags as $tag)
+                                @foreach ($allTags as $tag)
                                     <option value="{{ $tag }}">{{ $tag }}</option>
                                 @endforeach
                             </select>
@@ -175,12 +234,13 @@
                         <!-- Current Remark -->
                         <div class="col-md-12">
                             <x-adminlte-input name="current_remark" label="New Remark" placeholder="Add a remark"
-                                              fgroup-class="mb-3" required />
+                                fgroup-class="mb-3" required />
                         </div>
 
                         <!-- Past Remarks -->
                         <div class="col-md-12">
-                            <x-adminlte-textarea name="past_remarks" label="Past Remarks" rows="4" fgroup-class="mb-3" disabled />
+                            <x-adminlte-textarea name="past_remarks" label="Past Remarks" rows="4"
+                                fgroup-class="mb-3" disabled />
                         </div>
 
                     </div>
@@ -196,68 +256,103 @@
 </div>
 
 @push('scripts')
-<script>
-$(document).ready(function() {
-    var products = @json($products->pluck('name'));
+    <script>
+        $(document).ready(function() {
+            var products = @json($products->map(fn($p) => ['name' => $p->name, 'sku' => $p->sku, 'weight' => $p->weight_kg]));
 
-    // Open modal with AJAX
-    $(document).on('click', '.open-edit-lead-modal', function () {
-        const leadId = $(this).data('lead-id');
-        const modal = $('#editLeadModal');
-        const form = $('#editLeadForm');
+            // Open modal with AJAX
+            $(document).on('click', '.open-edit-lead-modal', function() {
+                const leadId = $(this).data('lead-id');
+                const modal = $('#editLeadModal');
+                const form = $('#editLeadForm');
 
-        // ===== RESET MODAL =====
-        modal.find('input:not([type=hidden]), select, textarea').val('');
-        modal.find('.product-pills').empty();
-        modal.find('.product-alert').addClass('d-none').text('');
+                // ===== RESET MODAL =====
+                modal.find('input:not([type=hidden]), select, textarea').val('');
+                modal.find('.product-pills').empty();
+                modal.find('.product-alert').addClass('d-none').text('');
 
-        $.get(`/leads/${leadId}/edit`, function(data) {
-            form.attr('action', `/leads/${leadId}`);
+                $.get(`/leads/${leadId}/edit`, function(data) {
+                    form.attr('action', `/leads/${leadId}`);
 
-            // ===== FILL FIELDS =====
-            modal.find('input[name="buyer_name"]').val(data.buyer_name);
-            modal.find('input[name="buyer_contact"]').val(data.buyer_contact);
-            modal.find('input[name="lead_date"]').val(data.lead_date);
-            modal.find('input[name="pincode"]').val(data.pincode);
-            modal.find('#edit_buyer_location').val(data.buyer_location);
-            modal.find('#edit_distance_km').val(data.distance_km);
-            modal.find('#edit_duration_minutes').val(data.duration_minutes);
-            modal.find('select[name="platform"]').val(data.platform);
-            modal.find('input[name="platform_keyword"]').val(data.platform_keyword);
-            modal.find('input[name="delivery_location"]').val(data.delivery_location);
-            modal.find('input[name="delivery_location_id"]').val(data.delivery_location_id);
-            modal.find('input[name="expected_delivery_date"]').val(data.expected_delivery_date);
-            modal.find('input[name="follow_up_date"]').val(data.follow_up_date);
-            modal.find('select[name="status"]').val(data.status);
-            modal.find('select[name="assigned_to"]').val(data.assigned_to);
-            modal.find('textarea[name="current_remark"]').val('');
-            modal.find('select[name="tags[]"]').val(data.tags);
+                    // ===== FILL FIELDS =====
+                    modal.find('input[name="buyer_name"]').val(data.buyer_name);
+                    modal.find('input[name="buyer_contact"]').val(data.buyer_contact);
+                    modal.find('input[name="lead_date"]').val(data.lead_date);
+                    modal.find('input[name="pincode"]').val(data.pincode);
+                    modal.find('#edit_buyer_location').val(data.buyer_location);
+                    modal.find('#edit_distance_km').val(data.distance_km);
+                    modal.find('#edit_duration_minutes').val(data.duration_minutes);
+                    modal.find('select[name="platform"]').val(data.platform);
+                    modal.find('input[name="platform_keyword"]').val(data.platform_keyword);
+                    modal.find('input[name="delivery_location"]').val(data.delivery_location);
+                    modal.find('input[name="delivery_location_id"]').val(data.delivery_location_id);
+                    modal.find('input[name="expected_delivery_date"]').val(data
+                        .expected_delivery_date);
+                    modal.find('input[name="follow_up_date"]').val(data.follow_up_date);
+                    modal.find('select[name="status"]').val(data.status);
+                    modal.find('select[name="assigned_to"]').val(data.assigned_to);
+                    modal.find('textarea[name="current_remark"]').val('');
+                    modal.find('select[name="tags[]"]').val(data.tags);
 
-            // Product detail
-            modal.find('textarea[name="product_detail"]').val(Array.isArray(data.product_detail) ? data.product_detail.join('\n') : data.product_detail || '');
+                    // Product detail
+                    modal.find('textarea[name="product_detail"]').val(Array.isArray(data
+                            .product_detail) ? data.product_detail.join('\n') : data
+                        .product_detail || '');
 
-            // Past remarks
-            modal.find('textarea[name="past_remarks"]').val(Array.isArray(data.past_remarks) ? data.past_remarks.join('\n') : data.past_remarks || '');
+                    // Past remarks
+                    modal.find('textarea[name="past_remarks"]').val(Array.isArray(data
+                        .past_remarks) ? data.past_remarks.join('\n') : data.past_remarks || '');
 
-            // ===== INIT SCRIPTS =====
-            initProductPills(".product-pills-container", products);
-            modal.find('.product-search').autocomplete({ source: products, minLength: 1, appendTo: "#editLeadModal" });
-            initTagMultiselect(modal.find('#tags'));
-            initDaysCalculation(modal);
-            initPincodeAutocomplete(
-                            "#edit_pincode_input",
-                            "#edit_delivery_location",
-                            "#edit_delivery_location_id",
-                            "#edit_distance_km",
-                            "#edit_duration_minutes",
-                            "#edit_loader",
-                            "#editLeadModal"
-                        );
-            modal.modal('show');
+                    // ===== INIT SCRIPTS =====
+                    initProductPills(".product-pills-container", products);
+                    modal.find('.product-search').autocomplete({
+                        source: products,
+                        minLength: 1,
+                        appendTo: "#editLeadModal"
+                    });
+                    initTagMultiselect(modal.find('#tags'));
+                    initDaysCalculation(modal);
+                    initPincodeAutocomplete(
+                        "#edit_pincode_input",
+                        "#edit_delivery_location",
+                        "#edit_delivery_location_id",
+                        "#edit_distance_km",
+                        "#edit_duration_minutes",
+                        "#edit_loader",
+                        "#editLeadModal"
+                    );
+                    modal.modal('show');
+                });
+            });
+            initDistanceDurationEditable();
+            initQuoteCalculator('#editLeadModal');
+            $('#editLeadModal').on('shown.bs.modal', function() {
+                $.fn.dataTable
+                    .tables({ visible: true, api: true })
+                    .columns.adjust()
+                    .responsive.recalc();
+            });
+            $('#editLeadModal').on('shown.bs.modal', function() {
+                $('#calcDetailsBody table.dataTable').each(function(i, table) {
+                    const $table = $(table);
+                    const api = $table.DataTable();
+                    console.log(`📊 Table #${i}:`, {
+                        outerWidth: $table.outerWidth(),
+                        tableWidth: $table.width(),
+                        parentWidth: $table.closest('.modal-body').width(),
+                        visible: $table.is(':visible'),
+                        columns: api.columns().count(),
+                        responsiveEnabled: !!api.responsive
+                    });
+                });
+
+                // Force recalculation after logging
+                $.fn.dataTable.tables({ visible: true, api: true })
+                    .columns.adjust()
+                    .responsive.recalc();
+            });
+
         });
-    });
-   initDistanceDurationEditable();
 
-});
-</script>
+    </script>
 @endpush

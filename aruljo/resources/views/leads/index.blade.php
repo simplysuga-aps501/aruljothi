@@ -189,6 +189,7 @@
     <link rel="stylesheet" href="https://cdn.datatables.net/datetime/1.5.5/css/dataTables.dateTime.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/columncontrol/1.0.7/css/columnControl.dataTables.min.css">
 
+
     <!--Select2 Tags JS-->
     <link rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/bootstrap-multiselect@1.1.0/dist/css/bootstrap-multiselect.css">
@@ -243,6 +244,7 @@
 
     <!--Auto Complete-->
     <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+
 
     @include('leads.partials.shared-js')
     <script>

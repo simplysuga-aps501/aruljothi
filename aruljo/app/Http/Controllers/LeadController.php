@@ -14,6 +14,8 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\DistanceController;
 use Illuminate\Support\Facades\Log;
+use App\Services\QuoteCalculatorService;
+
 
 
 class LeadController extends Controller
@@ -252,23 +254,17 @@ class LeadController extends Controller
 
         if ($locationId) {
             // Fetch location details directly from distance_pincodes
-            $location = DB::table('distance_pincodes')->where('id', $locationId)->first();
+            $location = $lead->location; // uses belongsTo relationship
 
             if ($location) {
                 $pincode = $location->pincode;
+                $fullLocation = $location->full_location . '-' . $pincode;
 
-                // Build the full location string: place,district,state-pincode
-                $fullLocation = "{$location->place}, {$location->district}, {$location->state}-{$location->pincode}";
-
-                // Fetch distance & duration from cache using to_location_id
-                $cache = DB::table('distance_cache')
-                    ->where('to_location_id', $locationId)
-                    ->latest('last_updated')
-                    ->first();
+                $cache = $location->latestCache; // if you add latestCache() helper in DistancePincode
 
                 if ($cache) {
-                    $distance_km = round($cache->distance_km, 0, PHP_ROUND_HALF_UP);
-                    $duration_minutes = round($cache->duration_minutes, 0, PHP_ROUND_HALF_UP);
+                    $distance_km = round($cache->distance_km);
+                    $duration_minutes = round($cache->duration_minutes);
                 }
             }
         }
@@ -446,5 +442,19 @@ class LeadController extends Controller
             return abs($diff) . " day(s) from today";
         }
 
+    }
+
+    public function calculateDraftQuote(Request $request, QuoteCalculatorService $calculator)
+    {
+        $result = $calculator->calculate(
+            $request->input('products', []),
+            (float)$request->input('distance_km', 0)
+        );
+
+        if (isset($result['error'])) {
+            return response()->json(['error' => $result['error']], 400);
+        }
+
+        return response()->json($result);
     }
 }

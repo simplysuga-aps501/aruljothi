@@ -48,7 +48,7 @@
 
                 if (!name) return showProductError(alertBox, "Enter a product name.");
                 if (!qty || qty <= 0) return showProductError(alertBox, "Quantity is required.");
-                if (productsList && !productsList.includes(name)) {
+                if (productsList && !productsList.some(p => p.name === name)) {
                     return showProductError(alertBox, "Select a valid product from the list.");
                 }
 
@@ -63,8 +63,18 @@
                 });
                 if (exists) return showProductError(alertBox, "This product already added.");
 
+                // Find the weight from productsList
+                var productObj = productsList.find(p => p.name === name);
+                var weight = productObj ? parseFloat(productObj.weight) : 0;
+                var sku = productObj ? productObj.sku : null;
+
+                // Create pill with data attributes
                 var pill = $('<span class="pill badge badge-info mr-1 mb-1">' + name + ' , ' + qty +
                              ' <i class="fas fa-times ml-1" style="cursor:pointer;"></i></span>');
+                pill.data('name',name);
+                pill.data('sku',sku);
+                pill.data('qty', qty);
+                pill.data('weight', weight);
                 pill.find('i').click(function () {
                     pill.remove();
                     updateProductTextarea(pillsContainer, textarea);
@@ -76,25 +86,33 @@
                 qtyInput.val('');
             });
 
-            // Rebuild pills from textarea
-            var existing = textarea.val();
-            if (existing) {
-                var items = existing.split('~|~');
-                console.log(items);
-                items.forEach(function (item) {
-                    var parts = item.split(",");
-                    var name = parts[0].trim();
-                    var qty  = (parts[1] || "").trim();
+           // Rebuild pills from textarea
+           var existing = textarea.val();
+           if (existing) {
+               var items = existing.split('~|~');
+               items.forEach(function (item) {
+                   var parts = item.split(",");
+                   var name = parts[0].trim();
+                   var qty  = (parts[1] || "").trim();
 
-                    var pill = $('<span class=" pill badge badge-info mr-1 mb-1">' + name + ' , ' + qty +
-                                 ' <i class="fas fa-times ml-1" style="cursor:pointer;"></i></span>');
-                    pill.find('i').click(function () {
-                        pill.remove();
-                        updateProductTextarea(pillsContainer, textarea);
-                    });
-                    pillsContainer.append(pill);
-                });
-            }
+                   var productObj = productsList.find(p => p.name === name);
+                   var weight = productObj ? parseFloat(productObj.weight) : 0;
+                   var sku = productObj ? productObj.sku : null; // ✅ FIX: Declare sku here
+
+                   var pill = $('<span class="pill badge badge-info mr-1 mb-1">' + name + ' , ' + qty +
+                                ' <i class="fas fa-times ml-1" style="cursor:pointer;"></i></span>');
+                   pill.data('name', name);
+                   pill.data('sku', sku);
+                   pill.data('qty', qty);
+                   pill.data('weight', weight);
+
+                   pill.find('i').click(function () {
+                       pill.remove();
+                       updateProductTextarea(pillsContainer, textarea);
+                   });
+                   pillsContainer.append(pill);
+               });
+           }
         });
     }
 
@@ -274,6 +292,102 @@ function initPincodeAutocomplete(
             $(this).css('background-color', '#d1ecf1'); // blue when readonly
         });
     }
+function initQuoteCalculator(container = document) {
+    const $container = $(container);
+
+    // ---------------- CALCULATE QUOTE BUTTON ----------------
+    $container.off('click', '#calculate_quote_btn').on('click', '#calculate_quote_btn', function () {
+        let products = [];
+
+        $container.find('.product-pills .pill').each(function() {
+            products.push({
+                name: $(this).data('name'),
+                sku: $(this).data('sku'),
+                qty: parseFloat($(this).data('qty')),
+                weight: parseFloat($(this).data('weight'))
+            });
+        });
+
+        const distanceInput = $container.find('.distance_km');
+        const distance = parseFloat(distanceInput.val());
+
+        if (!distance || products.length === 0) {
+            alert('Please enter products and distance.');
+            return;
+        }
+
+        const loader = $container.find('.loader, #loader');
+        loader.show();
+
+        $.ajax({
+            url: '{{ route("leads.calculate-quote") }}',
+            type: 'POST',
+            data: {
+                _token: '{{ csrf_token() }}',
+                products,
+                distance_km: distance
+            },
+            success: function(res) {
+                loader.hide();
+
+                $container.find('#suggested_truck_type').val(res.truck_type);
+                $container.find('#suggested_num_trucks').val(res.num_trucks);
+                $container.find('#estimated_cost').val(res.total_cost);
+
+                // Fill collapsible content
+                $('#calcDetailsBody').html(res.details_html || '<em>No calculation details available.</em>');
+                $('#calcDetailsCollapse').hide(); // keep hidden initially
+
+                // Initialize DataTables inside collapsible (if any)
+                $('#calcDetailsBody table').each(function() {
+                    if (!$.fn.DataTable.isDataTable(this)) {
+                        $(this).DataTable({
+                            responsive: true,
+                            paging: false,
+                            searching: false,
+                            info: false,
+                            autoWidth: false
+                        });
+                    }
+                });
+            },
+            error: function(xhr) {
+                loader.hide();
+                console.error(xhr.status, xhr.responseText);
+                alert('Error calculating quote. Please try again.');
+            }
+        });
+    });
+
+    // ---------------- TOGGLE COLLAPSIBLE ----------------
+    $(document).off('click', '#toggle_calc_details').on('click', '#toggle_calc_details', function() {
+        const collapse = $('#calcDetailsCollapse');
+
+        collapse.slideToggle(200, function() {
+            // Wait for DOM to render widths before recalculating
+            setTimeout(() => {
+                collapse.find('table').each(function() {
+                    if ($.fn.DataTable.isDataTable(this)) {
+                        $(this).DataTable().columns.adjust().responsive.recalc();
+                    }
+                });
+            }, 100);
+        });
+         $('#calcDetailsBody table.dataTable').each(function(i, table) {
+                            const $table = $(table);
+                            const api = $table.DataTable();
+                            console.log(`📊 Table #${i}:`, {
+                                outerWidth: $table.outerWidth(),
+                                tableWidth: $table.width(),
+                                parentWidth: $table.closest('.modal-body').width(),
+                                visible: $table.is(':visible'),
+                                columns: api.columns().count(),
+                                responsiveEnabled: !!api.responsive
+                            });
+                        });
+    });
+
+}
 
 
 </script>

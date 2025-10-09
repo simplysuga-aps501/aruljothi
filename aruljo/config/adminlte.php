@@ -348,7 +348,18 @@ return [
                // (you can add more sub-items here later, like Units, HSN Codes, etc.)
            ],
        ],
+       [
+           'text'        => 'Transport',
+           'icon'        => 'fas fa-truck', // truck icon
+           'submenu'     => [
+               [
+                   'text' => 'Agencies',
+                   'url'  => 'transport/agencies',
+                   'icon' => 'fas fa-building', // optional
+               ],
 
+           ],
+       ],
         ['header' => 'account_settings'],
         [
             'text' => 'profile',

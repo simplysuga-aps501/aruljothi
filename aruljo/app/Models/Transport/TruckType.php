@@ -30,4 +30,8 @@ class TruckType extends Model
     {
         return $this->hasMany(ProductTruckCapacity::class, 'truck_type_id');
     }
+    public function agencyRates()
+    {
+        return $this->hasMany(TruckAgencyRate::class, 'truck_type_id');
+    }
 }

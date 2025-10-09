@@ -143,6 +143,55 @@
                    <p class="mt-1 mb-0" style="font-size: 0.8rem;">Calculating...</p>
                </div>
            </div>
+            {{-- Transport Quote Section --}}
+            {{-- Calculate Button --}}
+           <div class="col-md-2">
+               <label>&nbsp;</label> {{-- Keeps vertical alignment with other inputs --}}
+               <button type="button" class="btn btn-primary w-100" id="calculate_quote_btn">
+                   <i class="fas fa-calculator"></i> Draft Quote
+               </button>
+           </div>
+
+
+            {{-- Truck Type --}}
+            <div class="col-md-4">
+                <x-adminlte-input name="suggested_truck_type" label="Truck Type" placeholder="Truck Type"
+                    fgroup-class="mb-3" readonly id="suggested_truck_type"/>
+            </div>
+
+            {{-- Number of Trucks --}}
+            <div class="col-md-2">
+                <x-adminlte-input name="suggested_num_trucks" label="Number of Trucks" placeholder="Number of Trucks"
+                    fgroup-class="mb-3" readonly id="suggested_num_trucks"/>
+            </div>
+
+            {{-- Estimated Cost --}}
+            <div class="col-md-4">
+                <label for="estimated_cost">Estimated Cost (₹)</label>
+                <div class="input-group mb-1">
+                    <input type="text" id="estimated_cost" name="estimated_cost"
+                           class="form-control" placeholder="Estimated Cost" readonly>
+                    <div class="input-group-append">
+                        <button class="btn btn-info" type="button" id="toggle_calc_details">
+                            <i class="fas fa-info-circle"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Collapsible Calculation Details --}}
+            <div class="col-12 mt-2">
+                <div class="card card-info collapse-card" id="calcDetailsCollapse" style="display:none;">
+                    <div class="card-header py-2">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-calculator mr-2"></i> Quote Calculation Details
+                        </h5>
+                    </div>
+                    <div class="card-body" id="calcDetailsBody" style="font-size:0.95rem; line-height:1.5; background:#f8f9fa;">
+                        <p>No details available yet.</p>
+                    </div>
+                </div>
+            </div>
 
             {{-- Expected Delivery & Follow-up --}}
             <div class="col-md-4">
@@ -206,14 +255,19 @@
                 <x-adminlte-button label="Submit" type="submit" theme="primary" icon="fas fa-save" class="btn-block"/>
             </div>
         </div>
-
       </form>
     </div>
   </div>
-</section>
+
 @stop
 
 @section('css')
+<!--Datatable CSS-->
+    <link rel="stylesheet" href="https://cdn.datatables.net/2.3.2/css/dataTables.dataTables.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/3.0.4/css/responsive.dataTables.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/datetime/1.5.5/css/dataTables.dateTime.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/columncontrol/1.0.7/css/columnControl.dataTables.min.css">
+
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-multiselect@1.1.0/dist/css/bootstrap-multiselect.css">
 <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
     <style>
@@ -239,20 +293,34 @@
 @stop
 
 @section('js')
+<!--Datatable JS-->
+        <script src="https://cdn.datatables.net/2.3.2/js/dataTables.js"></script>
+        <script src="https://cdn.datatables.net/responsive/3.0.4/js/dataTables.responsive.js"></script>
+        <script src="https://cdn.datatables.net/columncontrol/1.0.7/js/dataTables.columnControl.min.js"></script>
+
 <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap-multiselect@1.1.0/dist/js/bootstrap-multiselect.min.js"></script>
 <script src="https://cdn.jsdelivr.net/jquery.validation/1.19.5/jquery.validate.min.js"></script>
 @include('leads.partials.shared-js')
 <script>
-$(document).ready(function() {
-    var products = @json($products->pluck('name'));
 
-    $(".product-search").autocomplete({ source: products, minLength: 1 });
+    $(function () {
+        $('[data-toggle="tooltip"]').tooltip();
+    });
+    $(document).ready(function() {
+    var products = @json($products->map(fn($p) => ['name' => $p->name, 'sku' => $p->sku ,'weight' => $p->weight_kg]));
+
+    $(".product-search").autocomplete({
+        source: products.map(p => p.name),
+        minLength: 1
+    });
     initProductPills(".product-pills-container", products);
     initTagMultiselect();
     initDaysCalculation();
     initPincodeAutocomplete("#pincode_input", "#delivery_location", "#delivery_location_id", "#distance_km","#duration_minutes","#loader");
     initDistanceDurationEditable();
+    initQuoteCalculator();
+
 });
 </script>
 @stop

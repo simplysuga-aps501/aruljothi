@@ -13,6 +13,8 @@ use App\Http\Controllers\Product\ProductController;
 use App\Http\Controllers\Product\UnitController;
 use App\Http\Controllers\Product\HsncodeController;
 use App\Http\Controllers\Product\ProductTemplateController;
+use App\Http\Controllers\Transport\TruckAgencyController;
+
 
 
 
@@ -106,9 +108,26 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/products/{product}/edit', [ProductController::class, 'edit'])->name('products.edit');
 
         //Distance
-                Route::get('/api/distance/by-pincode', [DistanceController::class, 'byPincode'])->name('distance.byPincode');
-                Route::get('/distance/calc', [DistanceController::class, 'calc'])
-                   ->name('distance.calc');
+        Route::get('/api/distance/by-pincode', [DistanceController::class, 'byPincode'])->name('distance.byPincode');
+        Route::get('/distance/calc', [DistanceController::class, 'calc'])
+           ->name('distance.calc');
+        //Draft Quote
+        Route::post('/leads/calculate-quote', [LeadController::class, 'calculateDraftQuote'])
+           ->name('leads.calculate-quote');
+
+        /*
+       |--------------------------------------------------------------------------
+       | Transport Routes
+       |--------------------------------------------------------------------------
+       */
+
+       Route::prefix('transport')->group(function() {
+           Route::get('agencies', [TruckAgencyController::class, 'index'])->name('transport.agency.index');
+           Route::post('agencies/store', [TruckAgencyController::class, 'store'])->name('transport.agency.store');
+       });
+       Route::get('transport/get-districts/{state}', [TruckAgencyController::class, 'getDistricts']);
+       Route::get('transport/get-places/{state}/{district}', [TruckAgencyController::class, 'getPlaces']);
+
         /*
         |--------------------------------------------------------------------------
         | Admin Routes
