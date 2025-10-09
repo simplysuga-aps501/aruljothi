@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html data-theme="custom_light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link href="./output.css" rel="stylesheet" />
+
+    <!-- Google fonts import  -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <!-- All fonts single link -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Doto:wght@100..900&family=Faculty+Glyphic&family=Merriweather:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400;1,700;1,900&family=Monomakh&family=Outfit:wght@100..900&family=Quicksand:wght@300..700&family=Titillium+Web:ital,wght@0,200;0,300;0,400;0,600;0,700;0,900;1,200;1,300;1,400;1,600;1,700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Dummy Image link in case needed  -->
+    <!-- https://cdn.easyfrontend.com/pictures/portfolio/portfolio6.jpg -->
+
+    <!-- Tabler fonts for icons -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css"
+    />
+
+    <!-- Google Icons -->
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=neurology"
+    />
+
+    <style>
+      .ezy__portfolio8 {
+        /* Bootstrap variables */
+        --bs-body-color: #252d39;
+        --bs-body-bg: #dddddd;
+
+        /* Easy Frontend variables */
+        --ezy-theme-color: rgb(13, 110, 253);
+        --ezy-theme-color-rgb: 13, 110, 253;
+        --ezy-item-bg: #ffffff;
+        --ezy-item-shadow: 0px 4px 44px rgba(159, 190, 218, 0.17);
+
+        background-color: var(--bs-body-bg);
+        overflow: hidden;
+        padding: 60px 0;
+      }
+
+      @media (min-width: 768px) {
+        .ezy__portfolio8 {
+          padding: 100px 0;
+        }
+      }
+
+      /* Gray Block Style */
+      .gray .ezy__portfolio8,
+      .ezy__portfolio8.gray {
+        /* Bootstrap variables */
+        --bs-body-bg: rgb(246, 246, 246);
+
+        /* Easy Frontend variables */
+        --ezy-item-bg: #f6f6f6;
+        --ezy-item-shadow: 0px 4px 44px rgba(186, 155, 155, 0.17);
+      }
+
+      /* Dark Gray Block Style */
+      .dark-gray .ezy__portfolio8,
+      .ezy__portfolio8.dark-gray {
+        /* Bootstrap variables */
+        --bs-body-color: #ffffff;
+        --bs-body-bg: rgb(30, 39, 53);
+
+        /* Easy Frontend variables */
+        --ezy-item-bg: #222f3e;
+        --ezy-item-shadow: none;
+      }
+
+      /* Dark Block Style */
+      .dark .ezy__portfolio8,
+      .ezy__portfolio8.dark {
+        /* Bootstrap variables */
+        --bs-body-color: #ffffff;
+        --bs-body-bg: rgb(11, 23, 39);
+
+        /* Easy Frontend variables */
+        --ezy-item-bg: #162231;
+        --ezy-item-shadow: none;
+      }
+
+      .ezy__portfolio8-heading {
+        font-weight: bold;
+        font-size: 25px;
+        line-height: 25px;
+        color: var(--bs-body-color);
+      }
+
+      @media (min-width: 768px) {
+        .ezy__portfolio8-heading {
+          font-size: 45px;
+          line-height: 45px;
+        }
+      }
+
+      .ezy__portfolio8-sub-heading {
+        font-size: 16px;
+        line-height: 22px;
+        color: var(--bs-body-color);
+      }
+
+      .ezy__portfolio8-item {
+        background-color: var(--ezy-item-bg);
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: var(--ezy-item-shadow);
+        transition: transform 0.25s ease-in-out;
+      }
+
+      .ezy__portfolio8-item:hover {
+        transform: translateY(-5px);
+      }
+
+      .ezy__portfolio8-banner {
+        border-radius: 10px;
+      }
+
+      .ezy__portfolio8-list
+        [class*="col-"]:nth-of-type(1n)
+        .ezy__portfolio8-banner {
+        background-color: #c5e8e2;
+      }
+
+      .ezy__portfolio8-list
+        [class*="col-"]:nth-of-type(2n)
+        .ezy__portfolio8-banner {
+        background-color: #b6cbf4;
+      }
+
+      .ezy__portfolio8-list
+        [class*="col-"]:nth-of-type(3n)
+        .ezy__portfolio8-banner {
+        background-color: #fcc4c4;
+      }
+
+      .ezy__portfolio8-banner img {
+        border-radius: 10px;
+        margin-bottom: -50px;
+      }
+
+      .ezy__portfolio8-content {
+        margin-top: 50px;
+      }
+
+      .ezy__portfolio8-content * {
+        color: var(--bs-body-color);
+      }
+
+      .ezy__portfolio8-btn {
+        padding: 7px 20px;
+        min-width: 120px;
+        border-color: var(--ezy-theme-color);
+      }
+
+      .ezy__portfolio8-btn:hover {
+        color: #fff;
+        background-color: var(--ezy-theme-color);
+        border-color: var(--ezy-theme-color);
+      }
+    </style>
+  </head>
+  <body>
+    <!-- navbar -->
+    <div id="navbar"></div>
+
+    <!-- Product Section starts -->
+    <section
+      class="ezy__portfolio8 light py-14 md:py-24 bg-white dark:bg-[#0b1727] text-slate-800 dark:text-white"
+    >
+      <div class="container px-4 mx-auto">
+        <div class="grid grid-cols-12 justify-center mb-6 md:mb-12">
+          <div class="col-span-12 lg:col-span-6 lg:col-start-4 text-center">
+            <h2
+              class="text-3xl md:text-[45px] underline underline-offset-4 decoration-2 font-Merriweather mb-6"
+            >
+              Our Products
+            </h2>
+            <p class="mb-2 text-2xl font-Titillium">This is what we do</p>
+          </div>
+        </div>
+
+        <div
+          class="grid grid-cols-6 gap-6 gap-y-8 lg:gap-y-0 max-w-7xl mx-auto"
+        >
+          <!-- Card1 -->
+          <div class="col-span-6 md:col-span-3 lg:col-span-2">
+            <div
+              class="relative bg-white shadow-xl dark:bg-slate-800 hover:-translate-y-1 mt-6 duration-300 rounded-xl"
+            >
+              <div
+                class="bg-green-100 flex rounded-xl p-6 lg:p-12 pt-0 lg:pt-0 relative"
+              >
+                <!-- src="https://cdn.easyfrontend.com/pictures/portfolio/portfolio6.jpg"  -->
+                <img
+                  src="../assets/rcc-pipe.webp"
+                  alt="Solid Blocks Stones"
+                  class="w-full h-56 -mb-16 mt-12 rounded-xl border border-stone-500"
+                />
+              </div>
+              <div class="p-6 lg:p-12 mt-8 lg:-mt-2">
+                <h4 class="text-2xl font-medium mb-4">RCC Pipes</h4>
+                <p class="opacity-50 mb-0">
+                  Reinforced cement concrete pipes used for durable water supply
+                  and drainage systems.
+                </p>
+                <!-- <button
+                  class="px-5 py-2 rounded border border-blue-600 hover:text-white hover:bg-blue-600 duration-300 mt-6"
+                >
+                  Details
+                </button> -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Card2 -->
+          <div class="col-span-6 md:col-span-3 lg:col-span-2">
+            <div
+              class="bg-white shadow-xl dark:bg-slate-800 hover:-translate-y-1 mt-6 duration-300 rounded-xl mb-12"
+            >
+              <div
+                class="bg-blue-100 flex rounded-xl p-6 lg:p-12 pt-0 lg:pt-0 relative"
+              >
+                <img
+                  src="../assets/RCC_HalfCut_Pipes.jpg"
+                  alt=""
+                  class="w-full h-56 -mb-16 mt-12 rounded-xl border border-stone-500"
+                />
+              </div>
+              <div class="p-6 lg:p-12 mt-8 lg:-mt-2">
+                <h4 class="text-2xl font-medium mb-4">Half Cut Pipes</h4>
+                <p class="opacity-50 mb-0">
+                  Custom cut-length RCC pipes supplied as per project
+                  requirements.
+                </p>
+                <!-- <button
+                  class="px-5 py-2 rounded border border-blue-600 hover:text-white hover:bg-blue-600 duration-300 mt-6"
+                >
+                  Details
+                </button> -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Card3 -->
+          <div class="col-span-6 md:col-span-3 lg:col-span-2">
+            <div
+              class="bg-white shadow-xl dark:bg-slate-800 hover:-translate-y-1 mt-6 duration-300 rounded-xl mb-12"
+            >
+              <div
+                class="bg-red-100 flex rounded-xl p-6 lg:p-12 pt-0 lg:pt-0 relative"
+              >
+                <img
+                  src="../assets/v_Through.jpg"
+                  alt=""
+                  class="w-full h-56 -mb-16 mt-12 rounded-xl border border-stone-500"
+                />
+              </div>
+              <div class="p-6 lg:p-12 mt-8 lg:-mt-2">
+                <h4 class="text-2xl font-medium mb-4">V Throughs</h4>
+                <p class="opacity-50 mb-0">
+                  Precast V-shaped channels for guiding rainwater or irrigation
+                  flow.
+                </p>
+                <!-- <button
+                  class="px-5 py-2 rounded border border-blue-600 hover:text-white hover:bg-blue-600 duration-300 mt-6"
+                >
+                  Details
+                </button> -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Card4 -->
+          <div class="col-span-6 md:col-span-3 lg:col-span-2">
+            <div
+              class="relative bg-white shadow-xl dark:bg-slate-800 hover:-translate-y-1 mt-6 duration-300 rounded-xl"
+            >
+              <div
+                class="bg-green-100 flex justify-center rounded-xl p-6 lg:p-12 pt-0 lg:pt-0 relative"
+              >
+                <img
+                  src="../assets/Septic_Tank.jpg"
+                  alt=""
+                  class="w-auto h-56 -mb-16 mt-12 rounded-xl border border-stone-500"
+                />
+              </div>
+              <div class="p-6 lg:p-12 mt-8 lg:-mt-2">
+                <h4 class="text-2xl font-medium mb-4">Septic Tanks</h4>
+                <p class="opacity-50 mb-0">
+                  Precast concrete tanks for safe on-site sewage collection and
+                  treatment.
+                </p>
+                <!-- <button
+                  class="px-5 py-2 rounded border border-blue-600 hover:text-white hover:bg-blue-600 duration-300 mt-6"
+                >
+                  Details
+                </button> -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Card5 -->
+          <div class="col-span-6 md:col-span-3 lg:col-span-2">
+            <div
+              class="bg-white shadow-xl dark:bg-slate-800 hover:-translate-y-1 mt-6 duration-300 rounded-xl mb-12"
+            >
+              <div
+                class="bg-blue-100 flex rounded-xl p-6 lg:p-12 pt-0 lg:pt-0 relative"
+              >
+                <img
+                  src="../assets/Water_Storage_Tank.jpg"
+                  alt=""
+                  class="w-full h-56 -mb-16 mt-12 rounded-xl border border-stone-500"
+                />
+              </div>
+              <div class="p-6 lg:p-12 mt-8 lg:-mt-2">
+                <h4 class="text-2xl font-medium mb-4">Water Tanks</h4>
+                <p class="opacity-50 mb-0">
+                  RCC Sturdy concrete storage tanks for drinking or industrial
+                  water.
+                </p>
+                <!-- <button
+                  class="px-5 py-2 rounded border border-blue-600 hover:text-white hover:bg-blue-600 duration-300 mt-6"
+                >
+                  Details
+                </button> -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Card6 -->
+          <div class="col-span-6 md:col-span-3 lg:col-span-2">
+            <div
+              class="bg-white shadow-xl dark:bg-slate-800 hover:-translate-y-1 mt-6 duration-300 rounded-xl mb-12"
+            >
+              <div
+                class="bg-red-100 flex rounded-xl p-6 lg:p-12 pt-0 lg:pt-0 relative"
+              >
+                <img
+                  src="../assets/Paver_Block.jpg"
+                  alt=""
+                  class="w-full h-56 -mb-16 mt-12 rounded-xl border border-stone-500"
+                />
+              </div>
+              <div class="p-6 lg:p-12 mt-8 lg:-mt-2">
+                <h4 class="text-2xl font-medium mb-4">Paver Block</h4>
+                <p class="opacity-50 mb-0">
+                  Interlocking concrete blocks for paving driveways, paths and
+                  open spaces.
+                </p>
+                <!-- <button
+                  class="px-5 py-2 rounded border border-blue-600 hover:text-white hover:bg-blue-600 duration-300 mt-6"
+                >
+                  Details
+                </button> -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Card7 -->
+          <div class="col-span-6 md:col-span-3 lg:col-span-2">
+            <div
+              class="bg-white shadow-xl dark:bg-slate-800 hover:-translate-y-1 mt-6 duration-300 rounded-xl mb-12"
+            >
+              <div
+                class="bg-blue-100 flex rounded-xl p-6 lg:p-12 pt-0 lg:pt-0 relative"
+              >
+                <img
+                  src="../assets/Concrete_Solid_Block.jpg"
+                  alt=""
+                  class="w-full h-56 -mb-16 mt-12 rounded-xl border border-stone-500"
+                />
+              </div>
+              <div class="p-6 lg:p-12 mt-8 lg:-mt-2">
+                <h4 class="text-2xl font-medium mb-4">Solid Blocks</h4>
+                <p class="opacity-50 mb-0">
+                  Dense concrete blocks used for strong load-bearing walls.
+                </p>
+                <!-- <button
+                  class="px-5 py-2 rounded border border-blue-600 hover:text-white hover:bg-blue-600 duration-300 mt-6"
+                >
+                  Details
+                </button> -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Card8 -->
+          <div class="col-span-6 md:col-span-3 lg:col-span-2">
+            <div
+              class="bg-white shadow-xl dark:bg-slate-800 hover:-translate-y-1 mt-6 duration-300 rounded-xl mb-12"
+            >
+              <div
+                class="bg-red-100 flex rounded-xl p-6 lg:p-12 pt-0 lg:pt-0 relative"
+              >
+                <img
+                  src="../assets/Concrete_Hollow_Blocks.jpg"
+                  alt=""
+                  class="w-full h-56 -mb-16 mt-12 rounded-xl border border-stone-500"
+                />
+              </div>
+              <div class="p-6 lg:p-12 mt-8 lg:-mt-2">
+                <h4 class="text-2xl font-medium mb-4">Hollow Block</h4>
+                <p class="opacity-50 mb-0">
+                  Lightweight concrete blocks with cavities for faster,
+                  cost-effective construction.
+                </p>
+                <!-- <button
+                  class="px-5 py-2 rounded border border-blue-600 hover:text-white hover:bg-blue-600 duration-300 mt-6"
+                >
+                  Details
+                </button> -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Card9 -->
+          <div class="col-span-6 md:col-span-3 lg:col-span-2">
+            <div
+              class="bg-white shadow-xl dark:bg-slate-800 hover:-translate-y-1 mt-6 duration-300 rounded-xl mb-12"
+            >
+              <div
+                class="bg-blue-100 flex rounded-xl p-6 lg:p-12 pt-0 lg:pt-0 relative"
+              >
+                <img
+                  src="../assets/Boundary_Wall.jpg"
+                  alt=""
+                  class="w-full h-56 -mb-16 mt-12 rounded-xl border border-stone-500"
+                />
+              </div>
+              <div class="p-6 lg:p-12 mt-8 lg:-mt-2">
+                <h4 class="text-2xl font-medium mb-4">Boundary Wall</h4>
+                <p class="opacity-50 mb-0">
+                  Precast wall panels for quick installation of compound or
+                  perimeter walls.
+                </p>
+                <!-- <button
+                  class="px-5 py-2 rounded border border-blue-600 hover:text-white hover:bg-blue-600 duration-300 mt-6"
+                >
+                  Details
+                </button> -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Card10 -->
+          <div class="col-span-6 md:col-span-3 lg:col-span-2">
+            <div
+              class="bg-white shadow-xl dark:bg-slate-800 hover:-translate-y-1 mt-6 duration-300 rounded-xl mb-12"
+            >
+              <div
+                class="bg-red-100 flex rounded-xl p-6 lg:p-12 pt-0 lg:pt-0 relative"
+              >
+                <img
+                  src="../assets/Kerb_Stone1.jpg"
+                  alt=""
+                  class="w-full h-56 -mb-16 mt-12 rounded-xl border border-stone-500"
+                />
+              </div>
+              <div class="p-6 lg:p-12 mt-8 lg:-mt-2">
+                <h4 class="text-2xl font-medium mb-4">Kerb Stone</h4>
+                <p class="opacity-50 mb-0">
+                  Grey Concrete edging stones to define pavements and road
+                  margins.
+                </p>
+                <!-- <button
+                  class="px-5 py-2 rounded border border-blue-600 hover:text-white hover:bg-blue-600 duration-300 mt-6"
+                >
+                  Details
+                </button> -->
+              </div>
+            </div>
+          </div>
+          <!-- Card10 Ends  -->
+
+          <!-- Card11 -->
+          <div class="col-span-6 md:col-span-3 lg:col-span-2">
+            <div
+              class="bg-white shadow-xl dark:bg-slate-800 hover:-translate-y-1 mt-6 duration-300 rounded-xl mb-12"
+            >
+              <div
+                class="bg-blue-100 flex rounded-xl p-6 lg:p-12 pt-0 lg:pt-0 relative"
+              >
+                <img
+                  src="../assets/RCC_Chambers.jpg"
+                  alt=""
+                  class="w-full h-56 -mb-16 mt-12 rounded-xl border border-stone-500"
+                />
+              </div>
+              <div class="p-6 lg:p-12 mt-8 lg:-mt-2">
+                <h4 class="text-2xl font-medium mb-4">Precast Chambers</h4>
+                <p class="opacity-50 mb-0">
+                  Ready-made RCC boxes for housing utilities like cables or
+                  valves.
+                </p>
+                <!-- <button
+                  class="px-5 py-2 rounded border border-blue-600 hover:text-white hover:bg-blue-600 duration-300 mt-6"
+                >
+                  Details
+                </button> -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Card12 -->
+          <div class="col-span-6 md:col-span-3 lg:col-span-2">
+            <div
+              class="bg-white shadow-xl dark:bg-slate-800 hover:-translate-y-1 mt-6 duration-300 rounded-xl mb-12"
+            >
+              <div
+                class="bg-red-100 flex rounded-xl p-6 lg:p-12 pt-0 lg:pt-0 relative"
+              >
+                <img
+                  src="../assets/Rcc_Manhole_Cover2.jpg"
+                  alt=""
+                  class="w-full h-56 -mb-16 mt-12 rounded-xl border border-stone-500"
+                />
+              </div>
+              <div class="p-6 lg:p-12 mt-8 lg:-mt-2">
+                <h4 class="text-2xl font-medium mb-4">Manhole Covers</h4>
+                <p class="opacity-50 mb-0">
+                  Heavy-duty precast covers to safely seal manholes and
+                  underground access points.
+                </p>
+                <!-- <button
+                  class="px-5 py-2 rounded border border-blue-600 hover:text-white hover:bg-blue-600 duration-300 mt-6"
+                >
+                  Details
+                </button> -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Card13 -->
+          <div class="col-span-6 md:col-span-3 lg:col-span-2">
+            <div
+              class="bg-white shadow-xl dark:bg-slate-800 hover:-translate-y-1 mt-6 duration-300 rounded-xl mb-12"
+            >
+              <div
+                class="bg-blue-100 flex rounded-xl p-6 lg:p-12 pt-0 lg:pt-0 relative"
+              >
+                <img
+                  src="../assets/Cement_Pillar.jpg"
+                  alt=""
+                  class="w-full h-56 -mb-16 mt-12 rounded-xl border border-stone-500"
+                />
+              </div>
+              <div class="p-6 lg:p-12 mt-8 lg:-mt-2">
+                <h4 class="text-2xl font-medium mb-4">Cement Pillars</h4>
+                <p class="opacity-50 mb-0">
+                  Concrete posts for fencing, signage or structural support.
+                </p>
+                <!-- <button
+                  class="px-5 py-2 rounded border border-blue-600 hover:text-white hover:bg-blue-600 duration-300 mt-6"
+                >
+                  Details
+                </button> -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Card14 -->
+          <div class="col-span-6 md:col-span-3 lg:col-span-2">
+            <div
+              class="bg-white shadow-xl dark:bg-slate-800 hover:-translate-y-1 mt-6 duration-300 rounded-xl mb-12"
+            >
+              <div
+                class="bg-red-100 flex rounded-xl p-6 lg:p-12 pt-0 lg:pt-0 relative"
+              >
+                <img
+                  src="../assets/UShape_Drain.jpg"
+                  alt=""
+                  class="w-full h-56 -mb-16 mt-12 rounded-xl border border-stone-500"
+                />
+              </div>
+              <div class="p-6 lg:p-12 mt-8 lg:-mt-2">
+                <h4 class="text-2xl font-medium mb-4">U Shaped Drain</h4>
+                <p class="opacity-50 mb-0">
+                  U-profile concrete channels for surface water drainage.
+                </p>
+                <!-- <button
+                  class="px-5 py-2 rounded border border-blue-600 hover:text-white hover:bg-blue-600 duration-300 mt-6"
+                >
+                  Details
+                </button> -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Card15 -->
+          <div class="col-span-6 md:col-span-3 lg:col-span-2">
+            <div
+              class="bg-white shadow-xl dark:bg-slate-800 hover:-translate-y-1 mt-6 duration-300 rounded-xl mb-12"
+            >
+              <div
+                class="bg-blue-100 flex rounded-xl p-6 lg:p-12 pt-0 lg:pt-0 relative"
+              >
+                <img
+                  src="../assets/Concrete_Bench.jpg"
+                  alt=""
+                  class="w-full h-56 -mb-16 mt-12 rounded-xl border border-stone-500"
+                />
+              </div>
+              <div class="p-6 lg:p-12 mt-8 lg:-mt-2">
+                <h4 class="text-2xl font-medium mb-4">RCC Bench</h4>
+                <p class="opacity-50 mb-0">
+                  Reinforced concrete outdoor benches for parks, public areas
+                </p>
+                <!-- <button
+                  class="px-5 py-2 rounded border border-blue-600 hover:text-white hover:bg-blue-600 duration-300 mt-6"
+                >
+                  Details
+                </button> -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Card16 -->
+          <!-- <div class="col-span-6 md:col-span-3 lg:col-span-2">
+            <div
+              class="bg-white shadow-xl dark:bg-slate-800 hover:-translate-y-1 mt-6 duration-300 rounded-xl mb-12"
+            >
+              <div
+                class="bg-red-100 flex rounded-xl p-6 lg:p-12 pt-0 lg:pt-0 relative"
+              >
+                <img
+                  src="../assets/Square _Fencing_Poles.jpg"
+                  alt=""
+                  class="w-full h-56 -mb-16 mt-12 rounded-xl  border border-stone-500"
+                />
+              </div>
+              <div class="p-6 lg:p-12 mt-8 lg:-mt-2">
+                <h4 class="text-2xl font-medium mb-4">Fencing Poles</h4>
+                <p class="opacity-50 mb-0">
+                  Vitae bibendum egestas magna sit elit non.
+                </p>
+                <button
+                  class="px-5 py-2 rounded border border-blue-600 hover:text-white hover:bg-blue-600 duration-300 mt-6"
+                >
+                  Details
+                </button>
+              </div>
+            </div>
+          </div> -->
+
+          <!-- Card17 -->
+          <div class="col-span-6 md:col-span-3 lg:col-span-2">
+            <div
+              class="bg-white shadow-xl dark:bg-slate-800 hover:-translate-y-1 mt-6 duration-300 rounded-xl mb-12"
+            >
+              <div
+                class="bg-blue-100 flex rounded-xl p-6 lg:p-12 pt-0 lg:pt-0 relative"
+              >
+                <img
+                  src="../assets/Kilometer_Stone.jpg"
+                  alt=""
+                  class="w-full h-56 -mb-16 mt-12 rounded-xl border border-stone-500"
+                />
+              </div>
+              <div class="p-6 lg:p-12 mt-8 lg:-mt-2">
+                <h4 class="text-2xl font-medium mb-4">Kilometer Stone</h4>
+                <p class="opacity-50 mb-0">
+                  Precast milestone markers used along roads to display
+                  distances.
+                </p>
+                <!-- <button
+                  class="px-5 py-2 rounded border border-blue-600 hover:text-white hover:bg-blue-600 duration-300 mt-6"
+                >
+                  Details
+                </button> -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Product Section Ends -->
+
+    <!-- Footer section -->
+    <div id="footer"></div>
+    <script src="sw.js"></script>
+  </body>
+</html>

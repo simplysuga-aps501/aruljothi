@@ -20,8 +20,14 @@ use App\Http\Controllers\Transport\TruckAgencyController;
 
 require __DIR__.'/auth.php';
 
-// Public welcome page
+#Aruljo webpage
 Route::get('/', function () {
+    return response()->file(base_path('../public_html/Index.html'));
+});
+
+
+// Public welcome page
+Route::get('/welcome', function () {
     return view('welcome');
 });
 
