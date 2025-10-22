@@ -6,129 +6,283 @@ use Illuminate\Support\Facades\DB;
 
 class QuoteCalculatorService
 {
-    public function calculate(array $products, float $distance): array
+    public function calculateByCapacity(array $products, float $distance): array
     {
+        // ========================== INPUT VALIDATION ==========================
         if (empty($products) || $distance <= 0) {
-            return [
-                'error' => 'Products and distance are required.'
-            ];
+            return ['error' => 'Products and distance are required.'];
         }
 
-        // Fetch truck types
+        $bodyType = $distance <= 150 ? 'Open' : 'Truck';
+
+        // ========================== FETCH TRUCK TYPES ==========================
         $trucks = DB::table('tp_truck_types')
-            ->select('name', 'capacity_kg', 'rate_per_km')
+            ->select('id', 'name', 'capacity_kg', 'rate_per_km')
             ->orderBy('capacity_kg')
-            ->get();
+            ->get()
+            ->filter(fn($truck) => !in_array($truck->name, ['14 Wheel', '16 Wheel', 'Trailor']))
+            ->values();
 
         if ($trucks->isEmpty()) {
-            return [
-                'error' => 'No truck types found.'
-            ];
+            return ['error' => 'No truck types found.'];
         }
 
-        $total_weight = 0;
+        // ========================== PREPARE PRODUCT DATA ==========================
         $product_rows = [];
+        $net_product_weight = 0;
+        foreach ($products as $p) {
+            $qty = (int) ($p['qty'] ?? 0);
+            $weight = (float) ($p['weight'] ?? 0);
+            $price = (float) ($p['price'] ?? 0);
+            $sku = $p['sku'] ?? 'Unknown';
 
-        // Product details
-        foreach ($products as $product) {
-            $qty = (int) ($product['qty'] ?? 0);
-            $weight = (float) ($product['weight'] ?? 0);
-            $sku = $product['sku'] ?? 'Unknown';
-            $product_weight_total = $qty * $weight;
-            $total_weight += $product_weight_total;
+            $net_product_weight += ($weight * $qty);
 
             $product_rows[] = [
+                'id' => $p['id'] ?? null,
                 'sku' => $sku,
                 'qty' => $qty,
                 'weight' => $weight,
-                'total' => $product_weight_total
+                'total_weight' => $qty * $weight,
+                'price' => $price,
             ];
         }
 
-        // Select truck
-        $selected_truck = null;
-        $num_trucks = 0;
+
+        // ========================== TRUCK CAPACITY OVERVIEW ==========================
+        //Just for our own visualization of calculations - html
+        $truckCapacityTable = '<h5>Truck Capacity Overview</h5>';
+        $truckCapacityTable .= '<table class="table table-bordered table-sm w-100"><thead class="table-light"><tr>';
+        $truckCapacityTable .= '<th>Product</th><th>Qty Needed</th>';
         foreach ($trucks as $truck) {
-            $capacity = (float) $truck->capacity_kg;
-            if ($capacity >= $total_weight) {
-                $selected_truck = $truck;
-                $num_trucks = 1;
-                break;
+            $truckCapacityTable .= "<th>{$truck->name}</th>";
+        }
+        $truckCapacityTable .= '</tr></thead><tbody>';
+
+        foreach ($product_rows as $prod) {
+            $truckCapacityTable .= "<tr><td>{$prod['sku']}</td><td>{$prod['qty']}</td>";
+            foreach ($trucks as $truck) {
+                $maxUnits = DB::table('tp_truck_capacities')
+                    ->where('truck_type_id', $truck->id)
+                    ->where('product_id', $prod['id'])
+                    ->where('body_type', strtolower($bodyType) === 'open' ? 'open_body_truck' : 'truck')
+                    ->value('max_units') ?? 0;
+
+                $truckCapacityTable .= "<td>{$maxUnits}</td>";
             }
+            $truckCapacityTable .= '</tr>';
         }
+        $truckCapacityTable .= '</tbody></table>';
 
-        if (!$selected_truck) {
-            $selected_truck = $trucks->last();
-            $capacity = (float) $selected_truck->capacity_kg;
-            $num_trucks = (int) ceil($total_weight / $capacity);
-        }
 
-        // Distance multiplier
-        $minKm = DB::table('tp_min_km_multipliers')->orderBy('min_km')->get();
-        $multiplier = 1.0;
-        foreach ($minKm as $m) {
-            $min = (float) $m->min_km;
-            $max = $m->max_km ?? PHP_FLOAT_MAX;
-            if ($distance >= $min && $distance < $max) {
-                $multiplier = (float) $m->multiplier;
-                break;
+        // ========================== OPTIMIZED TRUCK ALLOCATION ==========================
+        $remainingProducts = $product_rows;
+        $truckAllocations = [];
+        $remainingProductWeight = $net_product_weight;
+
+        //Loop through remaining products array till no products left
+        while (array_sum(array_column($remainingProducts, 'qty')) > 0) {
+
+            // 1️⃣ SELECT SUITABLE TRUCK
+            $selectedTruck = $trucks->last(); // default to largest
+            foreach ($trucks as $truck) {
+                if ($truck->capacity_kg >= $remainingProductWeight) {
+                    $selectedTruck = $truck;
+                    break;
+                }
             }
+
+            $truckProducts = [];
+            $truckTotalWeightFilled = 0;
+            $sameProductLoaded = false;
+
+            // 2️⃣ STAGE 1: TRY TO FILL FULL TRUCK WITH SAME PRODUCT
+            foreach ($remainingProducts as &$product) {
+                if ($product['qty'] <= 0) continue;
+
+                $truckCapacity = DB::table('tp_truck_capacities')
+                    ->where('truck_type_id', $selectedTruck->id)
+                    ->where('product_id', $product['id'])
+                    ->where('body_type', strtolower($bodyType) === 'open' ? 'open_body_truck' : 'truck')
+                    ->first();
+
+                if (!$truckCapacity) continue;
+
+                $maxUnits = $truckCapacity->max_units ?? 0;
+                if ($maxUnits <= 0) continue;
+
+                $productLimitWeight = $maxUnits * $product['weight'];
+                $practicalWeight = min($productLimitWeight, $selectedTruck->capacity_kg);
+
+                // If full truck can be filled with this single product
+                if ($product['qty'] >= $maxUnits) {
+                    $truckProducts[] = [
+                        'sku' => $product['sku'],
+                        'allocated_qty' => $maxUnits,
+                        'total_weight' => $practicalWeight,
+                        'max_allowed_qty' => $maxUnits,
+                    ];
+
+                    $product['qty'] -= $maxUnits;
+                    $remainingProductWeight -= $practicalWeight;
+                    $truckTotalWeightFilled = $practicalWeight;
+                    $sameProductLoaded = true;
+                    break; // one full truck done
+                }
+            }
+            unset($product);
+
+            // 3️⃣ STAGE 2: MIX PRODUCTS WITH VOLUME CHECK
+            if (!$sameProductLoaded) {
+                $truckVolumeUsed = 0; // tracks fraction of truck volume used
+
+                foreach ($remainingProducts as &$product) {
+                    if ($product['qty'] <= 0) continue;
+
+                    $truckCapacity = DB::table('tp_truck_capacities')
+                        ->where('truck_type_id', $selectedTruck->id)
+                        ->where('product_id', $product['id'])
+                        ->where('body_type', strtolower($bodyType) === 'open' ? 'open_body_truck' : 'truck')
+                        ->first();
+
+                    if (!$truckCapacity) continue;
+
+                    $maxUnits = $truckCapacity->max_units ?? 0;
+                    if ($maxUnits <= 0) continue;
+
+                    $weightPerUnit = $product['weight'];
+                    $weightLeft = $selectedTruck->capacity_kg - $truckTotalWeightFilled;
+
+                    // Maximum units that can fit by weight
+                    $maxFitByWeight = floor($weightLeft / $weightPerUnit);
+
+                    // Maximum units that can fit by volume (fraction of max_units per product)
+                    $availableVolumeFraction = 1 - $truckVolumeUsed;
+                    $maxFitByVolume = floor($availableVolumeFraction * $maxUnits);
+
+                    // Allocate units considering product qty, weight limit, and volume limit
+                    $allocatable = min($product['qty'], $maxFitByWeight, $maxFitByVolume);
+
+                    if ($allocatable <= 0) continue;
+
+                    $allocatedWeight = $allocatable * $weightPerUnit;
+
+                    $truckProducts[] = [
+                        'sku' => $product['sku'],
+                        'allocated_qty' => $allocatable,
+                        'total_weight' => $allocatedWeight,
+                        'max_allowed_qty' => $maxUnits,
+                    ];
+
+                    // Update product and truck trackers
+                    $product['qty'] -= $allocatable;
+                    $remainingProductWeight -= $allocatedWeight;
+                    $truckTotalWeightFilled += $allocatedWeight;
+                    $truckVolumeUsed += $allocatable / $maxUnits;
+
+                    // Stop if truck is full by either weight or volume
+                    if ($truckVolumeUsed >= 1 || $truckTotalWeightFilled >= $selectedTruck->capacity_kg) {
+                        break;
+                    }
+                }
+                unset($product);
+            }
+
+
+            // 4️⃣ SAVE ALLOCATION
+            $truckAllocations[] = [
+                'truck_name' => $selectedTruck->name,
+                'body_type' => $bodyType,
+                'products' => $truckProducts,
+                'truck_total_weight' => round($truckTotalWeightFilled, 2),
+                'capacity_kg' => $selectedTruck->capacity_kg,
+                'load_type' => $sameProductLoaded ? 'Single Product' : 'Mixed Load',
+            ];
         }
 
-        $rate_per_km = (float) $selected_truck->rate_per_km;
-        $total_cost = $rate_per_km * $distance * $multiplier * $num_trucks;
+        // ========================== BUILD OUTPUT TABLES ==========================
+        $truckTable = '<h5>Truck Allocation</h5><table class="table table-bordered table-sm w-100">
+            <thead class="table-light">
+                <tr>
+                    <th>Sl #</th>
+                    <th>Truck Type</th>
+                    <th>Body Type</th>
+                    <th>Product</th>
+                    <th>Qty Allocated</th>
+                    <th>Total Weight</th>
+                    <th>Max Allowed Qty</th>
+                </tr>
+            </thead><tbody>';
 
-        // Build HTML table for modal
-        $productTableHtml = '<table class="table table-bordered table-sm">';
-        $productTableHtml .= '<thead><tr><th>Product</th><th>Quantity</th><th>Weight/unit (kg)</th><th>Total Weight (kg)</th></tr></thead><tbody>';
+        $sl = 1;
+        foreach ($truckAllocations as $truck) {
+            $productsCount = count($truck['products']);
+            $firstRow = true;
+
+            foreach ($truck['products'] as $prod) {
+                $truckTable .= '<tr>';
+                if ($firstRow) {
+                    $truckTable .= "<td rowspan='{$productsCount}'>{$sl}</td>";
+                    $truckTable .= "<td rowspan='{$productsCount}'>{$truck['truck_name']}</td>";
+                    $truckTable .= "<td rowspan='{$productsCount}'>{$truck['body_type']}</td>";
+                    $firstRow = false;
+                }
+
+                $truckTable .= "<td>{$prod['sku']}</td>";
+                $truckTable .= "<td>{$prod['allocated_qty']}</td>";
+                $truckTable .= "<td>{$prod['total_weight']} kg</td>";
+                $truckTable .= "<td>{$prod['max_allowed_qty']}</td>";
+                $truckTable .= '</tr>';
+            }
+
+            $truckTable .= "<tr class='table-info'>
+                <td colspan='5'><strong>Total in this truck</strong></td>
+                <td><strong>{$truck['truck_total_weight']} kg</strong></td>
+                <td></td>
+            </tr>";
+            $sl++;
+        }
+        $truckTable .= '</tbody></table>';
+
+        // ========================== PRICE TABLE ==========================
+        $totalProduct = $totalGST = $netTotal = 0;
+        $priceTable = '<h5>Price Details</h5><table class="table table-bordered table-sm w-100">
+            <thead class="table-light"><tr>
+                <th>Product</th>
+                <th>Qty</th>
+                <th>Rate/unit (₹)</th>
+                <th>Total Price (₹)</th>
+            </tr></thead><tbody>';
+
         foreach ($product_rows as $row) {
-            $productTableHtml .= "<tr>
+            $productTotal = $row['qty'] * $row['price'];
+            $gst = $productTotal * 0.18;
+            $total = $productTotal + $gst;
+
+            $totalProduct += $productTotal;
+            $totalGST += $gst;
+            $netTotal += $total;
+
+            $priceTable .= "<tr>
                 <td>{$row['sku']}</td>
                 <td>{$row['qty']}</td>
-                <td>{$row['weight']}</td>
-                <td>{$row['total']}</td>
+                <td>" . number_format($row['price'], 2) . "</td>
+                <td>" . number_format($productTotal, 2) . "</td>
             </tr>";
         }
-        $productTableHtml .= "<tr>
-            <td><strong>Total</strong></td>
-            <td></td>
-            <td></td>
-            <td><strong>{$total_weight}</strong></td>
-        </tr>";
-        $productTableHtml .= '</tbody></table>';
 
-        $summaryTableHtml = '<table class="table table-bordered table-sm">';
-        $summaryTableHtml .= '<thead><tr><th>Truck Type</th><th>Capacity (kg)</th><th>Trucks Required</th><th>Distance (km)</th><th>Multiplier</th><th>Rate/km (₹)</th><th>Total Cost (₹)</th></tr></thead><tbody>';
-        $summaryTableHtml .= "<tr>
-            <td>{$selected_truck->name}</td>
-            <td>{$selected_truck->capacity_kg}</td>
-            <td>{$num_trucks}</td>
-            <td>{$distance}</td>
-            <td>{$multiplier}</td>
-            <td>{$rate_per_km}</td>
-            <td>" . number_format($total_cost, 2) . "</td>
-        </tr>";
-        $summaryTableHtml .= '</tbody></table>';
+        $priceTable .= "</tbody>
+            <tfoot>
+                <tr><th colspan='3' class='text-end'>Total (Products):</th><th>" . number_format($totalProduct, 2) . " ₹</th></tr>
+                <tr><th colspan='3' class='text-end'>GST (18%):</th><th>" . number_format($totalGST, 2) . " ₹</th></tr>
+                <tr class='table-success'><th colspan='3' class='text-end'>Net Total:</th><th>" . number_format($netTotal, 2) . " ₹</th></tr>
+            </tfoot></table>";
 
-        $htmlDetails = $productTableHtml . '<br>' . $summaryTableHtml;
-
-        // Plain text for WhatsApp (monospaced for readability)
-        $textDetails = "📦 Products:\n";
-        $textDetails .= "Product | Qty | Wt/unit | Total Wt\n";
-        foreach ($product_rows as $row) {
-            $textDetails .= "{$row['sku']} | {$row['qty']} | {$row['weight']} | {$row['total']}\n";
-        }
-        $textDetails .= "TOTAL WEIGHT: {$total_weight}\n\n";
-        $textDetails .= "🚚 Truck & Cost Summary:\n";
-        $textDetails .= "Truck | Capacity | Trucks | Distance | Multiplier | Rate/km | Total\n";
-        $textDetails .= "{$selected_truck->name} | {$selected_truck->capacity_kg} | {$num_trucks} | {$distance} | {$multiplier} | {$rate_per_km} | " . number_format($total_cost, 2) . "\n";
-
+        // ========================== FINAL OUTPUT ==========================
         return [
-            'truck_type' => $selected_truck->name,
-            'num_trucks' => $num_trucks,
-            'total_cost' => number_format($total_cost, 2),
-            'details_html' => $htmlDetails, // modal
-            'details_text' => $textDetails  // WhatsApp
+            'total_cost' => number_format($netTotal, 2),
+            'details_html' => $truckCapacityTable . '<br>' . $truckTable . '<br>' . $priceTable,
+            'products' => $product_rows,
         ];
     }
 }

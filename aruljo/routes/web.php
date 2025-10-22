@@ -146,5 +146,7 @@ Route::middleware(['auth'])->group(function () {
             // admin can do everything in leads, including delete
             Route::delete('/leads/{id}', [LeadController::class, 'destroy'])->name('leads.destroy');
         });
+
     });
+
 });

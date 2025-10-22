@@ -26,9 +26,9 @@ class TruckType extends Model
     /**
      * Example: One truck type can be linked to many product truck capacities.
      */
-    public function productTruckCapacities()
+    public function truckCapacities()
     {
-        return $this->hasMany(ProductTruckCapacity::class, 'truck_type_id');
+        return $this->hasMany(TruckCapacity::class, 'truck_type_id');
     }
     public function agencyRates()
     {

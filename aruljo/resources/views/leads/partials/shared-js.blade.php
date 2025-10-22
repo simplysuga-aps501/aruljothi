@@ -67,14 +67,18 @@
                 var productObj = productsList.find(p => p.name === name);
                 var weight = productObj ? parseFloat(productObj.weight) : 0;
                 var sku = productObj ? productObj.sku : null;
+                var id = productObj ? productObj.id : null;
+                var price = productObj ? parseFloat(productObj.price) : 0;
 
                 // Create pill with data attributes
                 var pill = $('<span class="pill badge badge-info mr-1 mb-1">' + name + ' , ' + qty +
                              ' <i class="fas fa-times ml-1" style="cursor:pointer;"></i></span>');
                 pill.data('name',name);
+                pill.data('id',id);
                 pill.data('sku',sku);
                 pill.data('qty', qty);
                 pill.data('weight', weight);
+                 pill.data('price', price);
                 pill.find('i').click(function () {
                     pill.remove();
                     updateProductTextarea(pillsContainer, textarea);
@@ -98,13 +102,17 @@
                    var productObj = productsList.find(p => p.name === name);
                    var weight = productObj ? parseFloat(productObj.weight) : 0;
                    var sku = productObj ? productObj.sku : null; // ✅ FIX: Declare sku here
+                   var id = productObj ? productObj.id : null;
+                   var price = productObj ? parseFloat(productObj.price) : 0;
 
                    var pill = $('<span class="pill badge badge-info mr-1 mb-1">' + name + ' , ' + qty +
                                 ' <i class="fas fa-times ml-1" style="cursor:pointer;"></i></span>');
                    pill.data('name', name);
+                   pill.data('id', id);
                    pill.data('sku', sku);
                    pill.data('qty', qty);
                    pill.data('weight', weight);
+                   pill.data('price', price);
 
                    pill.find('i').click(function () {
                        pill.remove();
@@ -299,11 +307,14 @@ function initQuoteCalculator(container = document) {
     $container.off('click', '#calculate_quote_btn').on('click', '#calculate_quote_btn', function () {
         let products = [];
 
+        // Collect product details
         $container.find('.product-pills .pill').each(function() {
             products.push({
                 name: $(this).data('name'),
+                id: $(this).data('id'),
                 sku: $(this).data('sku'),
                 qty: parseFloat($(this).data('qty')),
+                price: $(this).data('price'),
                 weight: parseFloat($(this).data('weight'))
             });
         });
@@ -330,26 +341,17 @@ function initQuoteCalculator(container = document) {
             success: function(res) {
                 loader.hide();
 
+                // Fill main result fields
                 $container.find('#suggested_truck_type').val(res.truck_type);
                 $container.find('#suggested_num_trucks').val(res.num_trucks);
                 $container.find('#estimated_cost').val(res.total_cost);
 
-                // Fill collapsible content
-                $('#calcDetailsBody').html(res.details_html || '<em>No calculation details available.</em>');
-                $('#calcDetailsCollapse').hide(); // keep hidden initially
+                // Inject collapsible content (hidden by default)
+                const $calcBody = $container.find('#calcDetailsBody');
+                $calcBody.html(res.details_html || '<em>No calculation details available.</em>');
 
-                // Initialize DataTables inside collapsible (if any)
-                $('#calcDetailsBody table').each(function() {
-                    if (!$.fn.DataTable.isDataTable(this)) {
-                        $(this).DataTable({
-                            responsive: true,
-                            paging: false,
-                            searching: false,
-                            info: false,
-                            autoWidth: false
-                        });
-                    }
-                });
+                // Ensure collapse is hidden initially
+                $container.find('#calcDetailsCollapse').collapse('hide');
             },
             error: function(xhr) {
                 loader.hide();
@@ -360,33 +362,27 @@ function initQuoteCalculator(container = document) {
     });
 
     // ---------------- TOGGLE COLLAPSIBLE ----------------
-    $(document).off('click', '#toggle_calc_details').on('click', '#toggle_calc_details', function() {
-        const collapse = $('#calcDetailsCollapse');
-
-        collapse.slideToggle(200, function() {
-            // Wait for DOM to render widths before recalculating
-            setTimeout(() => {
-                collapse.find('table').each(function() {
-                    if ($.fn.DataTable.isDataTable(this)) {
-                        $(this).DataTable().columns.adjust().responsive.recalc();
-                    }
-                });
-            }, 100);
-        });
-         $('#calcDetailsBody table.dataTable').each(function(i, table) {
-                            const $table = $(table);
-                            const api = $table.DataTable();
-                            console.log(`📊 Table #${i}:`, {
-                                outerWidth: $table.outerWidth(),
-                                tableWidth: $table.width(),
-                                parentWidth: $table.closest('.modal-body').width(),
-                                visible: $table.is(':visible'),
-                                columns: api.columns().count(),
-                                responsiveEnabled: !!api.responsive
-                            });
-                        });
+    $container.find('#toggle_calc_details').off('click').on('click', function() {
+        $container.find('#calcDetailsCollapse').collapse('toggle');
     });
 
+    // ---------------- DATA TABLE INITIALIZATION ----------------
+    /* Recalculate / initialize DataTable after collapse fully shown
+    $container.find('#calcDetailsCollapse').off('shown.bs.collapse').on('shown.bs.collapse', function() {
+        $(this).find('table').each(function() {
+            if (!$.fn.DataTable.isDataTable(this)) {
+                $(this).DataTable({
+                    responsive: true,
+                    paging: false,
+                    searching: false,
+                    info: false,
+                    autoWidth: false
+                });
+            } else {
+                $(this).DataTable().columns.adjust().responsive.recalc();
+            }
+        });
+    });*/
 }
 
 

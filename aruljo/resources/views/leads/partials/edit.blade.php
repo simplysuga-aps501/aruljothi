@@ -2,10 +2,10 @@
 <div class="modal fade" id="editLeadModal" tabindex="-1" role="dialog" aria-labelledby="editLeadModalLabel"
     aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+        <div class="modal-content">
         <form id="editLeadForm" method="POST" action="">
             @csrf
             @method('PUT')
-            <div class="modal-content">
 
                 <!-- ============================ MODAL HEADER ============================ -->
                 <div class="modal-header">
@@ -136,28 +136,8 @@
                         </div>
                         {{-- Transport Quote Section --}}
 
-                        <!-- Draft Quote Button -->
-                        <div class="col-md-2">
-                            <label>&nbsp;</label>
-                            <button type="button" class="btn btn-primary w-100" id="calculate_quote_btn">
-                                <i class="fas fa-calculator"></i> Dft Quote
-                            </button>
-                        </div>
-
-                        <!-- Truck Type -->
-                        <div class="col-md-4">
-                            <x-adminlte-input name="suggested_truck_type" label="Truck Type" placeholder="Truck Type"
-                                fgroup-class="mb-3" readonly id="suggested_truck_type" />
-                        </div>
-
-                        <!-- Number of Trucks -->
-                        <div class="col-md-2">
-                            <x-adminlte-input name="suggested_num_trucks" label="No of Trucks"
-                                placeholder="No of Trucks" fgroup-class="mb-3" readonly id="suggested_num_trucks" />
-                        </div>
-
                         <!-- Estimated Cost -->
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <label for="estimated_cost">Estimated Cost (₹)</label>
                             <div class="input-group mb-3">
                                 <input type="text" id="estimated_cost" name="estimated_cost" class="form-control"
@@ -171,20 +151,26 @@
                             </div>
                         </div>
 
-                        <!-- Collapsible Calculation Details -->
-                        <div class="col-12 mt-2">
-                            <div class="card card-info collapse-card" id="calcDetailsCollapse" style="display:none;">
-                                <div class="card-header py-2">
-                                    <h5 class="card-title mb-0">
-                                        <i class="fas fa-calculator mr-2"></i> Quote Calculation Details
-                                    </h5>
-                                </div>
-                                <div class="card-body" id="calcDetailsBody"
-                                    style="font-size:0.95rem; line-height:1.5; background:#f8f9fa;">
-                                    <p>No details available yet.</p>
-                                </div>
-                            </div>
+                        <!-- Draft Quote Button -->
+                        <div class="col-md-6">
+                            <label>&nbsp;</label>
+                            <button type="button" class="btn btn-primary w-100" id="calculate_quote_btn">
+                                <i class="fas fa-calculator"></i> Dft Quote
+                            </button>
                         </div>
+                      <!-- ============================ QUOTE CALCULATION DETAILS ============================ -->
+                      <div class="col-12 mt-3">
+                          <div class="collapse" id="calcDetailsCollapse">
+                              <div class="card shadow-sm border-0 bg-light quote-card">
+                                  <div class="card-body p-3">
+                                      <div class="table-responsive" id="calcDetailsBody">
+                                          {{-- The generated $details_html from QuoteCalculatorService will be injected here --}}
+                                      </div>
+                                  </div>
+                              </div>
+                          </div>
+                      </div>
+
                         <!-- Expected Delivery Date -->
                         <div class="col-md-4">
                             <x-adminlte-input name="expected_delivery_date" label="Expected Delivery Date"
@@ -250,15 +236,15 @@
                 <div class="modal-footer">
                     <x-adminlte-button type="submit" label="Update Lead" theme="primary" />
                 </div>
-            </div>
         </form>
+    </div>
     </div>
 </div>
 
 @push('scripts')
     <script>
         $(document).ready(function() {
-            var products = @json($products->map(fn($p) => ['name' => $p->name, 'sku' => $p->sku, 'weight' => $p->weight_kg]));
+            var products = @json($productsArray);
 
             // Open modal with AJAX
             $(document).on('click', '.open-edit-lead-modal', function() {
@@ -322,37 +308,11 @@
                         "#editLeadModal"
                     );
                     modal.modal('show');
+                    // Initialize quote calculator after modal is shown
+                    initDistanceDurationEditable();
+                    initQuoteCalculator('#editLeadModal');
                 });
             });
-            initDistanceDurationEditable();
-            initQuoteCalculator('#editLeadModal');
-            $('#editLeadModal').on('shown.bs.modal', function() {
-                $.fn.dataTable
-                    .tables({ visible: true, api: true })
-                    .columns.adjust()
-                    .responsive.recalc();
-            });
-            $('#editLeadModal').on('shown.bs.modal', function() {
-                $('#calcDetailsBody table.dataTable').each(function(i, table) {
-                    const $table = $(table);
-                    const api = $table.DataTable();
-                    console.log(`📊 Table #${i}:`, {
-                        outerWidth: $table.outerWidth(),
-                        tableWidth: $table.width(),
-                        parentWidth: $table.closest('.modal-body').width(),
-                        visible: $table.is(':visible'),
-                        columns: api.columns().count(),
-                        responsiveEnabled: !!api.responsive
-                    });
-                });
-
-                // Force recalculation after logging
-                $.fn.dataTable.tables({ visible: true, api: true })
-                    .columns.adjust()
-                    .responsive.recalc();
-            });
-
         });
-
     </script>
 @endpush

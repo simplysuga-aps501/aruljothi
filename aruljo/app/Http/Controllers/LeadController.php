@@ -36,8 +36,15 @@ class LeadController extends Controller
 
         // Fetch all products for autocomplete
         $products = Product::all();
+        $productsArray = $products->map(fn($p) => [
+            'id' => $p->id,
+            'name' => $p->name,
+            'sku' => $p->sku,
+            'weight' => $p->weight_kg,
+            'price' => $p->quote_price,
+        ])->toArray();
 
-        return view('leads.create', compact('users', 'tags', 'platforms', 'products'));
+        return view('leads.create', compact('users', 'tags', 'platforms', 'productsArray'));
     }
 
     /**
@@ -235,8 +242,18 @@ class LeadController extends Controller
             }
         }
 
+        //products
+        // Fetch all products for autocomplete
+                $products = Product::all();
+                $productsArray = $products->map(fn($p) => [
+                    'id' => $p->id,
+                    'name' => $p->name,
+                    'sku' => $p->sku,
+                    'weight' => $p->weight_kg,
+                    'price' => $p->quote_price,
+                ])->toArray();
        return view('leads.index', compact(
-            'leads', 'users', 'currentUser', 'tab', 'statuses', 'platforms', 'allTags','isEuser','products'));
+            'leads', 'users', 'currentUser', 'tab', 'statuses', 'platforms', 'allTags','isEuser','productsArray'));
     }
 
 
@@ -446,7 +463,7 @@ class LeadController extends Controller
 
     public function calculateDraftQuote(Request $request, QuoteCalculatorService $calculator)
     {
-        $result = $calculator->calculate(
+        $result = $calculator->calculateByCapacity(
             $request->input('products', []),
             (float)$request->input('distance_km', 0)
         );
