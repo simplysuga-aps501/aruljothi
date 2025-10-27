@@ -27,10 +27,7 @@ class DistancePincode extends Model
         $parts = array_filter([$this->place, $this->district, $this->state]);
         return implode(', ', $parts);
     }
-    public function agencyRates()
-    {
-        return $this->hasMany(\App\Models\Transport\TruckAgencyRate::class, 'location_id');
-    }
+
     public function leads()
     {
         return $this->hasMany(\App\Models\Lead::class, 'delivery_location_id');

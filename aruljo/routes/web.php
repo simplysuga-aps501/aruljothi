@@ -13,8 +13,7 @@ use App\Http\Controllers\Product\ProductController;
 use App\Http\Controllers\Product\UnitController;
 use App\Http\Controllers\Product\HsncodeController;
 use App\Http\Controllers\Product\ProductTemplateController;
-use App\Http\Controllers\Transport\TruckAgencyController;
-
+ use App\Http\Controllers\Transport\TpOfficeController;
 
 
 
@@ -127,12 +126,32 @@ Route::middleware(['auth'])->group(function () {
        |--------------------------------------------------------------------------
        */
 
-       Route::prefix('transport')->group(function() {
-           Route::get('agencies', [TruckAgencyController::class, 'index'])->name('transport.agency.index');
-           Route::post('agencies/store', [TruckAgencyController::class, 'store'])->name('transport.agency.store');
+
+       Route::prefix('transport')->group(function () {
+           // Transport Offices CRUD
+           Route::resource('offices', TpOfficeController::class)
+               ->names([
+                   'index' => 'tp_offices.index',
+                   'create' => 'tp_offices.create',
+                   'store' => 'tp_offices.store',
+                   'destroy' => 'tp_offices.destroy',
+               ]);
+
+           // District Rates (future use)
+           Route::resource('district-rates', TpDistrictRateController::class)
+               ->names([
+                   'index' => 'tp_district_rates.index',
+                   'create' => 'tp_district_rates.create',
+                   'store' => 'tp_district_rates.store',
+               ])
+               ->only(['index', 'create', 'store']);
+
+           // Dependent dropdown routes
+           Route::get('get-districts/{state}', [TpOfficeController::class, 'getDistricts']);
+           Route::get('get-places/{state}/{district}', [TpOfficeController::class, 'getPlaces']);
+
        });
-       Route::get('transport/get-districts/{state}', [TruckAgencyController::class, 'getDistricts']);
-       Route::get('transport/get-places/{state}/{district}', [TruckAgencyController::class, 'getPlaces']);
+
 
         /*
         |--------------------------------------------------------------------------
