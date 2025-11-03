@@ -156,14 +156,16 @@
             plugins: [ChartDataLabels]
         });
 
-        // PLATFORM-WISE CREATED CHART
+        // PLATFORM-WISE CREATED CHART (Stacked)
+        // PLATFORM-WISE CREATED CHART (Stacked & Sorted by Total)
         const platformCtx = document.getElementById('platformChart').getContext('2d');
-        const platformLabels = @json($platformLabels);
-        const rawPlatformData = @json($platformData);
+        const platformLabels = @json($platformLabels);   // months
+        const rawPlatformData = @json($platformData);    // { platformName: {month1: count, ...}, ... }
 
         const platforms = Object.keys(rawPlatformData);
         const totalPlatforms = platforms.length;
 
+        // Generate distinct pastel colors
         function generateDistinctPastelColors(count) {
             const colors = [];
             for (let i = 0; i < count; i++) {
@@ -176,24 +178,55 @@
         const fillColors = generateDistinctPastelColors(totalPlatforms);
         const borderColors = fillColors.map(c => c.replace(/(\d+)%\)$/, (match, l) => `${Math.max(0, l - 20)}%)`));
 
-        const platformDatasets = platforms.map((platform, index) => {
+        // Build datasets with totals
+        let platformDatasets = platforms.map((platform, index) => {
             const created = platformLabels.map(label => rawPlatformData[platform][label] || 0);
             return {
                 label: platform,
                 data: created,
                 backgroundColor: fillColors[index],
                 borderColor: borderColors[index],
-                borderWidth: 1
+                borderWidth: 1,
+                total: created.reduce((a, b) => a + b, 0) // sum across all months
             };
         });
 
+        // Sort datasets descending by total leads
+        platformDatasets.sort((a, b) => b.total - a.total);
+
+        // Reverse so biggest comes last = drawn on top
+        platformDatasets.reverse();
+
+        // Build stacked bar chart
         new Chart(platformCtx, {
             type: 'bar',
             data: {
-                labels: platformLabels,
-                datasets: platformDatasets
+                labels: platformLabels,       // months
+                datasets: platformDatasets    // sorted datasets
             },
-            options: chartOptions,
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom' },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        itemSort: (a, b) => b.raw - a.raw
+                    },
+                    datalabels: {
+                        display: false // hide inside labels, use tooltip instead
+                    }
+                },
+                interaction: {
+                    mode: 'nearest',
+                    axis: 'x',
+                    intersect: false
+                },
+                scales: {
+                    x: { stacked: true },
+                    y: { stacked: true, beginAtZero: true }
+                }
+            },
             plugins: [ChartDataLabels]
         });
 

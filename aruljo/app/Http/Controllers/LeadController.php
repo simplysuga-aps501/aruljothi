@@ -3,13 +3,18 @@
 namespace App\Http\Controllers;
 
 use App\Models\Lead;
+use App\Models\LeadProductMap;
 use App\Models\User;
+use App\Models\Product\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use Spatie\Tags\Tag;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use App\Http\Controllers\DistanceController;
+use Illuminate\Support\Facades\Log;
+
 
 class LeadController extends Controller
 {
@@ -26,58 +31,96 @@ class LeadController extends Controller
         $platforms = config('platforms.list');
         // Remove "Justdial" only in create
         $platforms = array_filter($platforms, fn($p) => $p !== 'Justdial');
-        return view('leads.create', compact('users', 'tags', 'platforms'));
+
+        // Fetch all products for autocomplete
+        $products = Product::all();
+
+        return view('leads.create', compact('users', 'tags', 'platforms', 'products'));
     }
 
     /**
      * Store a newly created lead.
      */
+
     public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'platform' => 'required|string',
-            'lead_date' => 'required|date',
-            'buyer_name' => 'required|string',
-            'buyer_location' => 'nullable|string',
-            'buyer_contact' => ['required', 'regex:/^[6-9]\d{9}$/'],
-            'platform_keyword' => 'nullable|string',
-            'product_detail' => 'nullable|string',
-            'delivery_location' => 'nullable|string',
-            'expected_delivery_date' => 'nullable|date|after_or_equal:today',
-            'follow_up_date' => 'nullable|date|after_or_equal:today',
-            'status' => ['required', Rule::in($this->allowedStatuses())],
-            'assigned_to' => 'nullable|string',
-            'current_remark' => 'nullable|string|max:500',
-            'tags' => 'nullable|array',
-            'tags.*' => 'string',
-        ]);
+        {
+            Log::info('Lead form submitted', $request->all());
+            $validated = $request->validate([
+                'platform' => 'required|string',
+                'lead_date' => 'required|date',
+                'buyer_name' => 'required|string',
+                'buyer_location' => 'nullable|string',
+                'buyer_contact' => ['required', 'regex:/^[6-9]\d{9}$/'],
+                'platform_keyword' => 'nullable|string',
+                'product_detail' => 'nullable|string',
+                'delivery_location_id' => 'nullable|exists:distance_pincodes,id',
+                'expected_delivery_date' => 'nullable|date|after_or_equal:today',
+                'follow_up_date' => 'nullable|date|after_or_equal:today',
+                'status' => ['required', Rule::in($this->allowedStatuses())],
+                'assigned_to' => 'nullable|string',
+                'current_remark' => 'nullable|string|max:500',
+                'tags' => 'nullable|array',
+                'tags.*' => 'string',
+            ]);
 
-        $validated['assigned_to'] = $validated['assigned_to'] ?? Auth::user()->name;
+            $validated['assigned_to'] = $validated['assigned_to'] ?? Auth::user()->name;
+            $user = Auth::user()->name;
+            $timestamp = now()->format('d M Y, h:i A');
 
-        $user = Auth::user()->name;
-        $timestamp = now()->format('d M Y, h:i A');
+            $remarkText = ($validated['assigned_to'] !== $user) ? "assigned to {$validated['assigned_to']}" : "created the lead";
+            if ($request->filled('current_remark')) $remarkText .= " — {$request->current_remark}";
 
-        if (!empty($validated['assigned_to']) && $validated['assigned_to'] !== $user) {
-            $remarkText = "assigned to {$validated['assigned_to']}";
-        } else {
-            $remarkText = "created the lead";
+            $lead = new Lead(collect($validated)->except(['current_remark', 'tags', 'product_detail'])->toArray());
+            $lead->remarks = "{$user} ({$timestamp}): {$remarkText}";
+            $lead->save();
+
+            // Sync tags
+            if ($request->filled('tags')) {
+                $validTags = Tag::whereIn('name->en', $request->tags)->get();
+                $lead->syncTags($validTags);
+            }
+
+            // Handle product mapping
+            if ($request->filled('product_detail')) {
+                $products = explode('~|~', $request->product_detail);
+                $allProductsWithQty = [];
+                foreach ($products as $prod) {
+                    $parts = explode(',', $prod);
+                    $name = trim($parts[0]);
+                    $qty = isset($parts[1]) ? (int)trim($parts[1]) : 1;
+
+                    $product = Product::where('name', $name)->first();
+                    if ($product) {
+                        $lead->products()->attach($product->id, ['quantity' => $qty]);
+                        $allProductsWithQty[] = "{$name},{$qty}";
+                    }
+                }
+                $lead->product_detail = implode('~|~', $allProductsWithQty);
+                $lead->save();
+            }
+
+            // ---------------- Update Distance Cache ----------------
+            $toId = $request->delivery_location_id ?? null;
+            $submittedDistance = $request->distance_km ?? null;
+            $submittedDuration = $request->duration_minutes ?? null;
+
+            if ($toId && $submittedDistance !== null && $submittedDuration !== null) {
+                $cache = \App\Models\DistanceCache::firstOrNew([
+                    'to_location_id' => $toId,
+                ]);
+
+                if ($cache->distance_km !== (int)$submittedDistance || $cache->duration_minutes !== (int)$submittedDuration) {
+                    $cache->distance_km = (int)$submittedDistance;
+                    $cache->duration_minutes = (int)$submittedDuration;
+                    $cache->user_update = true;
+                    $cache->last_updated = now();
+                    $cache->save();
+                }
+            }
+
+
+            return redirect()->route('leads.index')->with('success', 'Lead added successfully!');
         }
-
-        if ($request->filled('current_remark')) {
-            $remarkText .= " — {$request->current_remark}";
-        }
-
-        $lead = new Lead(collect($validated)->except(['current_remark', 'tags'])->toArray());
-        $lead->remarks = "{$user} ({$timestamp}): {$remarkText}";
-        $lead->save();
-
-        if ($request->has('tags')) {
-            $validTags = Tag::whereIn('name->en', $request->tags)->get();
-            $lead->syncTags($validTags);
-        }
-
-        return redirect()->route('leads.index')->with('success', 'Lead added successfully!');
-    }
 
     /**
      * Display a listing of the leads.
@@ -85,6 +128,7 @@ class LeadController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
+        $products = Product::all();
         $tab = $request->get('tab', 'active');
         $today = now()->toDateString();
 
@@ -190,7 +234,7 @@ class LeadController extends Controller
         }
 
        return view('leads.index', compact(
-            'leads', 'users', 'currentUser', 'tab', 'statuses', 'platforms', 'allTags','isEuser'));
+            'leads', 'users', 'currentUser', 'tab', 'statuses', 'platforms', 'allTags','isEuser','products'));
     }
 
 
@@ -199,6 +243,36 @@ class LeadController extends Controller
      */
     public function edit(Lead $lead)
     {
+        $locationId = $lead->delivery_location_id;
+
+        $distance_km = null;
+        $duration_minutes = null;
+        $pincode = null;
+        $fullLocation = null;
+
+        if ($locationId) {
+            // Fetch location details directly from distance_pincodes
+            $location = DB::table('distance_pincodes')->where('id', $locationId)->first();
+
+            if ($location) {
+                $pincode = $location->pincode;
+
+                // Build the full location string: place,district,state-pincode
+                $fullLocation = "{$location->place}, {$location->district}, {$location->state}-{$location->pincode}";
+
+                // Fetch distance & duration from cache using to_location_id
+                $cache = DB::table('distance_cache')
+                    ->where('to_location_id', $locationId)
+                    ->latest('last_updated')
+                    ->first();
+
+                if ($cache) {
+                    $distance_km = round($cache->distance_km, 0, PHP_ROUND_HALF_UP);
+                    $duration_minutes = round($cache->duration_minutes, 0, PHP_ROUND_HALF_UP);
+                }
+            }
+        }
+
         return response()->json([
             'id' => $lead->id,
             'buyer_name' => $lead->buyer_name,
@@ -208,7 +282,11 @@ class LeadController extends Controller
             'platform_keyword' => $lead->platform_keyword,
             'product_detail' => $lead->product_detail,
             'buyer_location' => $lead->buyer_location,
-            'delivery_location' => $lead->delivery_location,
+            'pincode' => $pincode,
+            'delivery_location_id' => $locationId,
+            'distance_km' => $distance_km,
+            'duration_minutes' => $duration_minutes,
+            'delivery_location' => $fullLocation,
             'expected_delivery_date' => $lead->expected_delivery_date,
             'follow_up_date' => $lead->follow_up_date,
             'status' => $lead->status,
@@ -219,73 +297,85 @@ class LeadController extends Controller
         ]);
     }
 
+
     /**
      * Update lead details.
      */
     public function update(Request $request, $id)
-    {
+        {
+            Log::info('Lead update form submitted', $request->all());
+            $lead = Lead::findOrFail($id);
+            $validated = $request->validate([
+                'platform' => 'required|string',
+                'lead_date' => 'required|date',
+                'buyer_name' => 'required|string',
+                'buyer_location' => 'nullable|string',
+                'buyer_contact' => ['required', 'regex:/^[6-9]\d{9}$/'],
+                'platform_keyword' => 'nullable|string',
+                'product_detail' => 'nullable|string',
+                'delivery_location_id' => 'nullable|exists:distance_pincodes,id',
+                'expected_delivery_date' => 'nullable|date|after_or_equal:today',
+                'follow_up_date' => 'nullable|date|after_or_equal:today',
+                'status' => ['required', Rule::in($this->allowedStatuses())],
+                'assigned_to' => 'nullable|string',
+                'current_remark' => 'nullable|string|max:500',
+                'tags' => 'nullable|array',
+                'tags.*' => 'string',
+            ]);
 
-        $lead = Lead::findOrFail($id);
+            $oldAssignedTo = $lead->assigned_to;
+            $lead->fill(collect($validated)->except(['current_remark', 'tags'])->toArray());
 
-        $validated = $request->validate([
-            'platform' => 'required|string',
-            'lead_date' => 'required|date',
-            'buyer_name' => 'required|string',
-            'buyer_location' => 'nullable|string',
-            'buyer_contact' => ['required', 'regex:/^[6-9]\d{9}$/'],
-            'platform_keyword' => 'nullable|string',
-            'product_detail' => 'nullable|string',
-            'delivery_location' => 'nullable|string',
-            'expected_delivery_date' => 'nullable|date|after_or_equal:today',
-            'follow_up_date' => 'nullable|date|after_or_equal:today',
-            'status' => ['required', Rule::in($this->allowedStatuses())],
-            'assigned_to' => 'nullable|string',
-            'current_remark' => 'nullable|string|max:500',
-            'tags' => 'nullable|array',
-            'tags.*' => 'string',
-        ]);
+            $user = Auth::user()->name;
+            $timestamp = now()->format('d M Y, h:i A');
+            $remarkText = null;
 
+            if ($oldAssignedTo !== $lead->assigned_to && $lead->assigned_to) {
+                $remarkText = "reassigned to {$lead->assigned_to}";
+            }
 
-        $oldAssignedTo = $lead->assigned_to;
+            if ($request->filled('current_remark')) {
+                $remarkText = $remarkText ? "{$remarkText} — {$request->current_remark}" : $request->current_remark;
+            }
 
-        $lead->fill(collect($validated)->except(['current_remark', 'tags'])->toArray());
+            if ($remarkText) {
+                $fullRemark = "{$user} ({$timestamp}): {$remarkText}";
+                $lead->remarks = $lead->remarks ? $fullRemark . "~|~" . $lead->remarks : $fullRemark;
+            }
 
-        $user = Auth::user()->name;
-        $timestamp = now()->format('d M Y, h:i A');
-        $remarkText = null;
+            $lead->save();
 
-        if ($oldAssignedTo !== $lead->assigned_to && $lead->assigned_to) {
-            $remarkText = "reassigned to {$lead->assigned_to}";
+            // Sync tags
+            $validTags = collect($request->input('tags', []))
+                ->filter()
+                ->map(fn($tagName) => Tag::where('name->en', $tagName)->first())
+                ->filter()
+                ->values();
+            $lead->syncTags($validTags);
+
+            // ---------------- Update Distance Cache ----------------
+            $toId = $request->delivery_location_id ?? null;
+            $submittedDistance = $request->distance_km ?? null;
+            $submittedDuration = $request->duration_minutes ?? null;
+
+            if ($toId && $submittedDistance !== null && $submittedDuration !== null) {
+                $cache = \App\Models\DistanceCache::firstOrNew([
+                    'to_location_id' => $toId,
+                ]);
+
+                if ($cache->distance_km !== (int)$submittedDistance || $cache->duration_minutes !== (int)$submittedDuration) {
+                    $cache->distance_km = (int)$submittedDistance;
+                    $cache->duration_minutes = (int)$submittedDuration;
+                    $cache->user_update = true;
+                    $cache->last_updated = now();
+                    $cache->save();
+                }
+            }
+
+            $tab = $request->query('tab', 'active');
+            return redirect()->route('leads.index', ['tab' => $tab])->with('success', 'Lead updated successfully.');
         }
 
-        if ($request->filled('current_remark')) {
-            $remarkText = $remarkText
-                ? "{$remarkText} — {$request->current_remark}"
-                : $request->current_remark;
-        }
-
-        if ($remarkText) {
-            $fullRemark = "{$user} ({$timestamp}): {$remarkText}";
-            $lead->remarks = $lead->remarks
-                ? $fullRemark . "~|~" . $lead->remarks
-                : $fullRemark;
-        }
-
-        $lead->save();
-
-        $validTags = collect($request->input('tags', []))
-            ->filter()
-            ->map(fn($tagName) => Tag::where('name->en', $tagName)->first())
-            ->filter()
-            ->values();
-
-        $lead->syncTags($validTags);
-
-        $tab = $request->query('tab', 'active');
-
-        return redirect()->route('leads.index', ['tab' => $tab])
-            ->with('success', 'Lead updated successfully.');
-    }
 
     /**
      * Delete a lead.

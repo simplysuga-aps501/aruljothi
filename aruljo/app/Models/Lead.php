@@ -9,6 +9,7 @@ use OwenIt\Auditing\Auditable;
 use Spatie\Tags\HasTags;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Request;
+use App\Models\Product\Product;
 
 class Lead extends Model implements AuditableContract
 {
@@ -24,6 +25,7 @@ class Lead extends Model implements AuditableContract
         'platform_keyword',
         'product_detail',
         'delivery_location',
+        'delivery_location_id',
         'expected_delivery_date',
         'remarks',
         'follow_up_date',
@@ -57,4 +59,16 @@ class Lead extends Model implements AuditableContract
     {
         return $this->updated_at->timestamp;
     }
+
+    public function products()
+    {
+        return $this->belongsToMany(
+            Product::class,        // Related model
+            'lead_product_map',    // Pivot table name
+            'lead_id',             // Foreign key in pivot table for this model
+            'product_id'           // Foreign key in pivot table for related model
+        )->withPivot('quantity')
+         ->withTimestamps();
+    }
+
 }

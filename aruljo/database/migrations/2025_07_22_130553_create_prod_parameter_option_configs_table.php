@@ -1,0 +1,32 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('prod_parameter_option_configs', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('prod_parameter_id')->constrained('prod_parameters')->onDelete('cascade');
+                $table->string('parameter_option');
+                $table->json('dependencies')->nullable();
+                $table->string('abbreviation', 20)->nullable();
+                $table->unsignedBigInteger('modified_by')->nullable();
+                $table->timestamps();
+            });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('prod_parameter_option_configs');
+    }
+};

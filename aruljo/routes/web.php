@@ -8,6 +8,13 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UserRoleController;
+use App\Http\Controllers\DistanceController;
+use App\Http\Controllers\Product\ProductController;
+use App\Http\Controllers\Product\UnitController;
+use App\Http\Controllers\Product\HsncodeController;
+use App\Http\Controllers\Product\ProductTemplateController;
+
+
 
 require __DIR__.'/auth.php';
 
@@ -47,7 +54,7 @@ Route::middleware(['auth'])->group(function () {
         return back()->with('message', 'Verification link sent!');
     })->middleware(['auth', 'throttle:6,1'])->name('verification.send');
 
-  
+
     /*
     |--------------------------------------------------------------------------
     | Verified User Routes (only after email_verified_at is set)
@@ -76,6 +83,38 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/leads', [LeadController::class, 'store'])->name('leads.store');
         Route::get('/leads/{id}/audits', [LeadController::class, 'showAudits'])->name('leads.audits');
 
+        /*
+        |--------------------------------------------------------------------------
+        | Product Routes
+        |--------------------------------------------------------------------------
+        */
+        Route::prefix('products')->name('products.')->group(function () {
+            Route::get('/', [ProductController::class, 'index'])->name('index');
+            Route::post('/', [ProductController::class, 'store'])->name('store');
+            Route::get('/template/{id}/parameters', [ProductController::class, 'getParameters'])->name('getParameters');
+        });
+
+        // 🧪 Units (used by AJAX modal)
+        Route::post('/units', [UnitController::class, 'store'])->name('units.store');
+        Route::delete('/units/{id}', [UnitController::class, 'destroy'])->name('units.destroy');
+
+      Route::post('/hsncodes', [HsncodeController::class, 'store'])->name('hsncodes.store');
+      Route::delete('/hsncodes/{hsncode}', [HsncodeController::class, 'destroy'])->name('hsncodes.destroy');
+
+        // 📋 Product Templates (optional - if you're managing templates)
+        Route::resource('product-templates', ProductTemplateController::class)->only(['index', 'create', 'store', 'edit', 'update']);
+
+        //delete a product
+        Route::delete('/products/{id}', [ProductController::class, 'destroy'])->name('products.destroy');
+
+        Route::get('/units', [UnitController::class, 'index']);
+        // PUT or PATCH route for editing product (selling price & weight only)
+        Route::put('/products/{product}/edit', [ProductController::class, 'edit'])->name('products.edit');
+
+        //Distance
+                Route::get('/api/distance/by-pincode', [DistanceController::class, 'byPincode'])->name('distance.byPincode');
+                Route::get('/distance/calc', [DistanceController::class, 'calc'])
+                   ->name('distance.calc');
         /*
         |--------------------------------------------------------------------------
         | Admin Routes
