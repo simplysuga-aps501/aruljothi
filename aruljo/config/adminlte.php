@@ -350,16 +350,21 @@ return [
        ],
        [
            'text'        => 'Transport',
-           'icon'        => 'fas fa-truck', // truck icon
+           'icon'        => 'fas fa-truck',
            'submenu'     => [
                [
-                   'text' => 'Agencies',
-                   'url'  => 'transport/agencies',
-                   'icon' => 'fas fa-building', // optional
+                   'text' => 'Offices',
+                   'url'  => 'transport/offices',
+                   'icon' => 'fas fa-building',
                ],
-
+               [
+                   'text' => 'Rates',
+                   'url'  => 'transport/rates',
+                   'icon' => 'fas fa-rupee-sign',
+               ],
            ],
        ],
+
         ['header' => 'account_settings'],
         [
             'text' => 'profile',

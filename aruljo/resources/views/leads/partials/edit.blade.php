@@ -137,7 +137,7 @@
                         {{-- Transport Quote Section --}}
 
                         <!-- Estimated Cost -->
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label for="estimated_cost">Estimated Cost (₹)</label>
                             <div class="input-group mb-3">
                                 <input type="text" id="estimated_cost" name="estimated_cost" class="form-control"
@@ -152,12 +152,26 @@
                         </div>
 
                         <!-- Draft Quote Button -->
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label>&nbsp;</label>
                             <button type="button" class="btn btn-primary w-100" id="calculate_quote_btn">
                                 <i class="fas fa-calculator"></i> Dft Quote
                             </button>
                         </div>
+                        <div class="col-md-2">
+                            <label>&nbsp;</label> {{-- Keeps vertical alignment with other inputs --}}
+                            <button type="button" class="btn btn-secondary w-100" id="copy_whatsapp_text">
+                                <i class="fas fa-copy"></i> Copy
+                            </button>
+                        </div>
+
+                        <div class="col-md-2">
+                            <label>&nbsp;</label> {{-- Keeps vertical alignment with other inputs --}}
+                            <button type="button" class="btn btn-success w-100" id="send_whatsapp_btn">
+                                <i class="fab fa-whatsapp"></i>WhatsApp
+                            </button>
+                        </div>
+                        <div class="quote_alert text-danger" style="display:none;"></div>
                       <!-- ============================ QUOTE CALCULATION DETAILS ============================ -->
                       <div class="col-12 mt-3">
                           <div class="collapse" id="calcDetailsCollapse">
@@ -236,6 +250,7 @@
                 <div class="modal-footer">
                     <x-adminlte-button type="submit" label="Update Lead" theme="primary" />
                 </div>
+                <input type="hidden" name="tab" id="editLeadTab" value="">
         </form>
     </div>
     </div>
@@ -245,7 +260,7 @@
     <script>
         $(document).ready(function() {
             var products = @json($productsArray);
-
+            console.log(products);
             // Open modal with AJAX
             $(document).on('click', '.open-edit-lead-modal', function() {
                 const leadId = $(this).data('lead-id');
@@ -256,6 +271,13 @@
                 modal.find('input:not([type=hidden]), select, textarea').val('');
                 modal.find('.product-pills').empty();
                 modal.find('.product-alert').addClass('d-none').text('');
+
+                 // Get current tab from URL
+                const urlParams = new URLSearchParams(window.location.search);
+                const currentTab = urlParams.get('tab') || 'active';
+
+                // Store it in hidden field
+                $('#editLeadTab').val(currentTab);
 
                 $.get(`/leads/${leadId}/edit`, function(data) {
                     form.attr('action', `/leads/${leadId}`);
@@ -292,7 +314,7 @@
                     // ===== INIT SCRIPTS =====
                     initProductPills(".product-pills-container", products);
                     modal.find('.product-search').autocomplete({
-                        source: products,
+                        source: products.map(p => p.name),
                         minLength: 1,
                         appendTo: "#editLeadModal"
                     });

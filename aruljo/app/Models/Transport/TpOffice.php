@@ -5,10 +5,11 @@ namespace App\Models\Transport;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Traits\TracksModifiedBy;
 
 class TpOffice extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, TracksModifiedBy;
 
     protected $table = 'tp_offices';
 
@@ -19,12 +20,13 @@ class TpOffice extends Model
         'email',
         'address',
         'gst_number',
-        'default_per_km_rate',
         'location_id',
-        'preferred_districts', // stores district names as JSON array
+        'preferred_states',
+        'preferred_districts',
     ];
 
     protected $casts = [
+        'preferred_states' => 'array',
         'preferred_districts' => 'array',
     ];
 
@@ -36,22 +38,40 @@ class TpOffice extends Model
         return $this->belongsTo(\App\Models\DistancePincode::class, 'location_id');
     }
 
-
     /**
-     * Accessor: Get preferred districts as a comma-separated string
+     * The user who last modified this record
      */
-    public function getPreferredDistrictsListAttribute()
+    public function modifiedBy()
+    {
+        return $this->belongsTo(\App\Models\User::class, 'modified_by');
+    }
+
+    public function getPreferredStatesListAttribute(): string
+    {
+        return $this->preferred_states
+            ? implode(', ', $this->preferred_states)
+            : '';
+    }
+
+    public function getPreferredDistrictsListAttribute(): string
     {
         return $this->preferred_districts
             ? implode(', ', $this->preferred_districts)
             : '';
     }
 
-    /**
-     * Helper: Check if a given district name is marked as preferred
-     */
     public function isPreferredForDistrict(string $district): bool
     {
         return in_array($district, $this->preferred_districts ?? []);
+    }
+
+    public function isPreferredForState(string $state): bool
+    {
+        return in_array($state, $this->preferred_states ?? []);
+    }
+
+    public function districtRates()
+    {
+        return $this->hasMany(TpDistrictRate::class, 'office_id');
     }
 }

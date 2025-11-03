@@ -66,48 +66,6 @@ class QuoteCalculatorService
         // Sort products descending by unit weight
         usort($product_rows, fn($a, $b) => $b['weight'] <=> $a['weight']);
 
-        /* ----------------------------------------------------------------------
-         |  4️⃣ TRUCK CAPACITY OVERVIEW (HTML TABLE)
-         ----------------------------------------------------------------------
-        $truckCapacityTable = '
-            <h5 class="mt-3">Truck Capacity Overview</h5>
-            <table class="table table-bordered table-striped table-hover table-sm w-100">
-                <thead class="thead-light">
-                    <tr>
-                        <th>Product</th>
-                        <th>Qty</th>
-                        <th>Wt</th>';
-
-        foreach ($trucks as $truck) {
-            $truckCapacityTable .= "<th>{$truck->name}</th>";
-        }
-
-        $truckCapacityTable .= '
-                    </tr>
-                </thead>
-                <tbody>';
-
-        foreach ($product_rows as $prod) {
-            $truckCapacityTable .= "
-                <tr>
-                    <td>{$prod['sku']}</td>
-                    <td>{$prod['qty']}</td>
-                    <td>{$prod['weight']}</td>";
-
-            foreach ($trucks as $truck) {
-                $maxUnits = DB::table('tp_truck_capacities')
-                    ->where('truck_type_id', $truck->id)
-                    ->where('product_id', $prod['id'])
-                    ->where('body_type', strtolower($bodyType) === 'open' ? 'open_body_truck' : 'truck')
-                    ->value('max_units') ?? 0;
-
-                $truckCapacityTable .= "<td>{$maxUnits}</td>";
-            }
-
-            $truckCapacityTable .= '</tr>';
-        }
-
-        $truckCapacityTable .= '</tbody></table>';*/
 
         /* ----------------------------------------------------------------------
          |  5️⃣ OPTIMIZED TRUCK ALLOCATION
@@ -216,17 +174,34 @@ class QuoteCalculatorService
                 unset($product);
             }
 
+           // 🧮 Determine effective rate_per_km based on distance and multipliers
+           $effectiveRatePerKm = $selectedTruck->rate_per_km;
+
+           // Always get multiplier from table, regardless of km
+           $multiplier = DB::table('tp_min_km_multipliers')
+               ->where('min_km', '<=', $distance)
+               ->where(function ($query) use ($distance) {
+                   $query->where('max_km', '>', $distance)
+                         ->orWhereNull('max_km');
+               })
+               ->value('multiplier') ?? 1;
+
+           // Apply multiplier if found
+           $effectiveRatePerKm *= $multiplier;
+
             // ✅ Save truck allocation
             $truckAllocations[] = [
                 'truck_name'         => $selectedTruck->name,
                 'body_type'          => $bodyType,
-                'rate_per_km'        => $selectedTruck->rate_per_km,
-                'transport_cost'     => $selectedTruck->rate_per_km * $distance,
+                'rate_per_km'        => round($effectiveRatePerKm, 2),
+                'multiplier'         => $multiplier,
+                'transport_cost'     => round($effectiveRatePerKm * $distance, 2),
                 'products'           => $truckProducts,
                 'truck_total_weight' => round($truckTotalWeightFilled, 2),
                 'capacity_kg'        => $selectedTruck->capacity_kg,
                 'load_type'          => $sameProductLoaded ? 'Single Product' : 'Mixed Load',
             ];
+
         }
 
         /* ----------------------------------------------------------------------
@@ -295,6 +270,7 @@ class QuoteCalculatorService
                         <th>Truck Type</th>
                         <th>Body Type</th>
                         <th>Rate/km</th>
+                        <th>Min Km Rate</th>
                         <th>Distance</th>
                         <th>Transport Cost (₹)</th>
                     </tr>
@@ -308,6 +284,7 @@ class QuoteCalculatorService
                     <td>{$truck['truck_name']}</td>
                     <td>{$truck['body_type']}</td>
                     <td>" . number_format($truck['rate_per_km'], 2) . "</td>
+                    <td>{$truck['multiplier']}</td>
                     <td>" . number_format($distance, 2) . "</td>
                     <td>" . number_format($truck['transport_cost'], 2) . "</td>
                 </tr>";
@@ -321,7 +298,7 @@ class QuoteCalculatorService
                 </tbody>
                 <tfoot>
                     <tr class='table-success'>
-                        <th colspan='5' class='text-end'>Total Transport Cost:</th>
+                        <th colspan='6' class='text-end'>Total Transport Cost:</th>
                         <th>₹" . number_format($totalTransportCost, 2) . "</th>
                     </tr>
                 </tfoot>
@@ -339,7 +316,7 @@ class QuoteCalculatorService
 
         $priceTable = '
             <h5 class="mt-3">Price Details (Including Transport)</h5>
-            <table class="table table-bordered table-striped table-hover table-sm w-100">
+            <table class="table table-bordered table-striped table-hover table-sm w-100" id="summaryTable">
                 <thead class="thead-light">
                     <tr>
                         <th>Product</th>
@@ -352,7 +329,7 @@ class QuoteCalculatorService
                 <tbody>';
 
         foreach ($product_rows as $row) {
-            $transportPerUnit = $row['weight'] * $costPerKg;
+            $transportPerUnit = round($row['weight'] * $costPerKg);
             $finalRatePerUnit = $row['price'] + $transportPerUnit;
             $productTotal = $row['qty'] * $finalRatePerUnit;
 
@@ -367,8 +344,8 @@ class QuoteCalculatorService
                 <tr>
                     <td>{$row['sku']}</td>
                     <td>{$row['qty']}</td>
-                    <td>" . number_format($row['price'], 2) . "</td>
-                    <td>" . number_format($transportPerUnit, 2) . "</td>
+                    <td>" . number_format($row['price']) . "</td>
+                    <td>" . number_format($transportPerUnit) . "</td>
                     <td>" . number_format($productTotal, 2) . "</td>
                 </tr>";
         }

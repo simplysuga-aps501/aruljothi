@@ -77,6 +77,7 @@
                     pattern="[6-9]{1}[0-9]{9}" title="Valid 10-digit number starting with 6-9"
                     :value="old('buyer_contact')"
                     oninput="this.value=this.value.replace(/[^0-9]/g,'');"/>
+                <div id="duplicateAlert" class="text-danger small d-none"></div>
             </div>
             {{-- Buyer Location --}}
             <div class="col-md-4">
@@ -137,7 +138,7 @@
                    <span class="input-group-text">mins</span>
                </div>
                 <!-- Shared Alert Container -->
-                <div class="distance_alert text-danger" style="display:none;"></div>
+               <div class="distance_alert text-danger" style="display:none;"></div>
                <div id="loader" class="text-center my-1 " style="display:none;">
                    <i class="fas fa-spinner fa-spin fa-lg text-primary"></i>
                    <p class="mt-1 mb-0" style="font-size: 0.8rem;">Calculating...</p>
@@ -146,7 +147,7 @@
             {{-- Transport Quote Section --}}
 
             {{-- Estimated Cost --}}
-            <div class="col-md-6">
+            <div class="col-md-4">
                 <label for="estimated_cost">Estimated Cost (₹)</label>
                 <div class="input-group mb-1">
                     <input type="text" id="estimated_cost" name="estimated_cost"
@@ -158,26 +159,39 @@
                     </div>
                 </div>
             </div>
-             {{-- Calculate Button --}}
-               <div class="col-md-6">
-                   <label>&nbsp;</label> {{-- Keeps vertical alignment with other inputs --}}
-                   <button type="button" class="btn btn-primary w-100" id="calculate_quote_btn">
-                       <i class="fas fa-calculator"></i> Draft Quote
-                   </button>
-               </div>
+            {{-- Calculate Button --}}
+            <div class="col-md-4">
+               <label>&nbsp;</label> {{-- Keeps vertical alignment with other inputs --}}
+               <button type="button" class="btn btn-primary w-100" id="calculate_quote_btn">
+                   <i class="fas fa-calculator"></i> Draft Quote
+               </button>
+            </div>
+            <div class="col-md-2">
+                <label>&nbsp;</label> {{-- Keeps vertical alignment with other inputs --}}
+                <button type="button" class="btn btn-secondary w-100" id="copy_whatsapp_text">
+                    <i class="fas fa-copy"></i> Copy
+                </button>
+            </div>
 
-           <!-- ============================ QUOTE CALCULATION DETAILS ============================ -->
-                <div class="col-12 mt-3">
-                    <div class="collapse" id="calcDetailsCollapse">
-                        <div class="card shadow-sm border-0 bg-light quote-card">
-                            <div class="card-body p-3">
-                                <div class="table-responsive" id="calcDetailsBody">
-                                    {{-- The generated $details_html from QuoteCalculatorService will be injected here --}}
-                                </div>
+            <div class="col-md-2">
+                <label>&nbsp;</label> {{-- Keeps vertical alignment with other inputs --}}
+                <button type="button" class="btn btn-success w-100" id="send_whatsapp_btn">
+                    <i class="fab fa-whatsapp"></i>WhatsApp
+                </button>
+            </div>
+            <div class="quote_alert text-danger" style="display:none;"></div>
+            <!-- ============================ QUOTE CALCULATION DETAILS ============================ -->
+            <div class="col-12 mt-3">
+                <div class="collapse" id="calcDetailsCollapse">
+                    <div class="card shadow-sm border-0 bg-light quote-card">
+                        <div class="card-body p-3">
+                            <div class="table-responsive" id="calcDetailsBody">
+                                {{-- The generated $details_html from QuoteCalculatorService will be injected here --}}
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>
 
             {{-- Expected Delivery & Follow-up --}}
             <div class="col-md-4">
@@ -226,7 +240,6 @@
                 <x-adminlte-input name="current_remark" label="Current Remark" placeholder="Add your remark"
                     fgroup-class="mb-3" required :value="old('current_remark')"/>
             </div>
-
           </div>
         </div>
 
@@ -238,7 +251,7 @@
                 </a>
             </div>
             <div class="col-12 col-md-6">
-                <x-adminlte-button label="Submit" type="submit" theme="primary" icon="fas fa-save" class="btn-block"/>
+                <x-adminlte-button label="Submit" id="saveBtn" type="submit" theme="primary" icon="fas fa-save" class="btn-block"/>
             </div>
         </div>
       </form>
@@ -302,6 +315,42 @@
             initPincodeAutocomplete("#pincode_input", "#delivery_location", "#delivery_location_id", "#distance_km","#duration_minutes","#loader");
             initDistanceDurationEditable();
             initQuoteCalculator();
+
+            //Avoid duplicate entry of leads in past 3 days
+            const $buyerContact = $('#buyer_contact');
+            const $contactError = $('#duplicateAlert');
+            let lastCheckedNumber = '';
+
+            $buyerContact.on('blur', function ()
+            {
+                const number = $buyerContact.val().trim();
+                // Only check valid 10-digit numbers
+                if (number.length === 10 && /^\d+$/.test(number)) {
+                    // Prevent redundant AJAX
+                    if (number === lastCheckedNumber) return;
+                    lastCheckedNumber = number;
+
+                    $.ajax({
+                        url: '{{ route("leads.checkDuplicate") }}',
+                        type: 'GET',
+                        data: { buyer_contact: number },
+                        success: function (response) {
+                            if (response.exists) {
+                                $contactError
+                                    .removeClass('d-none')
+                                    .text('⚠️ The number was already added in the last 3 days.');
+                            } else {
+                                $contactError.addClass('d-none').text('');
+                            }
+                        },
+                        error: function () {
+                            console.error('Error checking duplicate number.');
+                        }
+                    });
+                } else {
+                    $contactError.addClass('d-none').text('');
+                }
+            });
         });
 </script>
 @stop

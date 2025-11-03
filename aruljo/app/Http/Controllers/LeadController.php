@@ -15,8 +15,9 @@ use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\DistanceController;
 use Illuminate\Support\Facades\Log;
 use App\Services\QuoteCalculatorService;
-
-
+use App\Exports\LeadsExport;
+use Maatwebsite\Excel\Facades\Excel;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class LeadController extends Controller
 {
@@ -53,7 +54,6 @@ class LeadController extends Controller
 
     public function store(Request $request)
         {
-            Log::info('Lead form submitted', $request->all());
             $validated = $request->validate([
                 'platform' => 'required|string',
                 'lead_date' => 'required|date',
@@ -150,6 +150,7 @@ class LeadController extends Controller
 
         if ($tab === 'all') {
             $leads = Lead::with('tags')
+                ->where('created_at', '>=', now()->subDays(60))
                 ->orderBy('created_at', 'desc')
                 ->get();
         } else {
@@ -316,7 +317,6 @@ class LeadController extends Controller
      */
     public function update(Request $request, $id)
         {
-            Log::info('Lead update form submitted', $request->all());
             $lead = Lead::findOrFail($id);
             $validated = $request->validate([
                 'platform' => 'required|string',
@@ -385,8 +385,10 @@ class LeadController extends Controller
                 }
             }
 
-            $tab = $request->query('tab', 'active');
-            return redirect()->route('leads.index', ['tab' => $tab])->with('success', 'Lead updated successfully.');
+            $tab = $request->input('tab', 'active');
+            return redirect()->route('leads.index', $tab === 'active' ? [] : ['tab' => $tab])
+                ->with('success', 'Lead updated successfully.');
+
         }
 
 
@@ -474,4 +476,20 @@ class LeadController extends Controller
 
         return response()->json($result);
     }
+
+    public function export()
+    {
+        return Excel::download(new LeadsExport, 'leads.xlsx');
+    }
+
+    public function checkDuplicate(Request $request)
+    {
+        $number = trim($request->input('buyer_contact'));
+        $exists = Lead::where('buyer_contact', $number)
+            ->where('created_at', '>=', Carbon::now()->subDays(3))
+            ->exists();
+
+        return response()->json(['exists' => $exists]);
+    }
+
 }
