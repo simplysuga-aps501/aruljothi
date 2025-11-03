@@ -77,6 +77,7 @@
                     pattern="[6-9]{1}[0-9]{9}" title="Valid 10-digit number starting with 6-9"
                     :value="old('buyer_contact')"
                     oninput="this.value=this.value.replace(/[^0-9]/g,'');"/>
+                <div id="duplicateAlert" class="text-danger small d-none"></div>
             </div>
             {{-- Buyer Location --}}
             <div class="col-md-4">
@@ -137,12 +138,60 @@
                    <span class="input-group-text">mins</span>
                </div>
                 <!-- Shared Alert Container -->
-                <div class="distance_alert text-danger" style="display:none;"></div>
+               <div class="distance_alert text-danger" style="display:none;"></div>
                <div id="loader" class="text-center my-1 " style="display:none;">
                    <i class="fas fa-spinner fa-spin fa-lg text-primary"></i>
                    <p class="mt-1 mb-0" style="font-size: 0.8rem;">Calculating...</p>
                </div>
            </div>
+            {{-- Transport Quote Section --}}
+
+            {{-- Estimated Cost --}}
+            <div class="col-md-4">
+                <label for="estimated_cost">Estimated Cost (₹)</label>
+                <div class="input-group mb-1">
+                    <input type="text" id="estimated_cost" name="estimated_cost"
+                           class="form-control" placeholder="Estimated Cost" readonly>
+                    <div class="input-group-append">
+                        <button class="btn btn-info" type="button" id="toggle_calc_details">
+                            <i class="fas fa-info-circle"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {{-- Calculate Button --}}
+            <div class="col-md-4">
+               <label>&nbsp;</label> {{-- Keeps vertical alignment with other inputs --}}
+               <button type="button" class="btn btn-primary w-100" id="calculate_quote_btn">
+                   <i class="fas fa-calculator"></i> Draft Quote
+               </button>
+            </div>
+            <div class="col-md-2">
+                <label>&nbsp;</label> {{-- Keeps vertical alignment with other inputs --}}
+                <button type="button" class="btn btn-secondary w-100" id="copy_whatsapp_text">
+                    <i class="fas fa-copy"></i> Copy
+                </button>
+            </div>
+
+            <div class="col-md-2">
+                <label>&nbsp;</label> {{-- Keeps vertical alignment with other inputs --}}
+                <button type="button" class="btn btn-success w-100" id="send_whatsapp_btn">
+                    <i class="fab fa-whatsapp"></i>WhatsApp
+                </button>
+            </div>
+            <div class="quote_alert text-danger" style="display:none;"></div>
+            <!-- ============================ QUOTE CALCULATION DETAILS ============================ -->
+            <div class="col-12 mt-3">
+                <div class="collapse" id="calcDetailsCollapse">
+                    <div class="card shadow-sm border-0 bg-light quote-card">
+                        <div class="card-body p-3">
+                            <div class="table-responsive" id="calcDetailsBody">
+                                {{-- The generated $details_html from QuoteCalculatorService will be injected here --}}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             {{-- Expected Delivery & Follow-up --}}
             <div class="col-md-4">
@@ -203,56 +252,106 @@
                 </a>
             </div>
             <div class="col-12 col-md-6">
-                <x-adminlte-button label="Submit" type="submit" theme="primary" icon="fas fa-save" class="btn-block"/>
+                <x-adminlte-button label="Submit" id="saveBtn" type="submit" theme="primary" icon="fas fa-save" class="btn-block"/>
             </div>
         </div>
-
       </form>
     </div>
   </div>
-</section>
+
 @stop
 
 @section('css')
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-multiselect@1.1.0/dist/css/bootstrap-multiselect.css">
-<link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
-    <style>
-    .product-pills .pill
-    {
-        display: inline-flex;
-        align-items: center;
-        justify-content: space-between; /* Push icon to the right */
-        max-width: 100%;
-        word-break: break-word;
-        white-space: normal;
-        padding: 5px 10px;
-        margin: 3px;
-    }
+    <!--Datatable CSS-->
+    <link rel="stylesheet" href="https://cdn.datatables.net/2.3.2/css/dataTables.dataTables.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/3.0.4/css/responsive.dataTables.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/datetime/1.5.5/css/dataTables.dateTime.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/columncontrol/1.0.7/css/columnControl.dataTables.min.css">
 
-    .product-pills .pill i
-    {
-        margin-left: 8px;
-        cursor: pointer;
-        flex-shrink: 0; /* Prevent icon from shrinking */
-    }
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-multiselect@1.1.0/dist/css/bootstrap-multiselect.css">
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+    <style>
+        .product-pills .pill
+        {
+            display: inline-flex;
+            align-items: center;
+            justify-content: space-between; /* Push icon to the right */
+            max-width: 100%;
+            word-break: break-word;
+            white-space: normal;
+            padding: 5px 10px;
+            margin: 3px;
+        }
+
+        .product-pills .pill i
+        {
+            margin-left: 8px;
+            cursor: pointer;
+            flex-shrink: 0; /* Prevent icon from shrinking */
+        }
     </style>
 @stop
 
 @section('js')
-<script src="https://code.jquery.com/ui/1.13.2/jquery-ui.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap-multiselect@1.1.0/dist/js/bootstrap-multiselect.min.js"></script>
-<script src="https://cdn.jsdelivr.net/jquery.validation/1.19.5/jquery.validate.min.js"></script>
-@include('leads.partials.shared-js')
-<script>
-$(document).ready(function() {
-    var products = @json($products->pluck('name'));
+    <!--Datatable JS-->
+    <script src="https://cdn.datatables.net/2.3.2/js/dataTables.js"></script>
+    <script src="https://cdn.datatables.net/responsive/3.0.4/js/dataTables.responsive.js"></script>
+    <script src="https://cdn.datatables.net/columncontrol/1.0.7/js/dataTables.columnControl.min.js"></script>
 
-    $(".product-search").autocomplete({ source: products, minLength: 1 });
-    initProductPills(".product-pills-container", products);
-    initTagMultiselect();
-    initDaysCalculation();
-    initPincodeAutocomplete("#pincode_input", "#delivery_location", "#delivery_location_id", "#distance_km","#duration_minutes","#loader");
-    initDistanceDurationEditable();
-});
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap-multiselect@1.1.0/dist/js/bootstrap-multiselect.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/jquery.validation/1.19.5/jquery.validate.min.js"></script>
+    @include('leads.partials.shared-js')
+
+    <script>
+        $(document).ready(function() {
+            var products = @json($productsArray);
+            $(".product-search").autocomplete({
+                source: products.map(p => p.name),
+                minLength: 1
+            });
+            initProductPills(".product-pills-container", products);
+            initTagMultiselect();
+            initDaysCalculation();
+            initPincodeAutocomplete("#pincode_input", "#delivery_location", "#delivery_location_id", "#distance_km","#duration_minutes","#loader");
+            initDistanceDurationEditable();
+            initQuoteCalculator();
+
+            //Avoid duplicate entry of leads in past 3 days
+            const $buyerContact = $('#buyer_contact');
+            const $contactError = $('#duplicateAlert');
+            let lastCheckedNumber = '';
+
+            $buyerContact.on('blur', function ()
+            {
+                const number = $buyerContact.val().trim();
+                // Only check valid 10-digit numbers
+                if (number.length === 10 && /^\d+$/.test(number)) {
+                    // Prevent redundant AJAX
+                    if (number === lastCheckedNumber) return;
+                    lastCheckedNumber = number;
+
+                    $.ajax({
+                        url: '{{ route("leads.checkDuplicate") }}',
+                        type: 'GET',
+                        data: { buyer_contact: number },
+                        success: function (response) {
+                            if (response.exists) {
+                                $contactError
+                                    .removeClass('d-none')
+                                    .text('⚠️ The number was already added in the last 3 days.');
+                            } else {
+                                $contactError.addClass('d-none').text('');
+                            }
+                        },
+                        error: function () {
+                            console.error('Error checking duplicate number.');
+                        }
+                    });
+                } else {
+                    $contactError.addClass('d-none').text('');
+                }
+            });
+        });
 </script>
 @stop

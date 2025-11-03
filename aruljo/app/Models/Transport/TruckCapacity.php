@@ -46,5 +46,13 @@ class TruckCapacity extends Model
         return $enum;
     }
 
+    public function getPracticalWeightCapacityAttribute()
+    {
+        $productWeight = $this->product->weight_kg ?? 0;
+        $maxUnits = $this->max_units ?? 0;
+
+        return $productWeight * $maxUnits;
+    }
+
 
 }

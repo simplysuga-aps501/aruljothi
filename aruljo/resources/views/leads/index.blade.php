@@ -54,8 +54,16 @@
                 </div>
 
                 <div class="card-body">
-                    <h5 class="mb-3 font-weight-bold">{{ $tab === 'all' ? 'All Leads' : 'Active Leads' }}</h5>
-
+                     <div class="d-flex justify-content-between align-items-center mb-3">
+                         <h5 class="font-weight-bold mb-0">{{ $tab === 'all' ? 'All Leads' : 'Active Leads' }}</h5>
+                         @if ($tab === 'all')
+                             @hasanyrole('admin|owner')
+                                 <a href="{{ route('leads.export') }}" class="btn btn-success">
+                                     <i class="fas fa-download"></i> Download All Leads
+                                 </a>
+                             @endhasanyrole
+                         @endif
+                     </div>
                     <div class="table-responsive">
                         <table id="leads_table" class="table table-bordered table-hover nowrap text-sm">
                             <thead class="thead-light">
@@ -160,6 +168,11 @@
                     @endforeach
                     </tbody>
                     </table>
+                    @if ($tab === 'all')
+                        <div class="alert alert-info py-2 px-3">
+                            Showing leads from the last 60 days only. Download the excel to see all the leads.
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>
@@ -188,6 +201,7 @@
     <link rel="stylesheet" href="https://cdn.datatables.net/responsive/3.0.4/css/responsive.dataTables.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/datetime/1.5.5/css/dataTables.dateTime.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/columncontrol/1.0.7/css/columnControl.dataTables.min.css">
+
 
     <!--Select2 Tags JS-->
     <link rel="stylesheet"
@@ -225,7 +239,6 @@
         }
 
 
-
     </style>
 @stop
 
@@ -243,6 +256,7 @@
 
     <!--Auto Complete-->
     <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+
 
     @include('leads.partials.shared-js')
     <script>
@@ -277,16 +291,6 @@
                 $('#flashSuccess').fadeOut();
             }, 3000);
         });
-
-        function copyPhone(event, number) {
-            if (!number || !navigator.clipboard) return;
-            if (!/Mobi|Android|iPhone/i.test(navigator.userAgent)) {
-                event.preventDefault();
-                navigator.clipboard.writeText(number)
-                    .then(() => alert('Phone number copied: ' + number))
-                    .catch(() => alert('Failed to copy number.'));
-            }
-        }
 
         function setDeleteAction(actionUrl) {
             document.getElementById('deleteForm').setAttribute('action', actionUrl);
