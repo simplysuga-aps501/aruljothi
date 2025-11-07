@@ -49,7 +49,6 @@
                 if (!name) return showProductError(alertBox, "Enter a product name.");
                 if (!qty || qty <= 0) return showProductError(alertBox, "Quantity is required.");
                 if (productsList && !productsList.some(p => p.name === name)) {
-                    console.log(productsList);
                     return showProductError(alertBox, "Select a valid product from the list.");
                 }
 
@@ -331,10 +330,14 @@
          return parseFloat(distanceInput.val());
      }
 
+
      // ---------------- CALCULATE QUOTE BUTTON ----------------
      $container.off('click', '#calculate_quote_btn').on('click', '#calculate_quote_btn', function () {
          const products = collectProductData();
+         console.log(products);
          const distance = getDistance();
+         console.log("distance",distance);
+         const delivery_location_id = $container.find('.delivery_location_id').val();
 
          if (!distance || products.length === 0) {
              alert('Please enter products and distance.');
@@ -350,7 +353,8 @@
              data: {
                  _token: '{{ csrf_token() }}',
                  products,
-                 distance_km: distance
+                 distance_km: distance,
+                 delivery_location_id : delivery_location_id
              },
              success: function (res) {
                  loader.hide();
@@ -426,7 +430,7 @@
          }
 
          const cleanPhone = phone.replace(/\D/g, '');
-         const url = `https://wa.me/${cleanPhone}?text=${summary.text}`;
+         const url = `https://wa.me/91${cleanPhone}?text=${summary.text}`;
          window.open(url, '_blank');
      });
  }

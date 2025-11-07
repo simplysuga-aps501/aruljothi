@@ -464,18 +464,55 @@ class LeadController extends Controller
     }
 
     public function calculateDraftQuote(Request $request, QuoteCalculatorService $calculator)
-    {
-        $result = $calculator->calculateByCapacity(
-            $request->input('products', []),
-            (float)$request->input('distance_km', 0)
-        );
+        {
+            $productInputs = $request->input('products', []);
+            $distance = (float) $request->input('distance_km', 0);
+            $locationId = $request->input('delivery_location_id');
+            $state = null;
 
-        if (isset($result['error'])) {
-            return response()->json(['error' => $result['error']], 400);
+            if ($locationId) {
+                $state = \App\Models\DistancePincode::where('id', $locationId)->value('state');
+            }
+
+            $productIds = collect($productInputs)->pluck('id')->filter()->all();
+            Log::info('🆔 Product IDs: ' . implode(', ', $productIds));
+
+            $products = \App\Models\Product\Product::with([
+                    'template',
+                    'parameterValues.parameter'
+                ])
+                ->whereIn('id', $productIds)
+                ->get()
+                ->map(function ($product) use ($productInputs) {
+                    $reqItem = collect($productInputs)->firstWhere('id', $product->id);
+
+                    // Attach qty and price (from request)
+                    $product->qty = $reqItem['qty'] ?? 0;
+                    $product->price = $reqItem['price'] ?? $product->quote_price;
+                    $product->weight = $reqItem['weight'] ?? $product->weight_kg;
+
+                    // Replace parameter IDs with readable names
+                    $product->parameterValues = $product->parameterValues->map(function ($pv) {
+                        return [
+                            'parameter' => $pv->parameter->name ?? 'Unknown',
+                            'value'     => $pv->value,
+                        ];
+                    });
+
+                    return $product;
+                });
+
+
+            $result = $calculator->calculateByCapacity($products->toArray(), $distance, $state);
+
+
+            if (isset($result['error'])) {
+                return response()->json(['error' => $result['error']], 400);
+            }
+
+            return response()->json($result);
         }
 
-        return response()->json($result);
-    }
 
     public function export()
     {

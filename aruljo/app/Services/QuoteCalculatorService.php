@@ -14,7 +14,7 @@ class QuoteCalculatorService
      * @param  float  $distance   Transport distance in kilometers
      * @return array              Total cost + formatted HTML tables for detailed breakdown
      */
-    public function calculateByCapacity(array $products, float $distance): array
+    public function calculateByCapacity(array $products, float $distance, ?string $state = null): array
     {
         /* ----------------------------------------------------------------------
          |  1️⃣ INPUT VALIDATION
@@ -22,13 +22,37 @@ class QuoteCalculatorService
         if (empty($products) || $distance <= 0) {
             return ['error' => 'Products and distance are required.'];
         }
+        Log::info('🧾 Quote Calculation Started', [
+            'state' => $state,
+            'distance' => $distance,
+            'products' => collect($products)->map(function ($p) {
+                return [
+                    'id'        => $p['id'] ?? null,
+                    'sku'       => $p['sku'] ?? null,
+                    'qty'       => $p['qty'] ?? null,
+                    'weight'    => $p['weight'] ?? null,
+                    'price'     => $p['price'] ?? null,
+                    'parameters'=> $p['parameterValues'] ?? [],
+                ];
+            })->toArray()
+        ]);
 
-        $bodyType = $distance <= 150 ? 'Open' : 'Truck';
+        //Log::info($products);
+        // 🛻 Determine body type based on distance and destination state
+        if ($distance <= 150) {
+            $bodyType = 'Open'; // Rule 1: Always Open for ≤150 km
+        } elseif ($distance > 150 && strtoupper(trim($state)) === 'KL') {
+            $bodyType = 'Open'; // Rule 2: For >150 km but destination is Kerala
+        } else {
+            $bodyType = 'Truck'; // Rule 3: Everything else is Closed Truck
+        }
+
 
         /* ----------------------------------------------------------------------
          |  2️⃣ FETCH TRUCK TYPES
          ---------------------------------------------------------------------- */
-        $trucks = DB::table('tp_truck_types')
+        /*
+        trucks = DB::table('tp_truck_types')
             ->select('id', 'name', 'capacity_kg', 'rate_per_km')
             ->orderBy('capacity_kg')
             ->get()
@@ -38,7 +62,51 @@ class QuoteCalculatorService
         if ($trucks->isEmpty()) {
             return ['error' => 'No truck types found.'];
         }
+        */
+        // 🚛 Check if any product requires a Trailor (Distance>250 , Length ≥ 2.5m and Diameter > 300mm)
+        $requiresTrailor = false;
 
+        if ($distance >= 200) {
+            $requiresTrailor = collect($products)->contains(function ($p) {
+                if (empty($p['parameterValues']) && empty($p['parameters'])) {
+                    return false;
+                }
+
+                $params = collect($p['parameterValues'] ?? $p['parameters'])
+                    ->pluck('value', 'parameter');
+
+                $length = (float) ($params['Length'] ?? 0);
+                $diameter = (float) ($params['Diameter'] ?? 0);
+
+                return $length >= 2.5 && $diameter > 300;
+            });
+
+            Log::info('🚛 Requires Trailor? ' . ($requiresTrailor ? 'Yes' : 'No'));
+        }
+
+        // 🚚 Fetch truck types dynamically
+        $trucks = DB::table('tp_truck_types')
+            ->select('id', 'name', 'capacity_kg', 'rate_per_km')
+            ->orderBy('capacity_kg')
+            ->get()
+            ->filter(function ($truck) use ($requiresTrailor) {
+                // Exclude big trucks always
+                if (in_array($truck->name, ['14 Wheel', '16 Wheel'])) {
+                    return false;
+                }
+                // Include Trailor only if required
+                if ($truck->name === 'Trailor' && !$requiresTrailor) {
+                    return false;
+                }
+                return true;
+            })
+            ->values();
+
+        if ($trucks->isEmpty()) {
+            return ['error' => 'No suitable truck types found.'];
+        }
+
+        Log::info('✅ Available Truck Types: ' . $trucks->pluck('name')->join(', '));
         /* ----------------------------------------------------------------------
          |  3️⃣ PREPARE PRODUCT DATA
          ---------------------------------------------------------------------- */
@@ -74,17 +142,48 @@ class QuoteCalculatorService
         $truckAllocations = [];
         $remainingProductWeight = $net_product_weight;
 
-        while (array_sum(array_column($remainingProducts, 'qty')) > 0) {
-
+        while (array_sum(array_column($remainingProducts, 'qty')) > 0)
+        {
+            Log::info('Remaining products:', $remainingProducts);
             // 🛻 Select Suitable Truck
-            $selectedTruck = $trucks->last();
+            // 🛻 Select the smallest truck that can carry *all* remaining products
+            $selectedTruck = null;
+
             foreach ($trucks as $truck) {
-                if ($truck->capacity_kg >= $remainingProductWeight) {
+                $canCarryAll = true;
+                $totalPossibleWeight = 0;
+
+                foreach ($remainingProducts as $product) {
+                    if ($product['qty'] <= 0) continue;
+
+                    $truckCapacity = DB::table('tp_truck_capacities')
+                        ->where('truck_type_id', $truck->id)
+                        ->where('product_id', $product['id'])
+                        ->where('body_type', strtolower($bodyType) === 'open' ? 'open_body_truck' : 'truck')
+                        ->first();
+
+                    // ❌ If even one product can't fit in this truck, reject it
+                    if (!$truckCapacity || $truckCapacity->max_units <= 0) {
+                        $canCarryAll = false;
+                        break;
+                    }
+
+                    // Estimate how much total weight this truck can hold for all products
+                    $totalPossibleWeight += $truckCapacity->max_units * $product['weight'];
+                }
+
+                // ✅ Select first (smallest) truck that fits all product types and total weight
+                if ($canCarryAll && $truck->capacity_kg >= $remainingProductWeight && $totalPossibleWeight >= $remainingProductWeight) {
                     $selectedTruck = $truck;
                     break;
                 }
             }
 
+            // 🚨 If none can hold all, fallback to the next best (largest)
+            if (!$selectedTruck) {
+                $selectedTruck = $trucks->last();
+            }
+            Log::info('Selected Truck: ' . $selectedTruck->name);
             $truckProducts = [];
             $truckTotalWeightFilled = 0;
             $sameProductLoaded = false;
