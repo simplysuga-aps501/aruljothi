@@ -19,6 +19,7 @@ class TpDistrictRate extends Model implements AuditableContract
     protected $fillable = [
         'location_id',
         'office_id',
+        'truck_type_id',
         'rate',
         'remarks',
     ];
@@ -38,7 +39,13 @@ class TpDistrictRate extends Model implements AuditableContract
     {
         return $this->belongsTo(TpOffice::class, 'office_id');
     }
-
+    /**
+     * Each rate is linked to a truck type (body type).
+     */
+    public function truckType()
+    {
+        return $this->belongsTo(TruckType::class, 'truck_type_id');
+    }
     /**
      * The user who last modified this record
      */
@@ -76,6 +83,16 @@ class TpDistrictRate extends Model implements AuditableContract
         if (isset($data['old_values']['office_id'])) {
             $oldOffice = TpOffice::find($data['old_values']['office_id']);
             $data['old_values']['office_id'] = $oldOffice->name ?? $data['old_values']['office_id'];
+        }
+
+        // Truck Type (Body Type)
+        if (isset($data['new_values']['truck_type_id'])) {
+            $newTruck = TruckType::find($data['new_values']['truck_type_id']);
+            $data['new_values']['truck_type_id'] = $newTruck->name ?? $data['new_values']['truck_type_id'];
+        }
+        if (isset($data['old_values']['truck_type_id'])) {
+            $oldTruck = TruckType::find($data['old_values']['truck_type_id']);
+            $data['old_values']['truck_type_id'] = $oldTruck->name ?? $data['old_values']['truck_type_id'];
         }
 
         // Users (created_by, updated_by, modified_by)

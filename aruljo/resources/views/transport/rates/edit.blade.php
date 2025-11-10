@@ -26,8 +26,12 @@
                             <input type="text" id="edit_place" class="form-control" readonly>
                         </div>
                     </div>
-
                     <div class="form-row mb-3">
+                        <div class="col-md-4">
+                            <label>Truck Type</label>
+                            <input type="text" id="edit_truck_type_name" class="form-control" readonly>
+                            <input type="hidden" name="truck_type_id" id="edit_truck_type_id">
+                        </div>
                         <div class="col-md-4">
                             <label>Office</label>
                             <select name="office_id" id="edit_office_id" class="form-control">
@@ -37,13 +41,12 @@
                                 @endforeach
                             </select>
                         </div>
-
                         <div class="col-md-4">
                             <label>Rate</label>
                             <input type="number" step="0.01" name="rate" id="edit_rate" class="form-control" required>
                         </div>
 
-                        <div class="col-md-4">
+                        <div class="col-md-12">
                             <label>Remarks</label>
                             <input type="text" name="remarks" id="edit_remarks" class="form-control">
                         </div>
@@ -73,6 +76,8 @@ $(function () {
             $('#edit_district').val(data.district);
             $('#edit_place').val(data.place);
             $('#edit_office_id').val(data.office_id);
+            $('#edit_truck_type_id').val(data.truck_type_id);
+            $('#edit_truck_type_name').val(data.truck_type_name);
             $('#edit_rate').val(data.rate);
             $('#edit_remarks').val(data.remarks);
 

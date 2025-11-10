@@ -468,14 +468,8 @@ class LeadController extends Controller
             $productInputs = $request->input('products', []);
             $distance = (float) $request->input('distance_km', 0);
             $locationId = $request->input('delivery_location_id');
-            $state = null;
-
-            if ($locationId) {
-                $state = \App\Models\DistancePincode::where('id', $locationId)->value('state');
-            }
 
             $productIds = collect($productInputs)->pluck('id')->filter()->all();
-            Log::info('🆔 Product IDs: ' . implode(', ', $productIds));
 
             $products = \App\Models\Product\Product::with([
                     'template',
@@ -498,13 +492,11 @@ class LeadController extends Controller
                             'value'     => $pv->value,
                         ];
                     });
-
                     return $product;
                 });
 
 
-            $result = $calculator->calculateByCapacity($products->toArray(), $distance, $state);
-
+            $result = $calculator->calculateByCapacity($products->toArray(), $distance, $locationId);
 
             if (isset($result['error'])) {
                 return response()->json(['error' => $result['error']], 400);

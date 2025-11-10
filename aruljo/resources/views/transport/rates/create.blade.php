@@ -31,8 +31,15 @@
                         <select id="location_id" name="location_id[]" class="form-control" multiple disabled>
                         </select>
                     </div>
-
-
+                    <div class="form-group">
+                        <label for="truck_type_id">Truck Type <span class="text-danger">*</span></label>
+                        <select id="truck_type_id" name="truck_type_id" class="form-control" required>
+                            <option value="">-- Select Truck Type --</option>
+                            @foreach($truckTypes as $truck)
+                                <option value="{{ $truck->id }}">{{ $truck->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
                     <div class="form-group">
                         <label for="office_id">Office (Optional)</label>
                         <select id="office_id" name="office_id" class="form-control">
@@ -42,7 +49,6 @@
                             @endforeach
                         </select>
                     </div>
-
                     <div class="form-group">
                         <label for="rate">Rate <span class="text-danger">*</span></label>
                         <input type="number" name="rate" id="rate" class="form-control" placeholder="Enter rate" required>

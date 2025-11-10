@@ -38,6 +38,7 @@
                         <th>State</th>
                         <th>District</th>
                         <th>Place</th>
+                        <th>Truck Type</th>
                         <th>Rate</th>
                         <th>Office</th>
                         <th>Remarks</th>
@@ -56,6 +57,7 @@
                                     {{ $rate->location->place ?? '-' }}
                                 </a>
                             </td>
+                            <td>{{ $rate->truckType->name ?? '-' }}</td>
                             <td>{{ $rate->rate ?? '-' }}</td>
                             <td>{{ $rate->office->name ?? '-' }}</td>
                             <td>{{ $rate->remarks ?? '-' }}</td>
