@@ -159,33 +159,70 @@ class QuoteCalculatorService
         while (array_sum(array_column($remainingProducts, 'qty')) > 0) {
             // 🛻 Select the smallest truck that can carry *all* remaining products
             $selectedTruck = null;
-            foreach ($trucks as $truck) {
+            foreach ($trucks as $truck)
+            {
                 $canCarryAll = true;
                 $totalPossibleWeight = 0;
-                $bodyTypeCurrent = strtolower($truck->name) === 'trailor' ? 'open_body_truck' : $bodyType;
+
+                $bodyTypeCurrent = strtolower($truck->name) === 'trailor'
+                    ? 'open_body_truck'
+                    : $bodyType;
+
+                $truckVolumeLeft = 1.0; // 100% volume available
+
                 foreach ($remainingProducts as $product) {
-                    //Log::info("Checking for product : SKU={$product['sku']}, Qty={$product['qty']}");
 
                     $truckCapacity = DB::table('tp_truck_capacities')
                         ->where('truck_type_id', $truck->id)
                         ->where('product_id', $product['id'])
-                        ->where('body_type',$bodyTypeCurrent)
+                        ->where('body_type', $bodyTypeCurrent)
                         ->first();
 
-                    // ❌ If even one product can't fit in this truck, reject it
+                    // ❌ Cannot carry this SKU at all
                     if (!$truckCapacity || $truckCapacity->max_units <= 0) {
                         $canCarryAll = false;
+                        Log::info("❌ Truck {$truck->name} REJECTED — Not suitable for {$product['sku']}");
                         break;
                     }
 
-                    // Estimate how much total weight this truck can hold for all products
+                    // ❌ Truck cannot carry required qty (VOLUME FAIL)
+                    if ($product['qty'] > $truckCapacity->max_units) {
+                        $canCarryAll = false;
+                        Log::info("❌ Truck {$truck->name} REJECTED — Cannot carry required quantity");
+                        break;
+                    }
+
+                    // Calculate how much fraction of volume this product consumes
+                    $volumeNeeded = $product['qty'] / $truckCapacity->max_units;
+
+                    Log::info("Product {$product['sku']}: Needs Volume = $volumeNeeded, Volume Left = $truckVolumeLeft");
+
+                    // ❌ Not enough volume
+                    if ($volumeNeeded > $truckVolumeLeft) {
+                        $canCarryAll = false;
+                        Log::info("❌ Truck {$truck->name} REJECTED — volume mismatch");
+                        break;
+                    }
+
+                    // Deduct used volume
+                    $truckVolumeLeft -= $volumeNeeded;
+
+                    // Weight capacity estimate
                     $totalPossibleWeight += $truckCapacity->max_units * $product['weight'];
                 }
 
-                // ✅ Select first (smallest) truck that fits all product types and total weight
-                if ($canCarryAll && $truck->capacity_kg >= $remainingProductWeight && $totalPossibleWeight >= $remainingProductWeight) {
+                // After checking all products…
+                if (!$canCarryAll) {
+                    Log::info("❌ Truck {$truck->name} REJECTED — volume/sku mismatch");
+                    continue;
+                }
+
+                // Weight check
+                if ($truck->capacity_kg >= $remainingProductWeight &&
+                    $totalPossibleWeight >= $remainingProductWeight) {
+
                     $selectedTruck = $truck;
-                    Log::info('Selected  : ' . $selectedTruck->name);
+                    Log::info("✅ SELECTED TRUCK: {$selectedTruck->name}");
                     break;
                 }
             }
@@ -341,7 +378,7 @@ class QuoteCalculatorService
            $transportCost = round($effectiveRatePerKm * $distance, 2);
 
            // 🚚 If distance >150 km AND truck type is “Truck” → check fixed rate table
-           if ($distance > 150 && $bodyTypeCurrent === 'Truck') {
+           if ($distance > 150 ) {
                $districtRate = DB::table('tp_district_rates')
                    ->where('location_id', $locationId)
                    ->where('truck_type_id', $selectedTruck->id)
