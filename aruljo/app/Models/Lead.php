@@ -70,5 +70,8 @@ class Lead extends Model implements AuditableContract
         )->withPivot('quantity')
          ->withTimestamps();
     }
-
+    public function location()
+    {
+        return $this->belongsTo(\App\Models\DistancePincode::class, 'delivery_location_id');
+    }
 }

@@ -13,7 +13,8 @@ use App\Http\Controllers\Product\ProductController;
 use App\Http\Controllers\Product\UnitController;
 use App\Http\Controllers\Product\HsncodeController;
 use App\Http\Controllers\Product\ProductTemplateController;
-
+use App\Http\Controllers\Transport\TpOfficeController;
+use App\Http\Controllers\Transport\TpDistrictRateController;
 
 
 require __DIR__.'/auth.php';
@@ -82,6 +83,17 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/leads/create', [LeadController::class, 'create'])->name('leads.create');
         Route::post('/leads', [LeadController::class, 'store'])->name('leads.store');
         Route::get('/leads/{id}/audits', [LeadController::class, 'showAudits'])->name('leads.audits');
+        Route::get('/leads/export', [LeadController::class, 'export'])->name('leads.export');
+
+        //Distance
+        Route::get('/api/distance/by-pincode', [DistanceController::class, 'byPincode'])->name('distance.byPincode');
+        Route::get('/distance/calc', [DistanceController::class, 'calc'])
+           ->name('distance.calc');
+        //Draft Quote
+        Route::post('/leads/calculate-quote', [LeadController::class, 'calculateDraftQuote'])
+           ->name('leads.calculate-quote');
+        Route::get('/leads/check-duplicate', [LeadController::class, 'checkDuplicate'])
+            ->name('leads.checkDuplicate');
 
         /*
         |--------------------------------------------------------------------------
@@ -98,10 +110,10 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/units', [UnitController::class, 'store'])->name('units.store');
         Route::delete('/units/{id}', [UnitController::class, 'destroy'])->name('units.destroy');
 
-      Route::post('/hsncodes', [HsncodeController::class, 'store'])->name('hsncodes.store');
-      Route::delete('/hsncodes/{hsncode}', [HsncodeController::class, 'destroy'])->name('hsncodes.destroy');
+        Route::post('/hsncodes', [HsncodeController::class, 'store'])->name('hsncodes.store');
+        Route::delete('/hsncodes/{hsncode}', [HsncodeController::class, 'destroy'])->name('hsncodes.destroy');
 
-        // 📋 Product Templates (optional - if you're managing templates)
+        // 📋 Product Templates (optional -  if you're managing templates)
         Route::resource('product-templates', ProductTemplateController::class)->only(['index', 'create', 'store', 'edit', 'update']);
 
         //delete a product
@@ -111,10 +123,47 @@ Route::middleware(['auth'])->group(function () {
         // PUT or PATCH route for editing product (selling price & weight only)
         Route::put('/products/{product}/edit', [ProductController::class, 'edit'])->name('products.edit');
 
-        //Distance
-                Route::get('/api/distance/by-pincode', [DistanceController::class, 'byPincode'])->name('distance.byPincode');
-                Route::get('/distance/calc', [DistanceController::class, 'calc'])
-                   ->name('distance.calc');
+
+
+        /*
+       |--------------------------------------------------------------------------
+       | Transport Routes
+       |--------------------------------------------------------------------------
+       */
+
+       Route::prefix('transport')->group(function () {
+           // Transport Offices CRUD
+           Route::resource('offices', TpOfficeController::class)
+               ->names([
+                   'index' => 'tp_offices.index',
+                   'create' => 'tp_offices.create',
+                   'store' => 'tp_offices.store',
+                   'update' => 'tp_offices.update',
+                   'destroy' => 'tp_offices.destroy',
+               ]);
+
+           // Dependent dropdown routes
+           Route::get('get-districts', [TpOfficeController::class, 'getDistricts']);
+       });
+
+      Route::prefix('transport')->group(function () {
+          Route::get('rates/get-districts', [TpDistrictRateController::class, 'getDistricts'])->name('rates.getDistricts');
+          Route::get('rates/get-places', [TpDistrictRateController::class, 'getPlaces'])->name('rates.getPlaces');
+
+          Route::resource('rates', TpDistrictRateController::class)
+              ->except(['show'])
+              ->names([
+                  'index' => 'rates.index',
+                  'create' => 'rates.create',
+                  'store' => 'rates.store',
+                  'edit' => 'rates.edit',
+                  'update' => 'rates.update',
+                  'destroy' => 'rates.destroy',
+              ]);
+      });
+      Route::get('rates/{id}/audits', [TpDistrictRateController::class, 'audits'])->name('rates.audits');
+
+
         /*
         |--------------------------------------------------------------------------
         | Admin Routes
@@ -127,5 +176,7 @@ Route::middleware(['auth'])->group(function () {
             // admin can do everything in leads, including delete
             Route::delete('/leads/{id}', [LeadController::class, 'destroy'])->name('leads.destroy');
         });
+
     });
+
 });

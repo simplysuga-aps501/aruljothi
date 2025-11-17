@@ -14,7 +14,10 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\DistanceController;
 use Illuminate\Support\Facades\Log;
-
+use App\Services\QuoteCalculatorService;
+use App\Exports\LeadsExport;
+use Maatwebsite\Excel\Facades\Excel;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class LeadController extends Controller
 {
@@ -34,8 +37,15 @@ class LeadController extends Controller
 
         // Fetch all products for autocomplete
         $products = Product::all();
+        $productsArray = $products->map(fn($p) => [
+            'id' => $p->id,
+            'name' => $p->name,
+            'sku' => $p->sku,
+            'weight' => $p->weight_kg,
+            'price' => $p->quote_price,
+        ])->toArray();
 
-        return view('leads.create', compact('users', 'tags', 'platforms', 'products'));
+        return view('leads.create', compact('users', 'tags', 'platforms', 'productsArray'));
     }
 
     /**
@@ -44,7 +54,6 @@ class LeadController extends Controller
 
     public function store(Request $request)
         {
-            Log::info('Lead form submitted', $request->all());
             $validated = $request->validate([
                 'platform' => 'required|string',
                 'lead_date' => 'required|date',
@@ -141,6 +150,7 @@ class LeadController extends Controller
 
         if ($tab === 'all') {
             $leads = Lead::with('tags')
+                ->where('created_at', '>=', now()->subDays(60))
                 ->orderBy('created_at', 'desc')
                 ->get();
         } else {
@@ -233,8 +243,18 @@ class LeadController extends Controller
             }
         }
 
+        //products
+        // Fetch all products for autocomplete
+                $products = Product::all();
+                $productsArray = $products->map(fn($p) => [
+                    'id' => $p->id,
+                    'name' => $p->name,
+                    'sku' => $p->sku,
+                    'weight' => $p->weight_kg,
+                    'price' => $p->quote_price,
+                ])->toArray();
        return view('leads.index', compact(
-            'leads', 'users', 'currentUser', 'tab', 'statuses', 'platforms', 'allTags','isEuser','products'));
+            'leads', 'users', 'currentUser', 'tab', 'statuses', 'platforms', 'allTags','isEuser','productsArray'));
     }
 
 
@@ -252,23 +272,17 @@ class LeadController extends Controller
 
         if ($locationId) {
             // Fetch location details directly from distance_pincodes
-            $location = DB::table('distance_pincodes')->where('id', $locationId)->first();
+            $location = $lead->location; // uses belongsTo relationship
 
             if ($location) {
                 $pincode = $location->pincode;
+                $fullLocation = $location->full_location . '-' . $pincode;
 
-                // Build the full location string: place,district,state-pincode
-                $fullLocation = "{$location->place}, {$location->district}, {$location->state}-{$location->pincode}";
-
-                // Fetch distance & duration from cache using to_location_id
-                $cache = DB::table('distance_cache')
-                    ->where('to_location_id', $locationId)
-                    ->latest('last_updated')
-                    ->first();
+                $cache = $location->latestCache; // if you add latestCache() helper in DistancePincode
 
                 if ($cache) {
-                    $distance_km = round($cache->distance_km, 0, PHP_ROUND_HALF_UP);
-                    $duration_minutes = round($cache->duration_minutes, 0, PHP_ROUND_HALF_UP);
+                    $distance_km = round($cache->distance_km);
+                    $duration_minutes = round($cache->duration_minutes);
                 }
             }
         }
@@ -303,7 +317,6 @@ class LeadController extends Controller
      */
     public function update(Request $request, $id)
         {
-            Log::info('Lead update form submitted', $request->all());
             $lead = Lead::findOrFail($id);
             $validated = $request->validate([
                 'platform' => 'required|string',
@@ -372,8 +385,10 @@ class LeadController extends Controller
                 }
             }
 
-            $tab = $request->query('tab', 'active');
-            return redirect()->route('leads.index', ['tab' => $tab])->with('success', 'Lead updated successfully.');
+            $tab = $request->input('tab', 'active');
+            return redirect()->route('leads.index', $tab === 'active' ? [] : ['tab' => $tab])
+                ->with('success', 'Lead updated successfully.');
+
         }
 
 
@@ -447,4 +462,63 @@ class LeadController extends Controller
         }
 
     }
+
+    public function calculateDraftQuote(Request $request, QuoteCalculatorService $calculator)
+        {
+            $productInputs = $request->input('products', []);
+            $distance = (float) $request->input('distance_km', 0);
+            $locationId = $request->input('delivery_location_id');
+
+            $productIds = collect($productInputs)->pluck('id')->filter()->all();
+
+            $products = \App\Models\Product\Product::with([
+                    'template',
+                    'parameterValues.parameter'
+                ])
+                ->whereIn('id', $productIds)
+                ->get()
+                ->map(function ($product) use ($productInputs) {
+                    $reqItem = collect($productInputs)->firstWhere('id', $product->id);
+
+                    // Attach qty and price (from request)
+                    $product->qty = $reqItem['qty'] ?? 0;
+                    $product->price = $reqItem['price'] ?? $product->quote_price;
+                    $product->weight = $reqItem['weight'] ?? $product->weight_kg;
+
+                    // Replace parameter IDs with readable names
+                    $product->parameterValues = $product->parameterValues->map(function ($pv) {
+                        return [
+                            'parameter' => $pv->parameter->name ?? 'Unknown',
+                            'value'     => $pv->value,
+                        ];
+                    });
+                    return $product;
+                });
+
+
+            $result = $calculator->calculateByCapacity($products->toArray(), $distance, $locationId);
+
+            if (isset($result['error'])) {
+                return response()->json(['error' => $result['error']], 400);
+            }
+
+            return response()->json($result);
+        }
+
+
+    public function export()
+    {
+        return Excel::download(new LeadsExport, 'leads.xlsx');
+    }
+
+    public function checkDuplicate(Request $request)
+    {
+        $number = trim($request->input('buyer_contact'));
+        $exists = Lead::where('buyer_contact', $number)
+            ->where('created_at', '>=', Carbon::now()->subDays(3))
+            ->exists();
+
+        return response()->json(['exists' => $exists]);
+    }
+
 }

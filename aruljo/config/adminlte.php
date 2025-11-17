@@ -348,6 +348,22 @@ return [
                // (you can add more sub-items here later, like Units, HSN Codes, etc.)
            ],
        ],
+       [
+           'text'        => 'Transport',
+           'icon'        => 'fas fa-truck',
+           'submenu'     => [
+               [
+                   'text' => 'Offices',
+                   'url'  => 'transport/offices',
+                   'icon' => 'fas fa-building',
+               ],
+               [
+                   'text' => 'Rates',
+                   'url'  => 'transport/rates',
+                   'icon' => 'fas fa-rupee-sign',
+               ],
+           ],
+       ],
 
         ['header' => 'account_settings'],
         [
