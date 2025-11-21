@@ -520,5 +520,21 @@ class LeadController extends Controller
 
         return response()->json(['exists' => $exists]);
     }
+    public function getQuoteReferenceData(Request $request)
+    {
+        $products    = $request->input('products', []);
+        $distance    = (float) $request->input('distance_km', 0);
+        $locationId  = $request->input('delivery_location_id');
+        $includeDraft = filter_var($request->input('include_draft', false), FILTER_VALIDATE_BOOLEAN);
+
+        $service = new \App\Services\QuoteCalculatorService();
+
+        return response()->json(
+            $service->getQuoteReferenceData($products, $distance, $locationId, $includeDraft)
+        );
+    }
+
+
+
 
 }

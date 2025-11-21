@@ -15,6 +15,7 @@ use App\Http\Controllers\Product\HsncodeController;
 use App\Http\Controllers\Product\ProductTemplateController;
 use App\Http\Controllers\Transport\TpOfficeController;
 use App\Http\Controllers\Transport\TpDistrictRateController;
+use App\Http\Controllers\Quotation\QuotationController;
 
 
 require __DIR__.'/auth.php';
@@ -163,6 +164,15 @@ Route::middleware(['auth'])->group(function () {
       });
       Route::get('rates/{id}/audits', [TpDistrictRateController::class, 'audits'])->name('rates.audits');
 
+      // Quotations routes
+             Route::prefix('quotations')->name('quotations.')->group(function () {
+                 Route::get('/', [QuotationController::class, 'index'])->name('index');
+                 Route::get('/create', [QuotationController::class, 'create'])->name('create');
+             });
+        // routes/web.php
+        Route::post('/leads/reference-data', [LeadController::class, 'getQuoteReferenceData'])
+            ->name('leads.reference-data');
+        Route::post('/quotations/store', [QuotationController::class, 'store'])->name('quotations.store');
 
         /*
         |--------------------------------------------------------------------------
