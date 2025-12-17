@@ -13,13 +13,17 @@ return new class extends Migration
     {
         Schema::create('quotations', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('lead_id')->constrained('leads')->onDelete('cascade');
+            $table->foreignId('lead_id')->constrained('leads')->cascadeOnDelete();
             $table->string('quote_number')->unique();
             $table->decimal('total_amount', 12, 2)->default(0);
-            $table->foreignId('current_version')->nullable();
-            $table->string('status')->default('draft'); // draft, sent, approved, rejected
-            $table->foreignId('created_by')->nullable()->constrained('users');
-            $table->foreignId('modified_by')->nullable()->constrained('users');
+
+            $table->foreignId('current_version')->nullable(); // define first
+            $table->string('status')->default('draft');
+
+            $table->foreignId('customer_id')->nullable()->constrained('customers')->nullOnDelete();
+            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('modified_by')->nullable()->constrained('users')->nullOnDelete();
+
             $table->softDeletes();
             $table->timestamps();
         });

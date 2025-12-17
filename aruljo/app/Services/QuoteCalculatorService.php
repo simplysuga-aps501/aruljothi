@@ -15,7 +15,7 @@ class QuoteCalculatorService
    ): array {
        // Existing queries...
        $availableTrucks = DB::table('tp_truck_types')
-           ->select('id','name','capacity_kg','rate_per_km')
+           ->select('id','name','capacity_kg','rate_per_km','unloading_charges_below_150', 'unloading_charges_above_150')
            ->orderBy('capacity_kg')
            ->get();
 
@@ -94,6 +94,15 @@ class QuoteCalculatorService
 
    public function calculateByCapacity(array $products, float $distance, ?string $locationId = null): array
        {
+            Log::info("\n\n================== Starting Quote Calculation ==================\n");
+
+                Log::info('📦 Incoming Calculation Request', [
+                    'products' => $products,
+                    'distance' => $distance,
+                    'location_id' => $locationId,
+                    'userId' => auth()->id(),
+                    'timestamp' => now()->toDateTimeString(),
+                ]);
            /* ----------------------------------------------------------------------
             |  1️⃣ INPUT VALIDATION
             ---------------------------------------------------------------------- */
@@ -409,6 +418,7 @@ class QuoteCalculatorService
                        }
 
                        $weightPerUnit = $product['weight'];
+                       Log::info($weightPerUnit);
                        $weightLeft = $selectedTruck->capacity_kg - $truckTotalWeightFilled;
 
                        $maxFitByWeight = floor($weightLeft / $weightPerUnit);
@@ -642,7 +652,8 @@ class QuoteCalculatorService
                            <th>Qty</th>
                            <th>Rate/unit (₹)</th>
                            <th>Transport/unit (₹)</th>
-                           <th>Total Price (₹)</th>
+                           <th>Total/unit (₹)</th>
+                           <th>Amount (₹)</th>
                        </tr>
                    </thead>
                    <tbody>';
@@ -670,6 +681,9 @@ class QuoteCalculatorService
                        <td>" .
                    number_format($transportPerUnit) .
                    "</td>
+                        <td>" .
+                           number_format($finalRatePerUnit) .
+                           "</td>
                        <td>" .
                    number_format($productTotal, 2) .
                    "</td>
@@ -680,13 +694,13 @@ class QuoteCalculatorService
                "
                    </tbody>
                    <tfoot>
-                       <tr><th colspan='4' class='text-end'>Subtotal (Products + Transport):</th><th>" .
+                       <tr><th colspan='5' class='text-end'>Subtotal (Products + Transport):</th><th>" .
                number_format($totalProduct, 2) .
                " ₹</th></tr>
-                       <tr><th colspan='4' class='text-end'>GST (18%):</th><th>" .
+                       <tr><th colspan='5' class='text-end'>GST (18%):</th><th>" .
                number_format($totalGST, 2) .
                " ₹</th></tr>
-                       <tr class='table-success'><th colspan='4' class='text-end'>Net Total:</th><th>" .
+                       <tr class='table-success'><th colspan='5' class='text-end'>Net Total:</th><th>" .
                number_format($netTotal, 2) .
                " ₹</th></tr>
                    </tfoot>

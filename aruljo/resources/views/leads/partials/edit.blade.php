@@ -230,7 +230,12 @@
                                 @endforeach
                             </select>
                         </div>
-
+                        <div class="col-md-4">
+                            <label>&nbsp;</label> {{-- Keeps vertical alignment with other inputs --}}
+                            <button type="button" class="btn btn-success w-100" id="sendStatusWhatsappBtn">
+                                <i class="fab fa-whatsapp"></i> WhatsApp
+                            </button>
+                        </div>
                         <!-- Current Remark -->
                         <div class="col-md-12">
                             <x-adminlte-input name="current_remark" label="New Remark" placeholder="Add a remark"
@@ -271,7 +276,7 @@
                 modal.find('input:not([type=hidden]), select, textarea').val('');
                 modal.find('.product-pills').empty();
                 modal.find('.product-alert').addClass('d-none').text('');
-
+                modal.find('.quote_alert').hide().html('');
                  // Get current tab from URL
                 const urlParams = new URLSearchParams(window.location.search);
                 const currentTab = urlParams.get('tab') || 'active';

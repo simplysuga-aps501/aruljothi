@@ -207,15 +207,6 @@
                 <small id="followup_days_left" class="text-muted"></small>
             </div>
 
-            {{-- Status --}}
-            <div class="col-md-4">
-                <x-adminlte-select name="status" label="Status" fgroup-class="mb-3">
-                    @foreach(['New Lead', 'Lead Followup', 'Quotation', 'PO', 'Cancelled', 'Completed'] as $status)
-                        <option value="{{ $status }}" @selected(old('status') === $status)>{{ $status }}</option>
-                    @endforeach
-                </x-adminlte-select>
-            </div>
-
             {{-- Assigned To --}}
             <div class="col-md-4">
                 <x-adminlte-select name="assigned_to" label="Assigned To" fgroup-class="mb-3">
@@ -234,7 +225,20 @@
                     @endforeach
                 </select>
             </div>
-
+            {{-- Status --}}
+            <div class="col-md-4">
+                <x-adminlte-select name="status" label="Status" fgroup-class="mb-3">
+                    @foreach(['New Lead', 'Lead Followup', 'Quotation', 'PO', 'Cancelled', 'Completed'] as $status)
+                        <option value="{{ $status }}" @selected(old('status') === $status)>{{ $status }}</option>
+                    @endforeach
+                </x-adminlte-select>
+            </div>
+            <div class="col-md-4">
+                <label>&nbsp;</label> {{-- Keeps vertical alignment with other inputs --}}
+                <button type="button" class="btn btn-success w-100" id="sendStatusWhatsappBtn">
+                    <i class="fab fa-whatsapp"></i> WhatsApp
+                </button>
+            </div>
             {{-- Current Remark --}}
             <div class="col-md-12">
                 <x-adminlte-input name="current_remark" label="Current Remark" placeholder="Add your remark"
@@ -302,6 +306,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap-multiselect@1.1.0/dist/js/bootstrap-multiselect.min.js"></script>
     <script src="https://cdn.jsdelivr.net/jquery.validation/1.19.5/jquery.validate.min.js"></script>
     @include('leads.partials.shared-js')
+    @include('shared_js.copy-pricetable')
 
     <script>
         $(document).ready(function() {

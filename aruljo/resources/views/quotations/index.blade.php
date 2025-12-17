@@ -5,9 +5,9 @@
 @section('content_header')
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
         <h1 class="m-0 text-dark">Quotations</h1>
-        <button class="btn btn-primary" data-toggle="modal" data-target="#createQuotationModal">
+        <a href="{{ route('quotations.create') }}" class="btn btn-primary">
             <i class="fas fa-plus-circle mr-1"></i> Create Quotation
-        </button>
+        </a>
     </div>
 @stop
 
@@ -24,9 +24,9 @@
                         <table id="quotationsTable" class="table table-bordered table-hover nowrap text-sm w-100">
                             <thead class="thead-light">
                                 <tr>
-                                    <th>#</th>
-                                    <th>Lead</th>
-                                    <th>Version</th>
+                                    <th>Quote No</th>
+                                    <th>Lead No</th>
+                                    <th>Buyer Name</th>
                                     <th>Amount</th>
                                     <th>Created By</th>
                                     <th>Last Updated</th>
@@ -36,30 +36,27 @@
                             <tbody>
                                 @foreach ($quotations as $quotation)
                                     <tr>
-                                        <td>{{ $quotation->id }}</td>
-                                        <td>{{ $quotation->lead->buyer_name ?? '-' }}</td>
-                                        <td>{{ $quotation->version_no ?? 'V1' }}</td>
-                                        <td>{{ number_format($quotation->amount, 2) }}</td>
-                                        <td>{{ $quotation->createdBy->name ?? '-' }}</td>
+                                        <td>{{ $quotation->quote_number }}</td>
+                                        <td>{{ $quotation->lead->id }}</td>
+                                        <td>
+                                            @if($quotation->lead)
+                                                <a href="{{ route('quotations.create-version', $quotation->id) }}">
+                                                    {{ $quotation->lead->buyer_name }}
+                                                </a>
+                                            @else
+                                                -
+                                            @endif
+                                        </td>
+                                        <td>{{ number_format($quotation->total_amount, 2) }}</td>
+                                        <td>{{ $quotation->creator->name ?? '-' }}</td>
                                         <td>{{ $quotation->updated_at?->format('d-M-Y H:i') }}</td>
                                         <td>
                                             <div class="d-flex align-items-center">
-                                                <button class="btn btn-xs btn-info view-quote" title="View" data-id="{{ $quotation->id }}">
-                                                    <i class="fas fa-eye"></i>
+                                                {{-- PDF Download --}}
+                                                <button class="btn btn-xs btn-danger ml-1 download-pdf" title="Download PDF"
+                                                        data-id="{{ $quotation->id }}">
+                                                    <i class="fas fa-file-pdf"></i>
                                                 </button>
-                                                <button class="btn btn-xs btn-warning ml-1 edit-quote" title="Edit" data-id="{{ $quotation->id }}">
-                                                    <i class="fas fa-edit"></i>
-                                                </button>
-                                                <button class="btn btn-xs btn-secondary ml-1 print-quote" title="Print" data-id="{{ $quotation->id }}">
-                                                    <i class="fas fa-print"></i>
-                                                </button>
-                                                <form action="{{ route('quotations.destroy', $quotation->id) }}" method="POST" class="ml-1">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="btn btn-xs btn-danger" title="Delete">
-                                                        <i class="fas fa-trash"></i>
-                                                    </button>
-                                                </form>
                                             </div>
                                         </td>
                                     </tr>
@@ -86,11 +83,12 @@
             }
         }
     </style>
+@stack('styles')
 @stop
 
 @section('js')
     <script src="https://cdn.datatables.net/2.3.2/js/dataTables.js"></script>
-    <script src="https://cdn.datatables.net/responsive/3.0.4/js/dataTables.responsive.js"></script>
+    <script src="https://cdn.datatables.net/responsive/3.0.4/js/responsive.dataTables.js"></script>
 
     <script>
         $(document).ready(function() {
@@ -107,13 +105,15 @@
                 }
             });
 
-            $('#createQuotationModal').on('shown.bs.modal', function() {
-                $('.select2').select2({
-                    dropdownParent: $('#createQuotationModal')
-                });
-            });
-
             setTimeout(() => $('#flashSuccess').fadeOut(), 3000);
+
+            // PDF download for latest version
+            $(document).on('click', '.download-pdf', function() {
+                const quotationId = $(this).data('id');
+                if (!quotationId) return;
+                window.open(`/quotations/${quotationId}/download`, '_blank');
+            });
         });
     </script>
+@stack('scripts')
 @stop

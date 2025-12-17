@@ -21,6 +21,8 @@ class TruckType extends Model
         'name',
         'capacity_kg',
         'description',
+        'unloading_charges_below_150',
+        'unloading_charges_above_150',
     ];
 
     /**
@@ -34,5 +36,5 @@ class TruckType extends Model
     {
         return $this->hasMany(TruckAgencyRate::class, 'truck_type_id');
     }
-    
+
 }

@@ -259,6 +259,7 @@
 
 
     @include('leads.partials.shared-js')
+    @include('shared_js.copy-pricetable')
     <script>
         $(document).ready(function() {
             new DataTable('#leads_table', {

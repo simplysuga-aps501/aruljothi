@@ -333,6 +333,23 @@ return [
                 ],
             ],
         ],
+        // Quotations
+        [
+            'text' => 'Quotations',
+            'icon' => 'fas fa-fw fa-file-invoice',
+            'submenu' => [
+                [
+                    'text' => 'View Quotations',
+                    'route' => 'quotations.index',
+                ],
+                [
+                    'text' => 'Create Quotation',
+                    'route' => 'quotations.create',
+
+                ],
+            ],
+        ],
+
 
        // Items
        [

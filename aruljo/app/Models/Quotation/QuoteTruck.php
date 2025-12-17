@@ -3,12 +3,13 @@
 namespace App\Models\Quotation;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Transport\TruckType;
 
 class QuoteTruck extends Model
 {
     protected $fillable = [
-        'quote_version_id', 'truck_type_id', 'body_type', 'truck_count',
-        'truck_cost', 'distance_km', 'multiplier'
+        'quote_version_id', 'truck_type_id', 'body_type',
+        'truck_cost', 'distance_km', 'rate_per_km','fixed_rate','multiplier','unloading_charges','total_weight',
     ];
 
     public function version()
@@ -23,7 +24,7 @@ class QuoteTruck extends Model
 
     public function products()
     {
-        return $this->hasMany(QuoteProduct::class, 'quote_truck_id');
+        return $this->hasMany(QuoteTruckProduct::class, 'quote_truck_id');
     }
 }
 

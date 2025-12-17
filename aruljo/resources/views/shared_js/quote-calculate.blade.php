@@ -38,17 +38,10 @@
                 },
                 success: res => {
                     loader.hide();
-                    console.log(res);
                     window.availableProductsForQuote = res.available_products || [];
-                    // If backend sent preallocation data → show editable version
-                    if (res.draft_allocations && res.draft_allocations.length) {
-                        renderManualQuoteTables(res, $container.find('#calcDetailsBody'));
-                        $container.find('#calcDetailsCollapse').collapse('show');
-                    } else {
-                        // fallback (readonly)
-                        renderManualQuoteTables(res, $container.find('#calcDetailsBody'));
-                        $container.find('#calcDetailsCollapse').collapse('show');
-                    }
+
+                    renderManualQuoteTables(res, $container.find('#calcDetailsBody'));
+                    $container.find('#calcDetailsCollapse').collapse('show');
                 },
                 error: xhr => {
                     loader.hide();
@@ -62,11 +55,47 @@
             $container.find('#calcDetailsCollapse').collapse('toggle');
         });
     }
+    function loadVersionData(versionId) {
+        const $modal = $('#editQuotationModal');
+        const $body = $modal.find('#calcDetailsBody');
+        const $collapse = $modal.find('#calcDetailsCollapse');
+        const $loader = $modal.find('#quote_loader');
+
+        if (!versionId) return;
+
+        $loader.show();
+
+        $.ajax({
+            url: `/quotations/${versionId}/db-version-data`,
+            type: 'GET',
+            success: function (res) {
+                res.is_edit_mode = true;
+                res.prices = res.available_products;
+                $loader.hide();
+                console.log('✅ Loaded version data from DB:', res);
+
+                // Reuse existing logic — render the same quote tables
+                renderManualQuoteTables(res, $body);
+                $collapse.collapse('show');
+
+                // Update totals and cost field
+                $modal.find('#estimated_cost').val(res.net_total || '');
+            },
+            error: function (xhr) {
+                $loader.hide();
+                console.error('❌ Error loading version data:', xhr.responseText);
+                alert('Failed to load quote version data.');
+            }
+        });
+    }
 
     /* ================================================================
     |   Render Main Quote Tables
     ================================================================ */
     function renderManualQuoteTables(data, $target) {
+        console.log("entered");
+        console.log(data);
+        console.log($target);
         const trucks = data.available_trucks || [];
         const products = data.available_products || [];
         const capacities = data.truck_capacities || [];
@@ -74,26 +103,23 @@
         const multipliers = data.km_multipliers || [];
         const distance = parseFloat(data.distance_km) || 0;
         const drafts = data.draft_allocations || [];
-
+        console.log(products);
         window.availableProductsForQuote = data.available_products || [];
-        // Store for later use when removing trucks
         window.lastAvailableTrucks = trucks;
         window.lastDistrictRates = districtRates;
         window.lastKmMultipliers = multipliers;
         window.lastDistance = distance;
-
+        window.truck_capacities = capacities;
 
         // 1️⃣ Build base structure (empty tables)
         $target.html(buildTruckAllocationHTML(trucks, products));
         $target.append(buildTransportTableHTML(distance));
         $target.append(buildPriceTableHTML(products));
-        console.log(products);
-        console.log('Prefilling trucks:', drafts);
-        // 2️⃣ If we have draft allocations, populate them
-        if (drafts.length) {
 
+        // 2️⃣ Prefill trucks/products if editing
+        if (drafts.length) {
             const $tbody = $target.find('#truck_allocation_body');
-            $tbody.empty(); // clear default empty row
+            $tbody.empty();
 
             drafts.forEach((truckData, index) => {
                 const rowIndex = index + 1;
@@ -104,39 +130,33 @@
                         <td class="truck-weight text-end">0 kg</td>
                     </tr>`;
 
-                // Append truck rows
                 $tbody.append(truckHTML + subtotalHTML);
 
                 const $truckRow = $tbody.find('.allocation-row').last();
-
-                // Preselect truck and body
+                // ✅ Adjusted to match backend keys (truck_id + qty)
                 $truckRow.find('.truck-select').val(truckData.truck_id);
                 $truckRow.find('.body-select').val(truckData.body_type || 'Truck');
 
-                // Fill products
-                // Fill products
                 truckData.items.forEach((item, i) => {
                     const requested = parseFloat(item.requested_qty || 0);
+                    const allocated = parseFloat(item.qty || 0); // ✅ backend sends "qty"
 
                     if (i === 0) {
-                        // first product goes into main row
                         $truckRow.find('.product-select').val(item.product_id);
                         handleProductChange($truckRow.find('.product-select'), capacities);
-                        $truckRow.find('.qty-input').val(item.qty).trigger('input');
+                        $truckRow.find('.qty-input').val(allocated).trigger('input');
                         $truckRow.find('.req-input').val(requested);
                     } else {
-                        // additional products go in extension rows
                         addProductRow($truckRow.find('.add-product-row'), products, capacities);
                         const $extRow = $truckRow.nextAll('.product-extension').last();
                         $extRow.find('.product-select').val(item.product_id);
                         handleProductChange($extRow.find('.product-select'), capacities);
-                        $extRow.find('.qty-input').val(item.qty).trigger('input');
+                        $extRow.find('.qty-input').val(allocated).trigger('input');
                         $extRow.find('.req-input').val(requested);
                     }
                 });
             });
-
-            // Finally, add the "+ Add Truck" control and totals footer back
+            updateTotalWeight();
             $tbody.append(`
                 <tr class="add-truck-control text-center">
                     <td colspan="7">
@@ -144,24 +164,68 @@
                     </td>
                 </tr>
             `);
-            // ✅ After prefilling all data, recompute all total weights
-            $tbody.find('.qty-input').each(function () {
-                handleQtyInput($(this));
+            // ✅ Force recalculation of weights and transport/unit after draft fill
+            $tbody.find('.product-select').each(function () {
+                handleProductChange($(this), capacities);
             });
-
+            computeTransportPerUnit();
         }
 
-        // 3️⃣ Attach all event handlers
+        // 3️⃣ Attach event handlers (still needed for edit adjustments)
         setupTruckAllocationEvents($target, trucks, products, capacities, distance);
         setupTransportTable($target, trucks, districtRates, multipliers, distance);
         setupPriceTable($target);
 
-        // 4️⃣ Update all totals immediately
+        // 4️⃣ 🟢 EDIT MODE LOGIC — display DB data only
+        if (data.is_edit_mode) {
+            // Prefill transport costs (exactly from DB)
+            const $tbody = $('#transportTable tbody');
+            $tbody.empty();
+            (data.transport || []).forEach((row, i) => {
+                $tbody.append(`
+                    <tr>
+                        <td>${i + 1}</td>
+                        <td>${row.truck_name}</td>
+                        <td><input type="number" class="form-control form-control-sm rate-km" value="${row.rate}"></td>
+                        <td>${row.multiplier || '-'}</td>
+                        <td>${data.distance_km}</td>
+                        <td><input type="number" class="form-control form-control-sm unloading-cost" value="${row.unloading}"></td>
+                        <td class="transport-cost">₹${row.cost}</td>
+                    </tr>
+                `);
+            });
+
+            // ✅ Prefill price table directly from DB data
+            $('#priceTable tbody tr').each(function () {
+                const productId = parseInt($(this).data('product-id'));
+                const db = (data.available_products || []).find(p => p.id === productId);
+                if (!db) return;
+
+                $(this).find('.qty').val(db.requested_qty);
+                $(this).find('.rate-unit').val(db.price);
+                $(this).find('.transport-unit').val(db.transport_unit || 0);
+                $(this).find('.total').text('₹' + (db.total_price || 0));
+            });
+
+            // Prefill totals
+            $('#subtotal').text('₹' + (data.subtotal || 0));
+            $('#net_total').text('₹' + (data.net_total || 0));
+            $('#gst').text('₹' + (data.subtotal * (data.gst_rate / 100) || 0));
+
+            $('#truck_total_weight').text(data.total_weight ? data.total_weight + ' kg' : '');
+            $('#total_transport_cost').text('₹' + (data.total_transport || 0));
+
+            // 🚫 Don’t recalculate anything
+            return;
+        }
+
+        // 5️⃣ Default (create mode)
         updateTotalWeight();
         refreshTransportTable(trucks, districtRates, multipliers, distance);
         updatePriceTotals();
         computeTransportPerUnit();
     }
+
 
     /* ================================================================
     |   1️⃣ Truck Allocation Table HTML Builder
@@ -169,6 +233,7 @@
     function buildTruckAllocationHTML(trucks, products) {
         return `
         <h5 class="mt-3">Truck Allocation</h5>
+        <div class="table-responsive">
         <table class="table table-bordered table-striped table-sm w-100" id="truckTable">
             <thead>
                 <tr>
@@ -199,7 +264,8 @@
                     <th id="truck_total_weight">0 kg</th>
                 </tr>
             </tfoot>
-        </table>`;
+        </table>
+    </div>`;
     }
 
     function buildTruckRowHTML(index, trucks, products) {
@@ -295,21 +361,31 @@
     ================================================================ */
     function buildTransportTableHTML(distance) {
         return `
-        <h5 class="mt-3">Transport Cost Details</h5>
-        <table class="table table-bordered table-striped table-sm w-100" id="transportTable">
-            <thead>
-                <tr>
-                    <th>#</th><th>Truck Type</th>
-                    <th>${distance < 150 ? 'Rate/km' : 'Fixed Rate (₹)'}</th>
-                    ${distance < 150 ? '<th>Multiplier</th><th>Distance (km)</th>' : '<th colspan="2">Distance (km)</th>'}
-                    <th>Transport Cost (₹)</th>
-                </tr>
-            </thead>
-            <tbody><tr><td colspan="6" class="text-center text-muted">No trucks are selected.</td></tr></tbody>
-            <tfoot>
-                <tr class="table-success"><th colspan="5" class="text-end">Total Transport Cost:</th><th id="total_transport_cost">₹0</th></tr>
-            </tfoot>
-        </table>`;
+            <h5 class="mt-3">Transport Cost Details</h5>
+            <div class="table-responsive">
+            <table class="table table-bordered table-striped table-sm w-100" id="transportTable">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Truck Type</th>
+                        <th>${distance < 150 ? 'Rate/km' : 'Fixed Rate (₹)'}</th>
+                        <th>Multiplier</th>
+                        <th>Distance (km)</th>
+                        <th>Unloading (₹)</th>
+                        <th>Total Transport (₹)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td colspan="7" class="text-center text-muted">No trucks are selected.</td></tr>
+                </tbody>
+                <tfoot>
+                    <tr class="table-success">
+                        <th colspan="6" class="text-end">Total Transport Cost:</th>
+                        <th id="total_transport_cost">₹0</th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>`;
     }
 
     function setupTransportTable($target, trucks, districtRates, multipliers, distance) {
@@ -318,24 +394,67 @@
             refreshTransportTable(trucks, districtRates, multipliers, distance)
         );
 
-        // 🟢 When rate per km or fixed rate changes, recalc cost instantly
-        $target.on('input', '.rate-km', function () {
+        // 🟢 Recalculate total cost whenever rate/km, fixed rate, or unloading changes
+        $target.on('input', '.rate-km, .fixed-rate, .unloading-cost', function () {
             const $row = $(this).closest('tr');
-            const rate = parseFloat($(this).val()) || 0;
-            const dist = distance || 0;
-            const multiplier = parseFloat($row.find('.multiplier').text()) || 1;
-            const newCost = rate * multiplier * dist;
-            $row.find('.transport-cost').text('₹' + Math.round(newCost));
+            const rate = parseFloat($row.find('input.rate-km, input.fixed-rate').val()) || 0;
+            const multiplierText = $row.find('.multiplier').text();
+            const multiplier = multiplierText && multiplierText !== '-' ? parseFloat(multiplierText) || 1 : 1;
+            const dist = parseFloat($row.find('td:nth-child(5)').text()) || 0;
+            const unloading = parseFloat($row.find('.unloading-cost').val()) || 0;
+
+            let newTotal = 0;
+
+            // 👇 Handle per-km vs fixed-rate logic
+            if (distance < 150) {
+                newTotal = (rate * multiplier * dist) + unloading;
+            } else {
+                newTotal = rate + unloading; // fixed rate + unloading
+            }
+
+            $row.find('.transport-cost').text('₹' + Math.round(newTotal));
             updateTransportTotal();
         });
 
-        // 🟢 For fixed-rate type (distance > 150)
-        $target.on('input', '.fixed-rate', function () {
+
+        // 🟢 When unloading charge changes, update total cost immediately
+        $target.on('input', '.unloading-cost', function () {
             const $row = $(this).closest('tr');
-            const rate = parseFloat($(this).val()) || 0;
-            $row.find('.transport-cost').text('₹' + Math.round(rate));
+            const unloading = parseFloat($(this).val()) || 0;
+            const rate = parseFloat($row.find('input.rate-km, input.fixed-rate').val()) || 0;
+            const multiplier = parseFloat($row.find('.multiplier').text()) || 1;
+            const dist = parseFloat($row.find('td:nth-child(5)').text()) || 0;
+
+            // Compute base cost (depends on distance type)
+            const baseCost = (window.lastDistance && window.lastDistance < 150)
+                ? rate * multiplier * dist
+                : rate;
+
+            const newTotal = baseCost + unloading;
+            $row.find('.transport-cost').text('₹' + Math.round(newTotal));
             updateTransportTotal();
         });
+        // 🟢 When distance changes, recalculate that truck's transport total
+        $target.on('input', '.transport-distance', function () {
+            const $row = $(this).closest('tr');
+            const newDistance = parseFloat($(this).val()) || 0;
+            const rate = parseFloat($row.find('input.rate-km, input.fixed-rate').val()) || 0;
+            const unloading = parseFloat($row.find('.unloading-cost').val()) || 0;
+            const multiplierText = $row.find('.multiplier').text();
+            const multiplier = multiplierText && multiplierText !== '-' ? parseFloat(multiplierText) || 1 : 1;
+
+            // Update total cost for that row
+            let total = 0;
+            if (window.lastDistance < 150) {
+                total = (rate * multiplier * newDistance) + unloading;
+            } else {
+                total = rate + unloading;
+            }
+
+            $row.find('.transport-cost').text('₹' + Math.round(total));
+            updateTransportTotal();
+        });
+
     }
 
 
@@ -345,23 +464,38 @@
     function buildPriceTableHTML(products) {
         return `
         <h5 class="mt-3">Price Details (Manual Entry)</h5>
+        <div class="table-responsive">
         <table class="table table-bordered table-striped table-sm w-100" id="priceTable">
-            <thead><tr><th>Product</th><th>Qty</th><th>Rate/unit (₹)</th><th>Transport/unit (₹)</th><th>Total Price (₹)</th></tr></thead>
-            <tbody>${products.map(p => `
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Qty</th>
+                    <th>Rate/unit</th>
+                    <th>Transport/unit</th>
+                    <th>Total/Unit</th>
+                    <th>Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${products.map(p => `
                 <tr data-product-id="${p.id}">
                     <td>${p.sku}</td>
                     <td><input type="number" min="0" class="form-control form-control-sm qty" value="${p.requested_qty || 0}"></td>
                     <td><input type="number" step="0.01" class="form-control form-control-sm rate-unit" value="${p.price || 0}"></td>
                     <td><input type="number" step="0.01" class="form-control form-control-sm transport-unit" value="0"></td>
+                    <td class="total-unit-price text-end">0</td>
                     <td class="total text-end">0</td>
-                </tr>`).join('')}</tbody>
+                </tr>`).join('')}
+            </tbody>
             <tfoot>
-                <tr><th colspan="4" class="text-end">Subtotal:</th><th id="subtotal">₹0</th></tr>
-                <tr><th colspan="4" class="text-end">GST (18%):</th><th id="gst">₹0</th></tr>
-                <tr class="table-success"><th colspan="4" class="text-end">Net Total:</th><th id="net_total">₹0</th></tr>
+                <tr><th colspan="5" class="text-end">Subtotal:</th><th id="subtotal">₹0</th></tr>
+                <tr><th colspan="5" class="text-end">GST (18%):</th><th id="gst">₹0</th></tr>
+                <tr class="table-success"><th colspan="5" class="text-end">Net Total:</th><th id="net_total">₹0</th></tr>
             </tfoot>
-        </table>`;
+        </table>
+    </div>`;
     }
+
 
     function setupPriceTable($target) {
         $target.on('input', '.rate-unit, .transport-unit, .qty', updatePriceTotals);
@@ -576,48 +710,64 @@
         tbody.empty();
 
         if (!selectedTruckIds.length) {
-            tbody.html(`<tr><td colspan="6" class="text-center text-muted">No trucks are selected.</td></tr>`);
+            tbody.html(`<tr><td colspan="7" class="text-center text-muted">No trucks are selected.</td></tr>`);
             updateTransportTotal();
             return;
         }
 
         let htmlRows = '';
+
         selectedTruckIds.forEach((truckId, i) => {
             const truck = trucks.find(t => t.id === truckId);
             if (!truck) return;
 
-            let rate = truck.rate_per_km || 0;
-            let multiplier = 1;
-            let cost = 0;
+            const unloading =
+                distance < 150
+                    ? parseFloat(truck.unloading_charges_below_150 || 0)
+                    : parseFloat(truck.unloading_charges_above_150 || 0);
+
+            let rateDisplay = 0;     // what shows in input
+            let baseCost = 0;        // cost used for total
+            let multiplier = 1;      // only used <150 km
 
             if (distance < 150) {
+                // Per km mode
                 const match = multipliers.find(m => distance >= m.min_km && (!m.max_km || distance < m.max_km));
                 multiplier = match ? match.multiplier : 1;
-                cost = rate * multiplier * distance;
-
-                htmlRows += `
-                    <tr>
-                        <td>${i + 1}</td>
-                        <td>${truck.name}</td>
-                        <td><input type="number" class="form-control form-control-sm rate-km" value="${rate}"></td>
-                        <td class="multiplier">${multiplier}</td>
-                        <td>${distance}</td>
-                        <td class="transport-cost">₹${Math.round(cost)}</td>
-                    </tr>`;
+                const ratePerKm = truck.rate_per_km || 0;
+                baseCost = ratePerKm * multiplier * distance;
+                rateDisplay = ratePerKm; // show rate/km
             } else {
+                // Fixed district rate mode
                 const fixed = districtRates.find(r => r.truck_type_id === truckId);
-                rate = fixed ? fixed.rate : 0;
-                cost = rate;
-
-                htmlRows += `
-                    <tr>
-                        <td>${i + 1}</td>
-                        <td>${truck.name}</td>
-                        <td><input type="number" class="form-control form-control-sm fixed-rate" value="${rate}"></td>
-                        <td colspan="2">${distance}</td>
-                        <td class="transport-cost">₹${Math.round(cost)}</td>
-                    </tr>`;
+                const fixedRate = fixed ? parseFloat(fixed.rate) : 0;
+                baseCost = fixedRate;
+                rateDisplay = fixedRate; // show fixed total, not rate/km
             }
+
+            const totalCost = baseCost + unloading;
+
+            htmlRows += `
+                <tr>
+                    <td>${i + 1}</td>
+                    <td>${truck.name}</td>
+                    <td>
+                        <input type="number"
+                               class="form-control form-control-sm ${distance < 150 ? 'rate-km' : 'fixed-rate'}"
+                               value="${rateDisplay}">
+                    </td>
+                    <td>${distance < 150 ? multiplier : '-'}</td>
+                    <td>
+                        <input type="number" class="form-control form-control-sm transport-distance"
+                               value="${distance}" min="1" step="0.1">
+                    </td>
+                    <td>
+                        <input type="number"
+                               class="form-control form-control-sm unloading-cost"
+                               value="${unloading}">
+                    </td>
+                    <td class="transport-cost">₹${Math.round(totalCost)}</td>
+                </tr>`;
         });
 
         tbody.html(htmlRows);
@@ -674,22 +824,30 @@
         $('#priceTable tbody tr').each(function () {
             const qty = parseFloat($(this).find('.qty').val()) || 0;
             const rate = parseFloat($(this).find('.rate-unit').val()) || 0;
-            const trans = parseFloat($(this).find('.transport-unit').val()) || 0;
+            const transport = parseFloat($(this).find('.transport-unit').val()) || 0;
 
-            const total = qty * (rate + trans);
-            subtotal += total;
+            const totalUnitPrice = rate + transport;
+            const totalPrice = totalUnitPrice * qty;
 
-            // 🟢 Update per-row total cell
-            $(this).find('.total').text('₹' + Math.round(total));
+            // ✅ Update table cells
+            $(this).find('.total-unit-price').text(totalUnitPrice.toFixed(2));
+            $(this).find('.total').text(totalPrice.toFixed(2));
+
+            // ✅ Accumulate subtotal
+            subtotal += totalPrice;
         });
 
+        // ✅ Calculate GST & Net total
         const gst = subtotal * 0.18;
         const net = subtotal + gst;
 
-        // 🧾 Keep two decimals (.00) for GST and Net total
-        $('#subtotal').text('₹' + Math.round(subtotal));
+        // ✅ Update table footer
+        $('#subtotal').text('₹' + subtotal.toFixed(2));
         $('#gst').text('₹' + gst.toFixed(2));
         $('#net_total').text('₹' + net.toFixed(2));
+
+        // ✅ Also update hidden estimated cost if exists
+        $('#estimated_cost').val(net.toFixed(2));
     }
 
     function computeTransportPerUnit() {
@@ -728,59 +886,62 @@
     }
 
     //Collect to store
+    // --------------------------
+    // Collect truck allocations for QuoteTruckProduct
+    // --------------------------
     function collectTruckData() {
         const trucks = [];
-        $('#truckTable tbody .allocation-row').each(function () {
+
+        $('#truckTable tbody .allocation-row').each(function (index) {
             const $truckRow = $(this);
             const truckTypeId = parseInt($truckRow.find('.truck-select').val());
-            if (!truckTypeId) return; // skip empty truck
+            if (!truckTypeId) return;
 
             const bodyType = $truckRow.find('.body-select').val() || 'Truck';
+            const distance = parseFloat($(`#transportTable tbody tr:eq(${index})`).find('.transport-distance').val()) ||
+                             parseFloat($('.distance_km, #quote_distance_km').val()) || null;
+
+            // match with same index row in transport table
+            const $transportRow = $('#transportTable tbody tr').eq(index);
+            const truckCost = parseFloat($transportRow.find('.transport-cost').text().replace(/[₹,]/g, '')) || 0;
+            const unloading = parseFloat($transportRow.find('.unloading-cost').val()) || 0;
+            const ratePerKm = parseFloat($transportRow.find('input.rate-km').val()) || 0;
+
+
+            // ✅ Find total weight in the next truck-subtotal row
+            const totalWeight = parseFloat(
+                $truckRow.nextAll('.truck-subtotal').first().find('.truck-weight').text().replace(/[^\d.]/g, '')
+            ) || 0;
+
             const truckData = {
-                truck_type_id: truckTypeId,
+                truck_id: truckTypeId,
                 body_type: bodyType,
-                truck_count: parseInt($truckRow.find('.truck-count').val()) || 1,
-                truck_cost: parseFloat($truckRow.find('.truck-cost').text().replace(/[₹,]/g, '')) || 0,
-                distance_km: parseFloat($truckRow.find('.truck-distance').val()) || null,
-                multiplier: parseFloat($truckRow.find('.truck-multiplier').val()) || 1,
+                truck_cost: truckCost,
+                unloading_charges: unloading,
+                distance_km: distance,
+                multiplier: 1,
+                rate_per_km: ratePerKm,
+                total_weight: totalWeight,
                 products: []
             };
 
-            // Include main product row
-            const mainProductId = parseInt($truckRow.find('.product-select').val());
-            const mainQty = parseFloat($truckRow.find('.qty-input').val()) || 0;
-            const mainReq = parseFloat($truckRow.find('.req-input').val()) || 0;
-            const mainUnitPrice = parseFloat($truckRow.find('.unit-price').val()) || 0;
-            const mainTotalPrice = parseFloat($truckRow.find('.total-price').text().replace(/[₹,]/g, '')) || 0;
+            // Collect product data per truck
+            const $allProductRows = $truckRow.add($truckRow.nextUntil('.truck-subtotal', '.product-extension'));
+            $allProductRows.each(function () {
+                const $row = $(this);
+                const productId = parseInt($row.find('.product-select').val());
+                const qty = parseFloat($row.find('.qty-input').val()) || 0;
+                if (!productId || qty <= 0) return;
 
-            if (mainProductId && mainQty) {
+                // ✅ Lookup product weight and max capacity
+                const product = window.availableProductsForQuote?.find(p => p.id === productId);
+                const capacity = window.truck_capacities?.find(c => c.truck_type_id === truckTypeId && c.product_id === productId);
                 truckData.products.push({
-                    product_id: mainProductId,
-                    quantity: mainQty,
-                    requested_qty: mainReq,
-                    unit_price: mainUnitPrice,
-                    total_price: mainTotalPrice
+                    product_id: productId,
+                    qty: qty,
+                    weight_per_unit: product ? parseFloat(product.weight || product.weight_kg || 0) : 0,
+                    max_allowed_qty: capacity ? parseFloat(capacity.max_units || 0) : 0
                 });
-            }
-
-            // Include extension product rows
-            $truckRow.nextUntil('.truck-subtotal', '.product-extension').each(function () {
-                const $ext = $(this);
-                const extProductId = parseInt($ext.find('.product-select').val());
-                const extQty = parseFloat($ext.find('.qty-input').val()) || 0;
-                const extReq = parseFloat($ext.find('.req-input').val()) || 0;
-                const extUnitPrice = parseFloat($ext.find('.unit-price').val()) || 0;
-                const extTotalPrice = parseFloat($ext.find('.total-price').text().replace(/[₹,]/g, '')) || 0;
-
-                if (extProductId && extQty) {
-                    truckData.products.push({
-                        product_id: extProductId,
-                        quantity: extQty,
-                        requested_qty: extReq,
-                        unit_price: extUnitPrice,
-                        total_price: extTotalPrice
-                    });
-                }
             });
 
             trucks.push(truckData);
@@ -789,8 +950,13 @@
         return trucks;
     }
 
+    // --------------------------
+    // Collect aggregated product totals for QuotePriceDetail
+    // --------------------------
     function collectPriceData() {
         const priceData = [];
+        const map = {}; // map product_id => aggregated totals
+
         $('#priceTable tbody tr').each(function () {
             const $row = $(this);
             const productId = parseInt($row.data('product-id'));
@@ -799,38 +965,117 @@
             const qty = parseFloat($row.find('.qty').val()) || 0;
             const unitPrice = parseFloat($row.find('.rate-unit').val()) || 0;
             const transportUnit = parseFloat($row.find('.transport-unit').val()) || 0;
-            const total = parseFloat($row.find('.total').text().replace(/[₹,]/g, '')) || 0;
+            const totalUnitPrice = unitPrice + transportUnit;
+            const totalPrice = qty * totalUnitPrice;
 
-            priceData.push({
-                product_id: productId,
-                qty: qty,
-                unit_price: unitPrice,
-                transport_unit: transportUnit,
-                total_price: total
-            });
+            if (!map[productId]) {
+                map[productId] = {
+                    product_id: productId,
+                    total_qty: 0,
+                    unit_price: unitPrice,
+                    transport_unit: transportUnit,
+                    total_unit_price: totalUnitPrice,
+                    total_price: 0
+                };
+            }
+
+            map[productId].total_qty += qty;
+            map[productId].total_price += totalPrice;
         });
+
+        // Convert map to array
+        for (const pid in map) {
+            priceData.push(map[pid]);
+        }
+
         return priceData;
     }
 
+    // --------------------------
+    // Collect transport per truck (unchanged)
+    // --------------------------
     function collectTransportData() {
         const transportData = [];
         $('#transportTable tbody tr').each(function () {
             const $row = $(this);
             const truckName = $row.find('td:nth-child(2)').text();
-            const costText = $row.find('.transport-cost').text();
-            if (!truckName || costText === '') return;
-
-            const truckId = parseInt($row.find('.truck-select').val()) || null; // optional
             const rate = parseFloat($row.find('input').val()) || 0;
-            const cost = parseFloat(costText.replace(/[₹,]/g, '')) || 0;
+            const cost = parseFloat($row.find('.transport-cost').text().replace(/[₹,]/g, '')) || 0;
+            const unloading = parseFloat($row.find('.unloading-cost').val()) || 0;
+
+            if (!truckName) return;
 
             transportData.push({
-                truck_id: truckId,
                 truck_name: truckName,
-                rate: rate,
-                cost: cost
+                rate,
+                unloading,
+                cost
             });
         });
         return transportData;
     }
+
+    // Validate allocated quantities
+    function validateAllocatedQuantities() {
+        const trucks = collectTruckData(); // get current allocations
+        let allocationError = false;
+
+        const allocatedMap = {};
+        trucks.forEach(t => {
+            t.products.forEach(p => {
+                allocatedMap[p.product_id] = (allocatedMap[p.product_id] || 0) + p.qty;
+            });
+        });
+
+        $('#truckTable tbody .allocation-row, #truckTable tbody .product-extension').removeClass('table-danger');
+
+        $('#priceTable tbody tr').each(function () {
+            const productId = parseInt($(this).data('product-id'));
+            const requestedQty = parseFloat($(this).find('.qty').val()) || 0;
+            const allocatedQty = allocatedMap[productId] || 0;
+
+            if (requestedQty !== allocatedQty) {
+                allocationError = true;
+
+                $('#truckTable tbody tr').each(function () {
+                    const $row = $(this);
+                    const rowProductId = parseInt($row.find('.product-select').val());
+                    if (rowProductId === productId) {
+                        $row.addClass('table-danger');
+                    }
+                });
+            }
+        });
+
+        if (allocationError) {
+            showAdminLTEAlert(
+                '⚠️ Allocated quantities do not match requested quantities for one or more products.'
+            );
+            return false; // block submission
+        }
+
+        return true;
+    }
+
+    // Validate transport distance consistency (mandatory now)
+    function validateTransportDistances() {
+        const distances = [];
+        $('#transportTable tbody tr').each(function () {
+            const $cell = $(this).find('td:nth-child(5)');
+            let dist = parseFloat($cell.find('input').val());
+            if (isNaN(dist)) dist = parseFloat($cell.text()) || 0;
+            if (dist) distances.push(dist);
+        });
+
+        const uniqueDistances = [...new Set(distances)];
+        if (uniqueDistances.length > 1) {
+            showAdminLTEAlert(
+                `⚠️ Distance values vary between trucks in the transport table: ${uniqueDistances.join(', ')} km. Please fix before submitting.`
+            );
+            return false;
+        }
+
+        return true;
+    }
+
     </script>
