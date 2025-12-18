@@ -188,6 +188,9 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/{quotation}/download', [QuotationController::class, 'download'])->name('download');
             Route::delete('/{id}', [QuotationController::class, 'destroy'])->name('destroy');
         });
+        // web.php
+        Route::get('/quotations/{quotation}/version/{version}/download', [QuotationController::class, 'downloadVersion'])
+            ->name('quotations.download-version');
 
         /*
         |--------------------------------------------------------------------------

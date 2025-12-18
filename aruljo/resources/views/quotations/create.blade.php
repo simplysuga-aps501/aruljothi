@@ -137,14 +137,14 @@
 
                             <div class="col-md-2">
                                 <label>&nbsp;</label> {{-- Keeps vertical alignment with other inputs --}}
-                                <button type="button" class="btn btn-secondary w-100" id="copy_whatsapp_text">
+                                <button type="button" class="btn btn-secondary w-100" id="copy_quote_whatsapp">
                                     <i class="fas fa-copy"></i> Copy
                                 </button>
                             </div>
 
                             <div class="col-md-2">
                                 <label>&nbsp;</label> {{-- Keeps vertical alignment with other inputs --}}
-                                <button type="button" class="btn btn-success w-100" id="send_whatsapp_btn">
+                                <button type="button" class="btn btn-success w-100" id="send_quote_whatsapp">
                                     <i class="fab fa-whatsapp"></i>
                                 </button>
                             </div>
@@ -349,7 +349,7 @@
 @include('shared_js.product-autocomplete')
 @include('shared_js.quote-calculate')
 @include('shared_js.quote-distance-editable')
-@include('shared_js.copy-pricetable')
+@include('shared_js.whatsapp-copy')
 @include('shared_js.alert')
 <script>
 $(document).ready(function() {
@@ -434,7 +434,6 @@ $(document).ready(function() {
 
         // Run validations in order
         if (!validateAllocatedQuantities()) return;
-        if (!validateTransportDistances()) return;
 
         const trucks = collectTruckData();
         const prices = collectPriceData();

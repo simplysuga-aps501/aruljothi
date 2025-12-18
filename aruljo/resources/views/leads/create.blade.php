@@ -163,22 +163,10 @@
             <div class="col-md-4">
                <label>&nbsp;</label> {{-- Keeps vertical alignment with other inputs --}}
                <button type="button" class="btn btn-primary w-100" id="calculate_quote_btn">
-                   <i class="fas fa-calculator"></i> Draft Quote
+                   <i class="fas fa-calculator"></i> Calculate Draft Quote
                </button>
             </div>
-            <div class="col-md-2">
-                <label>&nbsp;</label> {{-- Keeps vertical alignment with other inputs --}}
-                <button type="button" class="btn btn-secondary w-100" id="copy_whatsapp_text">
-                    <i class="fas fa-copy"></i> Copy
-                </button>
-            </div>
 
-            <div class="col-md-2">
-                <label>&nbsp;</label> {{-- Keeps vertical alignment with other inputs --}}
-                <button type="button" class="btn btn-success w-100" id="send_whatsapp_btn">
-                    <i class="fab fa-whatsapp"></i>WhatsApp
-                </button>
-            </div>
             <div class="quote_alert text-danger" style="display:none;"></div>
             <!-- ============================ QUOTE CALCULATION DETAILS ============================ -->
             <div class="col-12 mt-3">
@@ -233,7 +221,15 @@
                     @endforeach
                 </x-adminlte-select>
             </div>
-            <div class="col-md-4">
+        {{-- Copy --}}
+             <div class="col-md-2">
+                <label>&nbsp;</label> {{-- Keeps vertical alignment with other inputs --}}
+                <button type="button" class="btn btn-secondary w-100" id="copy_whatsapp_text">
+                    <i class="fas fa-copy"></i> Copy
+                </button>
+            </div>
+        {{-- Whatsapp --}}
+            <div class="col-md-2">
                 <label>&nbsp;</label> {{-- Keeps vertical alignment with other inputs --}}
                 <button type="button" class="btn btn-success w-100" id="sendStatusWhatsappBtn">
                     <i class="fab fa-whatsapp"></i> WhatsApp
@@ -306,7 +302,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap-multiselect@1.1.0/dist/js/bootstrap-multiselect.min.js"></script>
     <script src="https://cdn.jsdelivr.net/jquery.validation/1.19.5/jquery.validate.min.js"></script>
     @include('leads.partials.shared-js')
-    @include('shared_js.copy-pricetable')
+    @include('shared_js.whatsapp-copy')
 
     <script>
         $(document).ready(function() {

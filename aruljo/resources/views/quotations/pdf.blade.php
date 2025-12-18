@@ -56,7 +56,7 @@
                    {{ $version->customer_state ?? '' }}<br>
                @endif
                @if(!empty($version->customer_pincode))
-                   PIN: {{ $version->customer_pincode }}<br>
+                   Pincode: {{ $version->customer_pincode }}<br>
                @endif
 
                {{-- GST --}}
@@ -193,8 +193,6 @@
         <p style="margin:2px 0; font-size:11px;">
             {{ $version->pdf_delivery ?? 'Materials are readily available. We can supply your requirement within 2 days as per your delivery schedule after placing your order.' }}
         </p>
-
-        <h4 class="subheading">Terms & Conditions:</h4>
         <p style="margin:2px 0; font-size:11px;">
             {{ $version->pdf_terms ?? 'The above price includes loading and transportation. Unloading is under client scope.' }}
         </p>

@@ -259,7 +259,8 @@
 
 
     @include('leads.partials.shared-js')
-    @include('shared_js.copy-pricetable')
+    @include('shared_js.whatsapp-copy')
+
     <script>
         $(document).ready(function() {
             new DataTable('#leads_table', {

@@ -28,17 +28,14 @@ class QuotationController extends Controller
 {
     public function index()
     {
-        $quotations = Quotation::with(['lead', 'creator', 'versions', 'activeVersion'])->latest()->get();
-        $leads = Lead::select('id', 'buyer_name')->orderBy('buyer_name')->get();
-        $productsArray = Product::all()->map(fn($p) => [
-            'id' => $p->id,
-            'name' => $p->name,
-            'sku' => $p->sku,
-            'weight' => $p->weight_kg,
-            'price' => $p->quote_price,
-        ])->toArray();
+        $quotations = Quotation::with(['lead', 'creator', 'versions', 'activeVersion'])
+                ->whereHas('lead', function ($q) {
+                    $q->where('status', '!=', 'Cancelled');
+                })
+                ->latest()
+                ->get();
 
-        return view('quotations.index', compact('quotations', 'leads','productsArray'));
+        return view('quotations.index', compact('quotations'));
     }
 
     public function create()
@@ -289,6 +286,31 @@ class QuotationController extends Controller
         return $pdf->download($quotation->quote_number . '.pdf');
     }
 
+    // QuotationController.php
+    public function downloadVersion($quotationId, $versionId)
+    {
+        // Load quotation with versions
+        $quotation = Quotation::with(['lead', 'versions.trucks.products.product'])->findOrFail($quotationId);
+
+        // Get the requested version
+        $version = $quotation->versions->firstWhere('id', $versionId);
+
+        if (!$version) {
+            abort(404, 'Version not found for this quotation.');
+        }
+
+        $data = [
+            'quotation' => $quotation,
+            'version' => $version,
+            'trucks' => $version->trucks ?? [],
+        ];
+
+        $pdf = PDF::loadView('quotations.pdf', $data)->setPaper('A4', 'portrait');
+
+        return $pdf->download($quotation->quote_number . '-v' . $version->version_number . '.pdf');
+    }
+
+
     public function fetchQuotationData($id)
     {
         $quotation = Quotation::with([
@@ -517,6 +539,7 @@ class QuotationController extends Controller
                 'requested_qty' => $p->total_qty,
                 'price' => $p->unit_price,
                 'transport_unit' => $p->transport_unit ?? 0,
+                'total_unit_price' => $p->total_unit_price ?? 0,
                 'total_price' => $p->total_price ?? 0,
                 'weight_kg' => $p->product->weight_kg ?? 0,
             ])->values(),
@@ -532,12 +555,13 @@ class QuotationController extends Controller
                 'items' => $t->products->map(function ($p) use ($version) {
                     $priceDetail = $version->priceDetails->firstWhere('product_id', $p->product_id);
                     return [
-                        'product_id' => $p->product_id,
-                        'qty' => $p->allocated_qty,
-                        'max_allowed_qty' => $p->product->max_units ?? 0,
-                        'unit_price' => $priceDetail?->unit_price ?? 0,
-                        'transport_unit' => $priceDetail?->transport_unit ?? 0,
-                        'total_price' => $priceDetail?->total_price ?? 0,
+                        'product_id'      => $p->product_id,
+                        'qty'             => $p->allocated_qty,
+                        'requested_qty'   => $priceDetail?->total_qty ?? 0,
+                        'max_allowed_qty' => $p->max_allowed_qty ?? 0, // ✅ pull directly from DB column
+                        'unit_price'      => $priceDetail?->unit_price ?? 0,
+                        'transport_unit'  => $priceDetail?->transport_unit ?? 0,
+                        'total_price'     => $priceDetail?->total_price ?? 0,
                     ];
                 }),
             ])->values(),
@@ -545,7 +569,7 @@ class QuotationController extends Controller
             // 🟢 Transport summary
             'transport' => $version->trucks->map(fn($t) => [
                 'truck_name' => $t->truckType->name ?? '',
-                'rate' => $t->truckType->rate_per_km ?? 0,
+                'rate' => $t->rate_per_km ?? $t->fixed_rate ?? 0,
                 'multiplier' => $t->multiplier ?? 1,
                 'distance' => $t->distance_km ?? 0,
                 'unloading' => $t->unloading_charges ?? 0,

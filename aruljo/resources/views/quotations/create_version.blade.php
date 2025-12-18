@@ -152,14 +152,14 @@
 
                         <div class="col-md-2">
                             <label>&nbsp;</label> {{-- Keeps vertical alignment with other inputs --}}
-                            <button type="button" class="btn btn-secondary w-100" id="copy_whatsapp_text">
+                            <button type="button" class="btn btn-secondary w-100" id="copy_quote_whatsapp">
                                 <i class="fas fa-copy"></i> Copy
                             </button>
                         </div>
 
                         <div class="col-md-2">
                             <label>&nbsp;</label> {{-- Keeps vertical alignment with other inputs --}}
-                            <button type="button" class="btn btn-success w-100" id="send_whatsapp_btn">
+                            <button type="button" class="btn btn-success w-100" id="send_quote_whatsapp">
                                 <i class="fab fa-whatsapp"></i>
                             </button>
                         </div>
@@ -287,7 +287,8 @@
             </a>
 
             <div>
-                <a href="{{ route('quotations.download', ['quotation' => $quotation->id]) }}"
+
+                <a href="{{ route('quotations.download-version', ['quotation' => $quotation->id, 'version' => $version->id]) }}"
                    class="btn btn-danger" target="_blank">
                     <i class="fas fa-download"></i> Download PDF
                 </a>
@@ -300,6 +301,7 @@
       </form>
     </div>
 </div>
+@include('partials.adminlte-alert-modal')
 @stop
 
 @section('css')
@@ -372,11 +374,11 @@
 @include('shared_js.product-autocomplete')
 @include('shared_js.quote-calculate')
 @include('shared_js.quote-distance-editable')
-@include('shared_js.copy-pricetable')
+@include('shared_js.whatsapp-copy')
+@include('shared_js.alert')
 <script>
 $(document).ready(function () {
     const products = @json($productsArray);
-
     // ✅ Extract quotation ID from URL (e.g., /quotations/2/edit)
     const pathParts = window.location.pathname.split('/');
     const quotationId = pathParts[pathParts.indexOf('quotations') + 1];
@@ -469,8 +471,16 @@ $(document).ready(function () {
                 "Delivery will be made to the address mentioned above within the agreed timeline."
             );
 
-            const products = data.productsArray;
             initProductPills(".product-pills-container", products);
+            $(".product-pills-container .product-search").autocomplete({
+                source: products.map(p => p.name),
+                minLength: 1,
+                select: function(event, ui) {
+                    $(this).val(ui.item.value || ui.item.label || ui.item);
+                    return false;
+                }
+            });
+
             initPincodeAutocomplete("#quote_pincode_input", "#quote_delivery_location",
                 "#quote_delivery_location_id", "#quote_distance_km", "#quote_duration_minutes",
                 "#quote_loader", "#editLeadModal");
@@ -478,6 +488,7 @@ $(document).ready(function () {
             initQuoteCalculator();
             if (data.versionData)
             {
+                data.versionData.is_edit_mode = true;
                 renderManualQuoteTables(data.versionData, $container.find('#calcDetailsBody'));
                 $('#calcDetailsCollapse').collapse('show');
             }
@@ -488,8 +499,7 @@ $(document).ready(function () {
     $(document).on('submit', '#createVersionQuotationForm', function (e) {
         e.preventDefault();
 
-        if (!validateAllocatedQuantities()) return;
-        if (!validateTransportDistances()) return;
+        if (!validateQuantities()) return;
 
         const trucks = collectTruckData();
         const prices = collectPriceData();

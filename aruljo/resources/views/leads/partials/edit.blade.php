@@ -155,20 +155,7 @@
                         <div class="col-md-4">
                             <label>&nbsp;</label>
                             <button type="button" class="btn btn-primary w-100" id="calculate_quote_btn">
-                                <i class="fas fa-calculator"></i> Dft Quote
-                            </button>
-                        </div>
-                        <div class="col-md-2">
-                            <label>&nbsp;</label> {{-- Keeps vertical alignment with other inputs --}}
-                            <button type="button" class="btn btn-secondary w-100" id="copy_whatsapp_text">
-                                <i class="fas fa-copy"></i> Copy
-                            </button>
-                        </div>
-
-                        <div class="col-md-2">
-                            <label>&nbsp;</label> {{-- Keeps vertical alignment with other inputs --}}
-                            <button type="button" class="btn btn-success w-100" id="send_whatsapp_btn">
-                                <i class="fab fa-whatsapp"></i>WhatsApp
+                                <i class="fas fa-calculator"></i> Calculate Draft Quote
                             </button>
                         </div>
                         <div class="quote_alert text-danger" style="display:none;"></div>
@@ -201,16 +188,6 @@
                             <small id="edit_followup_days_left" class="text-muted"></small>
                         </div>
 
-                        <!-- Status -->
-                        <div class="col-md-4">
-                            <x-adminlte-select name="status" label="Status" fgroup-class="mb-3" required>
-                                <option value="">Select Status</option>
-                                @foreach ($statuses as $status)
-                                    <option value="{{ $status }}">{{ $status }}</option>
-                                @endforeach
-                            </x-adminlte-select>
-                        </div>
-
                         <!-- Assigned To -->
                         <div class="col-md-4">
                             <x-adminlte-select name="assigned_to" label="Assigned To" fgroup-class="mb-3">
@@ -230,10 +207,27 @@
                                 @endforeach
                             </select>
                         </div>
+
+                        <!-- Status -->
                         <div class="col-md-4">
+                            <x-adminlte-select name="status" label="Status" fgroup-class="mb-3" required>
+                                <option value="">Select Status</option>
+                                @foreach ($statuses as $status)
+                                    <option value="{{ $status }}">{{ $status }}</option>
+                                @endforeach
+                            </x-adminlte-select>
+                        </div>
+
+                        <div class="col-md-2">
                             <label>&nbsp;</label> {{-- Keeps vertical alignment with other inputs --}}
                             <button type="button" class="btn btn-success w-100" id="sendStatusWhatsappBtn">
                                 <i class="fab fa-whatsapp"></i> WhatsApp
+                            </button>
+                        </div>
+                        <div class="col-md-2">
+                            <label>&nbsp;</label> {{-- Keeps vertical alignment with other inputs --}}
+                            <button type="button" class="btn btn-secondary w-100" id="copy_whatsapp_text">
+                                <i class="fas fa-copy"></i> Copy
                             </button>
                         </div>
                         <!-- Current Remark -->
@@ -338,6 +332,35 @@
                     // Initialize quote calculator after modal is shown
                     initDistanceDurationEditable();
                     initQuoteCalculator('#editLeadModal');
+
+                    // 🔹 Load related quotation details (read-only mode)
+                    // 🔹 Load related quotation details (read-only mode)
+                    if (data.quotation_id) {
+                        let dataUrl = `/quotations/${data.quotation_id}/data`;
+                        if (data.version_id) dataUrl += `?version_id=${data.version_id}`;
+
+                        $.get(dataUrl, function (quoteData) {
+                            if (quoteData.versionData) {
+                                modal.find('#calculate_quote_btn').text("Recalculate Quote");
+                                const $calcBody = modal.find('#calcDetailsBody');
+
+                                // Render full quotation tables
+                                renderReadOnlyQuote(quoteData.versionData, modal.find('#calcDetailsBody'));
+
+                                // Show the collapse section
+                                modal.find('#calcDetailsCollapse').collapse('show');
+                                if (quoteData.versionData.net_total !== undefined) {
+                                modal.find('#estimated_cost').val(quoteData.versionData.net_total);
+                                }
+
+                                } else {
+                                console.warn('No versionData found for quote', data.quotation_id);
+                            }
+                        }).fail(function() {
+                            console.error('Failed to load quotation data.');
+                            modal.find('.quote_alert').show().text('Failed to load quotation details.');
+                        });
+                    }
                 });
             });
         });
