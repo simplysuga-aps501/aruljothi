@@ -7,7 +7,7 @@ $(document).ready(function() {
         'Lead Followup': (buyerName) => `Hello ${buyerName},\n\nJust following up regarding your request with Aruljothi Pipeworks. Please let us know if you need any assistance.\n\n📞 Kavin: 7373738363\n📞 Office: 6381603739\n📞 Office: 7373233233\n🌐 https://aruljothipipes.in/`,
         'Quotation': (buyerName, quoteSummary) => `Hello ${buyerName},\n\nThis is a gentle reminder from Aruljothi Pipeworks to review and approve the quotation at your convenience so we can proceed further.\n\n${quoteSummary || ''}\n\n📞 Kavin: 7373738363\n📞 Office: 6381603739\n📞 Office: 7373233233\n🌐 https://aruljothipipes.in/`,
         'PO': (buyerName) => `Hello ${buyerName},\n\nThank you for your order. We have received your PO and will process it shortly at Aruljothi Pipeworks.\n\n📞 Kavin: 7373738363\n📞 Office: 6381603739\n📞 Office: 7373233233\n🌐 https://aruljothipipes.in/`,
-        'Cancelled': (buyerName, reason = '') => `Hello ${buyerName},\n\nThank you for considering Aruljothi Pipeworks. We understand you won’t be proceeding at this time${reason ? ' due to ' + reason : ''}. For any future requirements, please feel free to reach out to us.\n\n📞 Kavin: 7373738363\n📞 Office: 6381603739\n📞 Office: 7373233233\n🌐 https://aruljothipipes.in/`,
+        'Cancelled': (buyerName) => `Hello ${buyerName},\n\nWe are sorry to see you go. Please contact us again if you have future requirements.\n\n📞 Kavin: 7373738363\n📞 Office: 6381603739\n📞 Office: 7373233233\n🌐 https://aruljothipipes.in/`,
         'Completed': (buyerName) => `Hello ${buyerName},\n\nYour order with Aruljothi Pipeworks has been successfully completed. Thank you for choosing us.\n\n📞 Kavin: 7373738363\n📞 Office: 6381603739\n📞 Office: 7373233233\n🌐 https://aruljothipipes.in/`
     };
 
@@ -105,8 +105,7 @@ $(document).ready(function() {
             }
             message = statusMessages['Quotation'](buyerName, summaryObj.plainText);
         } else if (status === 'Cancelled') {
-            const reason = prompt('Enter cancellation reason (optional):', '');
-            message = statusMessages['Cancelled'](buyerName, reason);
+            message = statusMessages['Cancelled'](buyerName);
         } else {
             message = statusMessages[status]?.(buyerName) || `Hello ${buyerName},\n\nStatus: ${status}`;
         }
@@ -143,8 +142,7 @@ $(document).ready(function() {
             }
             message = statusMessages['Quotation'](buyerName, summaryObj.plainText);
         } else if (status === 'Cancelled') {
-            const reason = prompt('Enter cancellation reason (optional):', '');
-            message = statusMessages['Cancelled'](buyerName, reason);
+            message = statusMessages['Cancelled'](buyerName);
         } else {
             message = statusMessages[status]?.(buyerName) || `Hello ${buyerName},\n\nStatus: ${status}`;
         }

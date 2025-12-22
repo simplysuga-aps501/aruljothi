@@ -361,8 +361,19 @@
                             modal.find('.quote_alert').show().text('Failed to load quotation details.');
                         });
                     }
+                    $(document).on('change', '#editLeadModal select[name="status"]', function() {
+                        const selected = $(this).val();
+                        if (selected === 'Cancelled') {
+                            const send = confirm("Please send a WhatsApp message to inform the customer about cancellation.\n\nDo you want to open WhatsApp now?");
+                            if (send) {
+                                $('#sendStatusWhatsappBtn').trigger('click');
+                            }
+                        }
+                    });
+
                 });
             });
+
         });
     </script>
 @endpush

@@ -18,12 +18,16 @@
                 <div class="row">
                     {{-- ==================== LEAD SELECTION ==================== --}}
                     <div class="col-md-12 form-group">
-                        <x-adminlte-select name="lead_id" id="lead_id" data-placeholder="Search by lead number or buyer name" required>
-                            <option value="">-- Select Lead to create quote--</option>
+                        <x-adminlte-select2 name="lead_id" id="lead_id"
+                            label="Select Lead"
+                            data-placeholder="Search by lead number or buyer name"
+                            allowClear
+                            required>
+                            <option value="">-- Select Lead to create quote --</option>
                             @foreach($leads as $lead)
                                 <option value="{{ $lead->id }}">#{{ $lead->id }} - {{ $lead->buyer_name }}</option>
                             @endforeach
-                        </x-adminlte-select>
+                        </x-adminlte-select2>
                     </div>
 
                     {{-- ==================== LEAD DETAILS (READ ONLY) ==================== --}}
@@ -432,8 +436,21 @@ $(document).ready(function() {
     $(document).on('submit', '#createQuotationForm', function (e) {
         e.preventDefault();
 
+        // 🧩 Ensure quote calculation has been done (check price table)
+        if ($('#priceTable').length === 0) {
+            $('.quote_alert')
+                .text('Please draft the quote before submitting.')
+                .show();
+
+            $('html, body').animate({
+                scrollTop: $('.quote_alert').offset().top - 100
+            }, 400);
+
+            return; // stop submission
+        }
+
         // Run validations in order
-        if (!validateAllocatedQuantities()) return;
+        if (!validateQuantities()) return;
 
         const trucks = collectTruckData();
         const prices = collectPriceData();
@@ -466,6 +483,21 @@ $(document).ready(function() {
 
         e.currentTarget.submit();
     });
+    // Initialize Select2 for lead search
+    $('#lead_id').select2({
+        placeholder: 'Search by lead number or buyer name',
+        width: '100%',
+        allowClear: true,
+        matcher: function(params, data) {
+            // Custom search to match both ID and name
+            if ($.trim(params.term) === '') return data;
+            if (typeof data.text === 'undefined') return null;
+
+            const term = params.term.toLowerCase();
+            return data.text.toLowerCase().includes(term) ? data : null;
+        }
+    });
+
 });
 </script>
 @stop

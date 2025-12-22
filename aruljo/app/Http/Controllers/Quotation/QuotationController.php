@@ -261,7 +261,36 @@ class QuotationController extends Controller
                     $cache->save();
                 }
             }
+            // 🔄 Sync updated fields to Lead (with audit)
+            $lead = \App\Models\Lead::find($request->lead_id);
 
+            if ($lead) {
+                $updates = [];
+
+                // Compare and update delivery_location_id
+                if (!empty($request->delivery_location_id) &&
+                    $lead->delivery_location_id != $request->delivery_location_id) {
+                    $updates['delivery_location_id'] = $request->delivery_location_id;
+                }
+
+                // Compare and update product_detail
+                if (!empty($request->product_detail) &&
+                    trim($lead->product_detail) !== trim($request->product_detail)) {
+                    $updates['product_detail'] = $request->product_detail;
+                }
+
+                // Only save if something changed (this will trigger OwenIt audit)
+                if (!empty($updates)) {
+                    $lead->fill($updates);
+                    $lead->save();
+
+                    \Log::info('Lead updated from quotation sync', [
+                        'lead_id' => $lead->id,
+                        'updated_fields' => $updates,
+                        'source' => 'Quotation Store'
+                    ]);
+                }
+            }
         });
 
         return redirect()
