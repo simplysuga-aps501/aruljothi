@@ -210,6 +210,7 @@ class QuotationController extends Controller
                     'distance_km' => $truckData['distance_km'] ?? null,
                     'multiplier' => $truckData['multiplier'] ?? 1,
                     'rate_per_km' => $truckData['rate_per_km'] ?? 0,
+                    'fixed_rate' => $truckData['fixed_rate'] ?? 0,
                     'total_weight' => $truckData['total_weight'] ?? 0,
                 ]);
 
@@ -597,12 +598,14 @@ class QuotationController extends Controller
 
             // 🟢 Transport summary
             'transport' => $version->trucks->map(fn($t) => [
-                'truck_name' => $t->truckType->name ?? '',
-                'rate' => $t->rate_per_km ?? $t->fixed_rate ?? 0,
-                'multiplier' => $t->multiplier ?? 1,
-                'distance' => $t->distance_km ?? 0,
-                'unloading' => $t->unloading_charges ?? 0,
-                'cost' => $t->truck_cost ?? 0,
+                'truck_name'  => $t->truckType->name ?? '',
+                'rate'        => $t->rate_per_km > 0 ? $t->rate_per_km : ($t->fixed_rate ?? 0),
+                'rate_per_km' => $t->rate_per_km ?? 0,   // optional, for clarity
+                'fixed_rate'  => $t->fixed_rate ?? 0,    // optional, for clarity
+                'multiplier'  => $t->multiplier ?? 1,
+                'distance'    => $t->distance_km ?? 0,
+                'unloading'   => $t->unloading_charges ?? 0,
+                'cost'        => $t->truck_cost ?? 0,
             ])->values(),
 
             // 🟢 Totals

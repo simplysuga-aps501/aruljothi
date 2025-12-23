@@ -672,13 +672,23 @@
         const productWeight = parseFloat($product.data('weight')) || 0;
         const max = parseFloat($row.find('.max-qty').text()) || 0;
 
-        // Validate against max allowed quantity
-        if (max && qty > max) return alert(`⚠️ Max allowed quantity is ${max}`);
+        if (max && qty > max) {
+            // Just warn, but continue calculation
+            console.warn(`⚠️ Quantity ${qty} exceeds max allowed ${max}`);
+            $row.find('.max-warning').remove();
+            $input.after(`<small class="text-danger max-warning">Max: ${max}</small>`);
+        } else {
+            $row.find('.max-warning').remove();
+        }
 
-        // Update row weight
-        $row.find('.total-weight').text(Math.round(qty * productWeight) + ' kg');
+        // Still update weight even if above max
+        const totalWeight = Math.round(qty * productWeight);
+        $row.find('.total-weight').text(totalWeight + ' kg');
+
         updateTotalWeight();
+
     }
+
 
     // Adds a new truck row to the allocation table
     function addTruckRow($target, trucks, products) {
@@ -941,6 +951,7 @@
 
         // Update the footer grand total
         $('#truck_total_weight').text(Math.round(grandTotal) + ' kg');
+        computeTransportPerUnit();
     }
 
     // Updates the total transport cost across all trucks
@@ -990,13 +1001,16 @@
 
     // Computes transport cost per unit for each product based on weight ratio
     function computeTransportPerUnit() {
+        console.log("Entered the compute ");
         // 1️⃣ Get total transport cost (₹)
         const totalTransport = parseFloat($('#total_transport_cost').text().replace(/[₹,]/g, '')) || 0;
 
         // 2️⃣ Get total truck weight (kg)
         const totalWeightText = $('#truck_total_weight').text().replace(/[^\d.]/g, '');
         const totalWeight = parseFloat(totalWeightText) || 0;
-
+        console.log(totalTransport);
+        console.log(totalWeightText);
+        console.log(totalWeight);
         // 3️⃣ Avoid division by zero
         if (!totalTransport || !totalWeight) {
             console.warn('⚠️ Transport per unit skipped — missing total transport or total weight');
@@ -1005,6 +1019,7 @@
 
         // 4️⃣ Compute ₹ per kg
         const costPerKg = totalTransport / totalWeight;
+        console.log(costPerKg);
 
         // 5️⃣ For each product row, compute per-unit transport cost (rounded)
         $('#priceTable tbody tr').each(function () {
@@ -1014,6 +1029,7 @@
             if (!product || !product.weight_kg) return;
 
             const weightPerUnit = parseFloat(product.weight_kg) || 0;
+            console.log(weightPerUnit);
             const transportPerUnit = Math.round(weightPerUnit * costPerKg); // Rounded to nearest ₹
 
             // Update UI
@@ -1039,21 +1055,47 @@
 
             const bodyType = $truckRow.find('.body-select').val() || 'Truck';
 
-            // Get distance from corresponding transport table row
-            const distance = parseFloat($(`#transportTable tbody tr:eq(${index})`).find('.transport-distance').val()) ||
-                             parseFloat($('.distance_km, #quote_distance_km').val()) || null;
-
-            // Match with same index row in transport table
+            // Get matching transport row
             const $transportRow = $('#transportTable tbody tr').eq(index);
+
+            // Distance
+            const distance =
+                parseFloat($transportRow.find('.transport-distance').val()) ||
+                parseFloat($('.distance_km, #quote_distance_km').val()) ||
+                null;
+
+            // Costs & rates
             const truckCost = parseFloat($transportRow.find('.transport-cost').text().replace(/[₹,]/g, '')) || 0;
             const unloading = parseFloat($transportRow.find('.unloading-cost').val()) || 0;
+
+            // 🔹 Collect both rate_per_km and fixed_rate safely
             const ratePerKm = parseFloat($transportRow.find('input.rate-km').val()) || 0;
+            const fixedRate = parseFloat($transportRow.find('input.fixed-rate').val()) || 0;
 
-            // Find total weight in the next truck-subtotal row
-            const totalWeight = parseFloat(
-                $truckRow.nextAll('.truck-subtotal').first().find('.truck-weight').text().replace(/[^\d.]/g, '')
-            ) || 0;
+            // Detect which one is active (based on distance or visibility)
+            let effectiveRatePerKm = 0;
+            let effectiveFixedRate = 0;
 
+            if (distance && distance < 150) {
+                effectiveRatePerKm = ratePerKm;
+                effectiveFixedRate = 0;
+            } else {
+                effectiveRatePerKm = 0;
+                effectiveFixedRate = fixedRate || ratePerKm; // fallback if same field reused
+            }
+
+            // Total weight from subtotal row
+            const totalWeight =
+                parseFloat(
+                    $truckRow
+                        .nextAll('.truck-subtotal')
+                        .first()
+                        .find('.truck-weight')
+                        .text()
+                        .replace(/[^\d.]/g, '')
+                ) || 0;
+
+            // Truck object
             const truckData = {
                 truck_id: truckTypeId,
                 body_type: bodyType,
@@ -1061,22 +1103,24 @@
                 unloading_charges: unloading,
                 distance_km: distance,
                 multiplier: 1,
-                rate_per_km: ratePerKm,
+                rate_per_km: effectiveRatePerKm,
+                fixed_rate: effectiveFixedRate,
                 total_weight: totalWeight,
                 products: []
             };
 
-            // Collect product data per truck
-            const $allProductRows = $truckRow.add($truckRow.nextUntil('.truck-subtotal', '.product-extension'));
-            $allProductRows.each(function () {
+            // Collect products for this truck
+            const $productRows = $truckRow.add($truckRow.nextUntil('.truck-subtotal', '.product-extension'));
+            $productRows.each(function () {
                 const $row = $(this);
                 const productId = parseInt($row.find('.product-select').val());
                 const qty = parseFloat($row.find('.qty-input').val()) || 0;
                 if (!productId || qty <= 0) return;
 
-                // Lookup product weight and max capacity
                 const product = window.availableProductsForQuote?.find(p => p.id === productId);
-                const capacity = window.truck_capacities?.find(c => c.truck_type_id === truckTypeId && c.product_id === productId);
+                const capacity = window.truck_capacities?.find(
+                    c => c.truck_type_id === truckTypeId && c.product_id === productId
+                );
 
                 truckData.products.push({
                     product_id: productId,
