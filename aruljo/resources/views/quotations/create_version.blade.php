@@ -125,6 +125,8 @@
                     <div class="product-pills mb-2 p-2" style="border:1px solid #d2d6de; border-radius:5px; display:flex; flex-wrap:wrap; gap:5px;"></div>
 
                     <textarea name="product_detail" class="d-none product-detail" rows="2"></textarea>
+
+
                 </div>
 
                 {{-- QUOTE & COST DETAILS --}}
@@ -166,7 +168,10 @@
                     </div>
 
                     <div class="quote_alert text-danger mt-2" style="display:none;"></div>
-
+                    <p class="text-muted  mt-2">
+                        <i class="fas fa-info-circle text-primary"></i>
+                        If you change the <strong>distance</strong> or <strong>products</strong>, please click <strong>Draft Quote</strong> again to refresh the calculation table.
+                    </p>
                     <div class="collapse mt-3" id="calcDetailsCollapse">
                         <div class="card shadow-sm border-0 bg-white quote-card">
                             <div class="card-body p-3">
@@ -263,13 +268,11 @@
                             <x-adminlte-input name="pdf_subject" id="pdf_subject"
                                 label="Subject" placeholder="Quotation subject"/>
                         </div>
-
-                        <div class="col-md-6">
-                            <x-adminlte-textarea name="pdf_terms" id="pdf_terms"
-                                label="Terms & Conditions" rows="3"/>
+                        <div class="col-md-12">
+                            @include('quotations.pdf-terms-builder')
                         </div>
 
-                        <div class="col-md-6">
+                        <div class="col-md-12">
                             <x-adminlte-textarea name="pdf_delivery" id="pdf_delivery"
                                 label="Delivery Terms" rows="3"/>
                         </div>
@@ -281,15 +284,18 @@
             </div>
         </div>
     </div>
-        <div class="modal-footer d-flex justify-content-between">
+        <div class="modal-footer flex-column flex-md-row justify-content-between align-items-center gap-2">
             <a href="{{ route('quotations.index') }}" class="btn btn-secondary">
                 Cancel
             </a>
 
-            <div>
+            <div class="d-flex flex-column flex-md-row gap-2">
+                <button type="button" class="btn btn-outline-info" id="preview_pdf_btn">
+                    <i class="fas fa-eye"></i> Preview PDF
+                </button>
 
                 <a href="{{ route('quotations.download-version', ['quotation' => $quotation->id, 'version' => $version->id]) }}"
-                   class="btn btn-danger" target="_blank">
+                   class="btn btn-danger">
                     <i class="fas fa-download"></i> Download PDF
                 </a>
 
@@ -298,10 +304,12 @@
                 </button>
             </div>
         </div>
+
       </form>
     </div>
 </div>
 @include('partials.adminlte-alert-modal')
+
 @stop
 
 @section('css')
@@ -362,6 +370,19 @@
             #truckTable td:nth-child(4) {
               min-width: 130px;   /* increase or decrease as needed */
             }
+        .modal-footer .btn + .btn,
+        .modal-footer .d-flex .btn + .btn {
+            margin-left: 0;
+            margin-right: 0;
+            margin-top: 0.5rem;
+        }
+        @media (min-width: 768px) {
+            .modal-footer .d-flex.flex-md-row .btn + .btn {
+                margin-top: 0;
+                margin-left: 0.75rem;
+            }
+        }
+
 </style>
 
 @stop
@@ -370,12 +391,15 @@
 <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap-multiselect@1.1.0/dist/js/bootstrap-multiselect.min.js"></script>
 <script src="https://cdn.jsdelivr.net/jquery.validation/1.19.5/jquery.validate.min.js"></script>
+
 @include('shared_js.pincode-autocomplete')
 @include('shared_js.product-autocomplete')
 @include('shared_js.quote-calculate')
 @include('shared_js.quote-distance-editable')
 @include('shared_js.whatsapp-copy')
-@include('shared_js.alert')
+@include('shared_js.sweetalert')
+@include('shared_js.mini-rate-modal')
+@include('shared_js.preview-pdf')
 <script>
 $(document).ready(function () {
     const products = @json($productsArray);
@@ -392,7 +416,6 @@ $(document).ready(function () {
             dataUrl += `?version_id=${versionId}`;
         }
         $.get(dataUrl, function (data) {
-            console.log(data);
             $('#quotation-main-section').removeClass('d-none');
             $('#lead-details').removeClass('d-none');
 
@@ -528,10 +551,10 @@ $(document).ready(function () {
         };
 
         $('#quote_edit_data').val(JSON.stringify(payload));
-        console.log("Payload:", JSON.stringify(payload));
 
         e.currentTarget.submit();
     });
 });
 </script>
+@stack('scripts')
 @stop

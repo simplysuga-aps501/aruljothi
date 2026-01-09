@@ -191,6 +191,8 @@ Route::middleware(['auth'])->group(function () {
         // web.php
         Route::get('/quotations/{quotation}/version/{version}/download', [QuotationController::class, 'downloadVersion'])
             ->name('quotations.download-version');
+        Route::post('/quotations/preview-pdf', [QuotationController::class, 'previewPdf'])
+            ->name('quotations.preview.pdf');
 
         /*
         |--------------------------------------------------------------------------

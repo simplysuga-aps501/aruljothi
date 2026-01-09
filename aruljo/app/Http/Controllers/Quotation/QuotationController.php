@@ -23,6 +23,7 @@ use App\Models\Transport\TpOffice;
 use App\Models\Transport\TruckCapacity;
 use App\Models\Transport\TpKmMultiplier;
 use App\Models\Customer;
+use Illuminate\Support\Str;
 
 class QuotationController extends Controller
 {
@@ -74,8 +75,6 @@ class QuotationController extends Controller
 
     public function store(Request $request)
     {
-        Log::info('Quotation Store Request:', $request->all());
-
         // Decode JSON from quote_edit_data
         if ($request->filled('quote_edit_data')) {
             $data = json_decode($request->quote_edit_data, true);
@@ -125,7 +124,9 @@ class QuotationController extends Controller
             'net_total' => 'required|numeric|min:0',
         ]);
 
-        DB::transaction(function () use ($request) {
+        $quotation = null;
+        $version = null;
+        DB::transaction(function () use ($request, &$quotation, &$version) {
             $userId = Auth::id();
             $leadId = $request->lead_id;
 
@@ -239,7 +240,12 @@ class QuotationController extends Controller
             }
 
             // Mark this version active in quotation
-            $quotation->update(['current_version' => $version->id]);
+            $quotation->update([
+                'current_version' => $version->id,
+                'total_amount' => $request->total_amount,
+                'modified_by' => Auth::id(), // ✅ track who made the latest version
+            ]);
+
 
             // ---------------- Update Distance Cache ----------------
             $toId = $request->delivery_location_id ?? null;
@@ -285,45 +291,55 @@ class QuotationController extends Controller
                     $lead->fill($updates);
                     $lead->save();
 
-                    \Log::info('Lead updated from quotation sync', [
-                        'lead_id' => $lead->id,
-                        'updated_fields' => $updates,
-                        'source' => 'Quotation Store'
-                    ]);
                 }
             }
         });
 
         return redirect()
-           ->route('quotations.index')
-           ->with('success', 'Quotation version created successfully.');
+            ->route('quotations.index')
+            ->with('download_pdf', route('quotations.download-version', [
+                'quotation' => $quotation->id,
+                'version'   => $version->id,
+            ]))
+            ->with('success', 'Quotation version created successfully. Downloading PDF...');
     }
-
 
     public function download($quotationId)
     {
-        $quotation = Quotation::with(['lead', 'versions.trucks.products.product'])->findOrFail($quotationId);
+        $quotation = Quotation::with(['lead', 'versions.trucks.products.product', 'customer', 'modifier'])->findOrFail($quotationId);
         $version = $quotation->versions->sortByDesc('version_number')->first();
 
         $data = [
             'quotation' => $quotation,
-            'version' => $version,
-            'trucks' => $version?->trucks ?? [],
+            'version'   => $version,
+            'trucks'    => $version?->trucks ?? [],
         ];
 
-        $pdf = PDF::loadView('quotations.pdf', $data)->setPaper('A4', 'portrait');
+        // 🟢 Dompdf setup for local images
+        $pdf = Pdf::setOptions([
+            'isRemoteEnabled' => false,
+            'chroot' => public_path(),
+        ])->loadView('quotations.pdf', $data)
+          ->setPaper('A4', 'portrait');
 
-        return $pdf->download($quotation->quote_number . '.pdf');
+        // Modifier (first 2 letters only)
+        $modifiedBy = optional($quotation->modifier)->name ?? 'Unknown';
+        $modifiedByShort = substr($modifiedBy, 0, 2);
+        $modifiedBySlug = strtoupper(Str::slug($modifiedByShort, '_'));
+
+        // Buyer (full name, uppercase)
+        $buyerName = $version->customer_name ?? 'Buyer';
+        $buyerNameSlug = strtoupper(Str::slug($buyerName, '_'));
+
+        // 🔹 Build filename
+        $filename = "{$quotation->quote_number}_{$modifiedBySlug}_{$buyerNameSlug}.pdf";
+        return $pdf->download($filename);
     }
 
-    // QuotationController.php
     public function downloadVersion($quotationId, $versionId)
     {
-        // Load quotation with versions
-        $quotation = Quotation::with(['lead', 'versions.trucks.products.product'])->findOrFail($quotationId);
-
-        // Get the requested version
-        $version = $quotation->versions->firstWhere('id', $versionId);
+        $quotation = Quotation::with(['lead', 'versions.trucks.products.product', 'customer', 'modifier'])->findOrFail($quotationId);
+        $version = $quotation->versions()->where('id', $versionId)->firstOrFail();
 
         if (!$version) {
             abort(404, 'Version not found for this quotation.');
@@ -331,15 +347,111 @@ class QuotationController extends Controller
 
         $data = [
             'quotation' => $quotation,
-            'version' => $version,
-            'trucks' => $version->trucks ?? [],
+            'version'   => $version,
+            'trucks'    => $version->trucks ?? [],
         ];
 
-        $pdf = PDF::loadView('quotations.pdf', $data)->setPaper('A4', 'portrait');
+        // 🟢 Dompdf setup for local images
+        $pdf = Pdf::setOptions([
+            'isRemoteEnabled' => false,
+            'chroot' => public_path(),
+        ])->loadView('quotations.pdf', $data)
+          ->setPaper('A4', 'portrait');
 
-        return $pdf->download($quotation->quote_number . '-v' . $version->version_number . '.pdf');
+       // Modifier (first 2 letters only)
+       $modifiedBy = optional($quotation->modifier)->name ?? 'Unknown';
+       $modifiedByShort = substr($modifiedBy, 0, 2);
+       $modifiedBySlug = strtoupper(Str::slug($modifiedByShort, '_'));
+
+       // Buyer (full name, uppercase)
+       $buyerName = $version->customer_name ?? 'Buyer';
+       $buyerNameSlug = strtoupper(Str::slug($buyerName, '_'));
+
+        // 🔹 Build filename with version
+        $filename = "{$quotation->quote_number}-V{$version->version_number}_{$modifiedBySlug}_{$buyerNameSlug}.pdf";
+        return $pdf->download($filename);
     }
 
+    public function previewPdf(Request $request)
+    {
+        try {
+            // Decode your live form data from JS
+            $payload = [];
+            if ($request->filled('quote_edit_data')) {
+                $decoded = json_decode($request->quote_edit_data, true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    $payload = $decoded;
+                }
+            }
+
+            // Build a mock quotation object (no DB save)
+            $quotation = (object) [
+                'quote_number' => 'PREVIEW',
+                'modifier' => Auth::user(),
+                'lead' => (object)[
+                    'buyer_name' => $request->customer_name ?: 'Customer',
+                    'buyer_contact' => $request->customer_contact,
+                    'created_at' => now(),
+                ],
+            ];
+
+            // Build mock version object
+            $version = (object) [
+                'version_number' => 0,
+                'customer_name' => $request->customer_name,
+                'customer_contact' => $request->customer_contact,
+                'customer_address_line1' => $request->customer_address_line1,
+                'customer_address_line2' => $request->customer_address_line2,
+                'customer_district' => $request->customer_district,
+                'customer_state' => $request->customer_state,
+                'customer_pincode' => $request->customer_pincode,
+                'customer_gst_number' => $request->customer_gst_number,
+                'pdf_date' => $request->pdf_date ?? now()->format('Y-m-d'),
+                'pdf_subject' => $request->pdf_subject ?? 'Quotation for supply of RCC Products',
+                'pdf_terms' => $request->pdf_terms ?? 'The above price includes loading and transportation. Unloading is under client scope.',
+                'pdf_delivery' => $request->pdf_delivery ?? 'Materials will be delivered as per your schedule.',
+                'gst_rate' => 18,
+            ];
+
+            // ✅ Rebuild priceDetails array from JS payload
+            $version->priceDetails = collect($payload['prices'] ?? [])->map(function ($p) {
+                return (object)[
+                    'product' => (object)[
+                        'name' => $p['product_name'] ?? 'Product',
+                        'unit' => (object)['name' => 'Nos']
+                    ],
+                    'unit_price' => $p['unit_price'] ?? 0,
+                    'transport_unit' => $p['transport_unit'] ?? 0,
+                    'total_unit_price' => $p['total_unit_price'] ?? 0,
+                    'total_qty' => $p['total_qty'] ?? 1,
+                    'total_price' => $p['total_price'] ?? 0,
+                ];
+            });
+
+            $version->trucks = collect($payload['trucks'] ?? [])->map(fn($t) => (object)$t);
+
+            // 🔹 Prepare data identical to downloadVersion()
+            $data = [
+                'quotation' => $quotation,
+                'version'   => $version,
+                'trucks'    => $version->trucks,
+            ];
+
+            // 🧾 Reuse the same PDF blade
+            $pdf = \PDF::setOptions([
+                'isRemoteEnabled' => false,
+                'chroot' => public_path(),
+            ])->loadView('quotations.pdf', $data)
+              ->setPaper('A4', 'portrait');
+
+            return response($pdf->output(), 200)
+                ->header('Content-Type', 'application/pdf');
+
+        } catch (\Throwable $e) {
+            \Log::error('❌ Preview PDF failed: '.$e->getMessage());
+            return response()->json(['error' => 'PDF generation failed.'], 500);
+        }
+    }
 
     public function fetchQuotationData($id)
     {
@@ -355,7 +467,6 @@ class QuotationController extends Controller
         $version = $versionId
             ? $quotation->versions->firstWhere('id', $versionId)
             : $quotation->versions->sortByDesc('version_number')->first();
-        Log::info($version);
         if (!$version) {
             return response()->json(['error' => 'Version not found'], 404);
         }
@@ -557,8 +668,33 @@ class QuotationController extends Controller
 
     public function getDbVersionData($versionId)
     {
-        $version = QuoteVersion::with(['trucks.truckType', 'trucks.products.product', 'priceDetails.product'])
-            ->findOrFail($versionId);
+        // ✅ Load the quotation + lead relationship too
+        $version = QuoteVersion::with([
+            'quotation.lead',
+            'trucks.truckType',
+            'trucks.products.product',
+            'priceDetails.product',
+        ])->findOrFail($versionId);
+
+        // 🟢 Access lead details through quotation
+        $lead = $version->quotation?->lead;
+        $locationId = $lead?->delivery_location_id;
+        $districtId = $lead?->district_id; // optional, if your leads table has district_id
+
+        // 🟢 Get district rates by location or district
+        $districtRates = collect();
+
+        if ($locationId) {
+            $districtRates = TpDistrictRate::where('location_id', $locationId)
+                ->select('truck_type_id', 'rate')
+                ->get();
+        }
+
+        if ($districtRates->isEmpty() && $districtId) {
+            $districtRates = TpDistrictRate::where('district_id', $districtId)
+                ->select('truck_type_id', 'rate')
+                ->get();
+        }
 
         $response = [
             // 🟢 Product list for price table
@@ -588,7 +724,7 @@ class QuotationController extends Controller
                         'product_id'      => $p->product_id,
                         'qty'             => $p->allocated_qty,
                         'requested_qty'   => $priceDetail?->total_qty ?? 0,
-                        'max_allowed_qty' => $p->max_allowed_qty ?? 0, // ✅ pull directly from DB column
+                        'max_allowed_qty' => $p->max_allowed_qty ?? 0,
                         'unit_price'      => $priceDetail?->unit_price ?? 0,
                         'transport_unit'  => $priceDetail?->transport_unit ?? 0,
                         'total_price'     => $priceDetail?->total_price ?? 0,
@@ -600,8 +736,8 @@ class QuotationController extends Controller
             'transport' => $version->trucks->map(fn($t) => [
                 'truck_name'  => $t->truckType->name ?? '',
                 'rate'        => $t->rate_per_km > 0 ? $t->rate_per_km : ($t->fixed_rate ?? 0),
-                'rate_per_km' => $t->rate_per_km ?? 0,   // optional, for clarity
-                'fixed_rate'  => $t->fixed_rate ?? 0,    // optional, for clarity
+                'rate_per_km' => $t->rate_per_km ?? 0,
+                'fixed_rate'  => $t->fixed_rate ?? 0,
                 'multiplier'  => $t->multiplier ?? 1,
                 'distance'    => $t->distance_km ?? 0,
                 'unloading'   => $t->unloading_charges ?? 0,
@@ -620,18 +756,17 @@ class QuotationController extends Controller
                 ->sum(fn($p) => ($p->product->weight_kg ?? 0) * $p->allocated_qty),
 
             // 🟢 Customer snapshot
-           'customer' => [
-               'id' => $version->customer_id,
-               'name' => $version->customer_name,
-               'contact' => $version->customer_contact,
-               'address_line1' => $version->customer_address_line1,
-               'address_line2' => $version->customer_address_line2,
-               'district' => $version->customer_district,
-               'state' => $version->customer_state,
-               'pincode' => $version->customer_pincode,
-               'gst_number' => $version->customer_gst_number,
-           ],
-
+            'customer' => [
+                'id' => $version->customer_id,
+                'name' => $version->customer_name,
+                'contact' => $version->customer_contact,
+                'address_line1' => $version->customer_address_line1,
+                'address_line2' => $version->customer_address_line2,
+                'district' => $version->customer_district,
+                'state' => $version->customer_state,
+                'pincode' => $version->customer_pincode,
+                'gst_number' => $version->customer_gst_number,
+            ],
 
             // 🟢 PDF snapshot
             'pdf' => [
@@ -641,28 +776,15 @@ class QuotationController extends Controller
                 'pdf_delivery' => $version->pdf_delivery ?? 'Materials are readily available. We can supply your requirement within 2 days as per your delivery schedule after placing your order.',
             ],
 
-            // Static lists
+            // 🟢 Static lists
             'available_trucks' => TruckType::select(
                 'id', 'name', 'rate_per_km', 'unloading_charges_below_150', 'unloading_charges_above_150'
             )->get(),
 
             'truck_capacities' => TruckCapacity::select('truck_type_id', 'product_id', 'body_type', 'max_units')->get(),
-            'district_rates' => TpDistrictRate::select('truck_type_id', 'rate')->get(),
+            'district_rates' => $districtRates, // ✅ filtered by lead location
             'km_multipliers' => TpKmMultiplier::select('min_km', 'max_km', 'multiplier')->get(),
         ];
-
-        Log::info("Quote version response summary", [
-            'version_id' => $versionId,
-            'customer' => $response['customer'] ?? null,
-            'counts' => [
-                'trucks' => count($response['draft_allocations']),
-                'products' => count($response['available_products']),
-                'truck_types' => count($response['available_trucks']),
-            ],
-        ]);
-
         return response()->json($response);
     }
-
-
 }

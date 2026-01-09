@@ -27,8 +27,9 @@
                                     <th>Quote No</th>
                                     <th>Lead No</th>
                                     <th>Buyer Name</th>
+                                    <th>Contact</th>
                                     <th>Amount</th>
-                                    <th>Created By</th>
+                                    <th>Modified By</th>
                                     <th>Last Updated</th>
                                     <th>Actions</th>
                                 </tr>
@@ -47,8 +48,38 @@
                                                 -
                                             @endif
                                         </td>
+                                        <td>
+                                            @if ($quotation->lead && $quotation->lead->buyer_contact)
+                                                @php
+                                                    // Clean and normalize phone number
+                                                    $contact = preg_replace('/\D/', '', $quotation->lead->buyer_contact);
+                                                    if (strlen($contact) == 10) {
+                                                        $contact = '91' . $contact; // Add country code if missing
+                                                    }
+                                                    $whatsappUrl = "https://wa.me/{$contact}";
+                                                    $callUrl = "tel:+{$contact}";
+                                                @endphp
+
+                                                {{-- Click to Call --}}
+                                                <a href="{{ $callUrl }}"
+                                                   class="text-primary"
+                                                   title="Click to call">
+                                                    {{ $quotation->lead->buyer_contact }}
+                                                </a>
+
+                                                {{-- WhatsApp link --}}
+                                                <a href="{{ $whatsappUrl }}"
+                                                   target="_blank"
+                                                   class="text-success ml-2"
+                                                   title="Chat on WhatsApp">
+                                                    <i class="fab fa-whatsapp fa-lg"></i>
+                                                </a>
+                                            @else
+                                                -
+                                            @endif
+                                        </td>
                                         <td>{{ number_format($quotation->total_amount, 2) }}</td>
-                                        <td>{{ $quotation->creator->name ?? '-' }}</td>
+                                        <td>{{ $quotation->modifier->name ?? $quotation->creator->name ?? '-' }}</td>
                                         <td>{{ $quotation->updated_at?->format('d-M-Y H:i') }}</td>
                                         <td>
                                             <div class="d-flex align-items-center">
@@ -68,6 +99,7 @@
             </div>
         </div>
     </section>
+
 @stop
 
 @section('css')
@@ -87,9 +119,10 @@
 @stop
 
 @section('js')
+
     <script src="https://cdn.datatables.net/2.3.2/js/dataTables.js"></script>
     <script src="https://cdn.datatables.net/responsive/3.0.4/js/responsive.dataTables.js"></script>
-
+    @include('shared_js.pdf-download')
     <script>
         $(document).ready(function() {
             new DataTable('#quotationsTable', {
@@ -107,12 +140,6 @@
 
             setTimeout(() => $('#flashSuccess').fadeOut(), 3000);
 
-            // PDF download for latest version
-            $(document).on('click', '.download-pdf', function() {
-                const quotationId = $(this).data('id');
-                if (!quotationId) return;
-                window.open(`/quotations/${quotationId}/download`, '_blank');
-            });
         });
     </script>
 @stack('scripts')

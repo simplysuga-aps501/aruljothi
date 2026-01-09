@@ -49,7 +49,10 @@ class Quotation extends Model
     {
         return $this->belongsTo(User::class, 'created_by');
     }
-
+    public function modifier()
+    {
+        return $this->belongsTo(User::class, 'modified_by');
+    }
     /** Helper relationships **/
 
     public function products()

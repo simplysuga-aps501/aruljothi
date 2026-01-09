@@ -260,7 +260,7 @@
 
     @include('leads.partials.shared-js')
     @include('shared_js.whatsapp-copy')
-
+    @include('shared_js.product-autocomplete')
     <script>
         $(document).ready(function() {
             new DataTable('#leads_table', {

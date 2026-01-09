@@ -33,14 +33,16 @@
       @endif
 
       {{-- Form --}}
-      <form action="{{ route('leads.store') }}" method="POST" onsubmit="return validateForm();">
+      <form id="createLeadForm" action="{{ route('leads.store') }}" method="POST" onsubmit="return validateForm();">
         @csrf
+        {{-- Hidden input to detect which button was clicked --}}
+        <input type="hidden" name="submit_action" id="submit_action" value="save">
         <div class="card-body">
           <div class="row">
 
             {{-- Platform --}}
             <div class="col-md-4">
-                <x-adminlte-select name="platform" label="Platform" fgroup-class="mb-3" required>
+                <x-adminlte-select name="platform" label="Platform *" fgroup-class="mb-3" required>
                     <option value="">Select</option>
                     @foreach($platforms as $platform)
                         <option value="{{ $platform }}" @selected(old('platform') === $platform)>{{ $platform }}</option>
@@ -50,7 +52,7 @@
 
             {{-- Lead Date --}}
             <div class="col-md-4">
-                <x-adminlte-input name="lead_date" label="Lead Date & Time" type="datetime-local"
+                <x-adminlte-input name="lead_date" label="Lead Date & Time *" type="datetime-local"
                     fgroup-class="mb-3" required
                     :value="old('lead_date', \Carbon\Carbon::now()->format('Y-m-d\TH:i'))"/>
             </div>
@@ -64,7 +66,7 @@
 
             {{-- Buyer Name --}}
             <div class="col-md-4">
-                <x-adminlte-input name="buyer_name" label="Buyer Name" placeholder="Name" type="text"
+                <x-adminlte-input name="buyer_name" label="Buyer Name *" placeholder="Name" type="text"
                     fgroup-class="mb-3" required minlength="3" maxlength="100"
                     pattern="^[a-zA-Z0-9\s.]+$" title="Only letters, numbers, spaces, and dots allowed."
                     :value="old('buyer_name')"/>
@@ -72,7 +74,7 @@
 
             {{-- Buyer Contact --}}
             <div class="col-md-4">
-                <x-adminlte-input name="buyer_contact" label="Buyer Contact" placeholder="Phone" type="text"
+                <x-adminlte-input name="buyer_contact" label="Buyer Contact *" placeholder="Phone" type="text"
                     fgroup-class="mb-3" required maxlength="15" minlength="10"
                     pattern="[6-9]{1}[0-9]{9}" title="Valid 10-digit number starting with 6-9"
                     :value="old('buyer_contact')"
@@ -237,24 +239,35 @@
             </div>
             {{-- Current Remark --}}
             <div class="col-md-12">
-                <x-adminlte-input name="current_remark" label="Current Remark" placeholder="Add your remark"
+                <x-adminlte-input name="current_remark" label="Current Remark *" placeholder="Add your remark"
                     fgroup-class="mb-3" required :value="old('current_remark')"/>
             </div>
 
           </div>
         </div>
 
-        {{-- Buttons --}}
-        <div class="form-group row mt-2 px-4">
-            <div class="col-12 col-md-6 mb-2 mb-md-0">
-                <a href="{{ route('leads.index') }}" class="btn btn-secondary btn-block">
-                    <i class="fas fa-times"></i> Cancel
-                </a>
+        {{-- ✅ Action Buttons --}}
+            <div class="form-group row mt-2 px-4">
+                <div class="col-12 col-md-4 mb-2 mb-md-0">
+                    <a href="{{ route('leads.index') }}" class="btn btn-secondary btn-block">
+                        <i class="fas fa-times"></i> Cancel
+                    </a>
+                </div>
+
+                {{-- Submit Lead --}}
+                <div class="col-12 col-md-4 mb-2 mb-md-0">
+                    <button type="submit" class="btn btn-primary btn-block" onclick="document.getElementById('submit_action').value='save';">
+                        <i class="fas fa-save"></i> Submit Lead
+                    </button>
+                </div>
+
+                {{-- Submit & Create Quote --}}
+                <div class="col-12 col-md-4">
+                    <button type="submit" class="btn btn-success btn-block" onclick="document.getElementById('submit_action').value='quote';">
+                        <i class="fas fa-file-invoice-dollar"></i> Submit & Create Quote
+                    </button>
+                </div>
             </div>
-            <div class="col-12 col-md-6">
-                <x-adminlte-button label="Submit" id="saveBtn" type="submit" theme="primary" icon="fas fa-save" class="btn-block"/>
-            </div>
-        </div>
       </form>
     </div>
   </div>
@@ -289,6 +302,7 @@
             cursor: pointer;
             flex-shrink: 0; /* Prevent icon from shrinking */
         }
+
     </style>
 @stop
 
@@ -303,7 +317,7 @@
     <script src="https://cdn.jsdelivr.net/jquery.validation/1.19.5/jquery.validate.min.js"></script>
     @include('leads.partials.shared-js')
     @include('shared_js.whatsapp-copy')
-
+    @include('shared_js.product-autocomplete')
     <script>
         $(document).ready(function() {
             var products = @json($productsArray);

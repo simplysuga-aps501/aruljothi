@@ -259,7 +259,6 @@
     <script>
         $(document).ready(function() {
             var products = @json($productsArray);
-            console.log(products);
             // Open modal with AJAX
             $(document).on('click', '.open-edit-lead-modal', function() {
                 const leadId = $(this).data('lead-id');
@@ -271,6 +270,14 @@
                 modal.find('.product-pills').empty();
                 modal.find('.product-alert').addClass('d-none').text('');
                 modal.find('.quote_alert').hide().html('');
+                modal.find('input[name="quote_edit_data"]').val('');
+
+                // 🔹 Reset previous quote section completely
+                modal.find('#calcDetailsBody').empty();                 // clear quote table
+                modal.find('#calcDetailsCollapse').collapse('hide');    // collapse quote details
+                modal.find('#estimated_cost').val('');                  // clear estimated cost
+                modal.find('#calculate_quote_btn').text("Draft Quote"); // reset button text
+
                  // Get current tab from URL
                 const urlParams = new URLSearchParams(window.location.search);
                 const currentTab = urlParams.get('tab') || 'active';
@@ -335,32 +342,65 @@
 
                     // 🔹 Load related quotation details (read-only mode)
                     // 🔹 Load related quotation details (read-only mode)
+                    // 🔹 Load related quotation details (read-only mode)
                     if (data.quotation_id) {
                         let dataUrl = `/quotations/${data.quotation_id}/data`;
                         if (data.version_id) dataUrl += `?version_id=${data.version_id}`;
 
                         $.get(dataUrl, function (quoteData) {
+                            const $calcBody = modal.find('#calcDetailsBody');
+
                             if (quoteData.versionData) {
                                 modal.find('#calculate_quote_btn').text("Recalculate Quote");
-                                const $calcBody = modal.find('#calcDetailsBody');
 
-                                // Render full quotation tables
-                                renderReadOnlyQuote(quoteData.versionData, modal.find('#calcDetailsBody'));
-
-                                // Show the collapse section
+                                // Render read-only quotation view
+                                renderReadOnlyQuote(quoteData.versionData, $calcBody);
                                 modal.find('#calcDetailsCollapse').collapse('show');
+
                                 if (quoteData.versionData.net_total !== undefined) {
-                                modal.find('#estimated_cost').val(quoteData.versionData.net_total);
+                                    modal.find('#estimated_cost').val(quoteData.versionData.net_total);
                                 }
 
-                                } else {
-                                console.warn('No versionData found for quote', data.quotation_id);
+                            } else {
+                                // 🟡 Quotation exists but has no version data
+                                const createUrl = `/quotations/create?lead_id=${leadId}`;
+                                $calcBody.html(`
+                                    <div class="alert alert-info text-center mb-0">
+                                        <i class="fas fa-info-circle"></i>
+                                        No quote has been generated yet.<br>
+                                        Click <strong>Draft Quote</strong> to create one, or
+                                        <a href="${createUrl}" target="_blank" rel="noopener"
+                                           class="btn btn-sm btn-primary mt-2">
+                                            <i class="fas fa-file-invoice"></i> Create Quotation
+                                        </a>
+                                    </div>
+                                `);
+                                modal.find('#calcDetailsCollapse').collapse('show');
+                                modal.find('#estimated_cost').val('');
+                                modal.find('#calculate_quote_btn').text("Draft Quote");
                             }
                         }).fail(function() {
                             console.error('Failed to load quotation data.');
                             modal.find('.quote_alert').show().text('Failed to load quotation details.');
                         });
+
+                    } else {
+                        // 🟡 Lead has no quotation at all
+                        const createUrl = `/quotations/create?lead_id=${leadId}`;
+                        modal.find('#calcDetailsBody').html(`
+                          <div class="alert bg-light border text-center mb-0">
+                              <i class="fas fa-info-circle text-secondary"></i>
+                              No quote has been generated yet.<br>
+                              Click <strong>Draft Quote</strong> for quick quote, or
+                              <a href="${createUrl}" target="_blank" rel="noopener"> Create Quotation
+                              </a>
+                          </div>
+                        `);
+                        modal.find('#calcDetailsCollapse').collapse('show');
+                        modal.find('#estimated_cost').val('');
+                        modal.find('#calculate_quote_btn').text("Draft Quote");
                     }
+
                     $(document).on('change', '#editLeadModal select[name="status"]', function() {
                         const selected = $(this).val();
                         if (selected === 'Cancelled') {

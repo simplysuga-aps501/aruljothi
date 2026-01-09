@@ -245,21 +245,18 @@
 
                         <div class="row">
                             <div class="col-md-3">
-                                <x-adminlte-input type="date" name="pdf_date" id="pdf_date"
-                                    label="Quotation Date"/>
+                                <x-adminlte-input type="date" name="pdf_date" id="pdf_date" label="Quotation Date"/>
                             </div>
 
                             <div class="col-md-9">
-                                <x-adminlte-input name="pdf_subject" id="pdf_subject"
-                                    label="Subject" placeholder="Quotation subject"/>
+                                <x-adminlte-input name="pdf_subject" id="pdf_subject" label="Subject" placeholder="Quotation subject"/>
                             </div>
 
-                            <div class="col-md-6">
-                                <x-adminlte-textarea name="pdf_terms" id="pdf_terms"
-                                    label="Terms & Conditions" rows="3"/>
+                            <div class="col-md-12">
+                                @include('quotations.pdf-terms-builder')
                             </div>
 
-                            <div class="col-md-6">
+                            <div class="col-md-12">
                                 <x-adminlte-textarea name="pdf_delivery" id="pdf_delivery"
                                     label="Delivery Terms" rows="3"/>
                             </div>
@@ -269,11 +266,18 @@
                 </div>
             </div>
             <div class="card-footer bg-white border-top d-none" id="quote-action-buttons">
-                <div class="d-flex justify-content-between align-items-center">
+                <div class="responsive-btn-footer">
                     <a href="{{ route('quotations.index') }}" class="btn btn-secondary">
                         <i class="fas fa-arrow-left"></i> Cancel
                     </a>
-                    <x-adminlte-button type="submit" theme="primary" label="Create Quotation" icon="fas fa-save"/>
+
+                    <div class="d-flex flex-column flex-md-row">
+                        <button type="button" class="btn btn-outline-info mr-md-2 mb-2 mb-md-0" id="preview_pdf_btn">
+                            <i class="fas fa-eye"></i> Preview PDF
+                        </button>
+
+                        <x-adminlte-button type="submit" theme="primary" label="Create Quotation" icon="fas fa-save"/>
+                    </div>
                 </div>
             </div>
         </form>
@@ -340,9 +344,35 @@
     #truckTable td:nth-child(4) {
       min-width: 130px;   /* increase or decrease as needed */
     }
+/* ===========================================================
+   RESPONSIVE BUTTON FOOTER (Bootstrap 4)
+   Keeps buttons inline on desktop, stacked on mobile, with gaps
+   =========================================================== */
+
+.responsive-btn-footer {
+    display: flex;
+    flex-direction: column;           /* stack on mobile */
+    align-items: center;
+    justify-content: space-between;
+}
+
+.responsive-btn-footer > * {
+    margin: 0.25rem 0;                /* vertical gap for mobile */
+}
+
+@media (min-width: 768px) {
+    .responsive-btn-footer {
+        flex-direction: row;          /* horizontal layout on md+ */
+        align-items: center;
+    }
+
+    .responsive-btn-footer > * {
+        margin: 0 0.5rem;             /* horizontal gap for desktop */
+    }
+}
 
 </style>
-
+@stack('styles')
 @stop
 
 @section('js')
@@ -354,7 +384,9 @@
 @include('shared_js.quote-calculate')
 @include('shared_js.quote-distance-editable')
 @include('shared_js.whatsapp-copy')
-@include('shared_js.alert')
+@include('shared_js.sweetalert')
+@include('shared_js.mini-rate-modal')
+@include('shared_js.preview-pdf')
 <script>
 $(document).ready(function() {
 
@@ -364,7 +396,6 @@ $(document).ready(function() {
         if (!id) return;
 
         $.get(`/leads/${id}/edit`, function(data) {
-            console.log(data);
             $('.quotation-main-section').removeClass('d-none');
             var products = @json($productsArray);
             // ===== LEAD INFO =====
@@ -452,34 +483,9 @@ $(document).ready(function() {
         // Run validations in order
         if (!validateQuantities()) return;
 
-        const trucks = collectTruckData();
-        const prices = collectPriceData();
-        const transport = collectTransportData();
-        const totalAmount = parseFloat($('#net_total').text().replace(/[₹,]/g, '')) || 0;
-        const subtotal = parseFloat($('#subtotal').text().replace(/[₹,]/g, '')) || 0;
-        const gst_rate = 18;
-        const gstAmount = subtotal * gst_rate / 100;
-        const net_total = subtotal + gstAmount;
-        const totalWeight = parseFloat($('#truck_total_weight').text().replace(/[^\d.]/g, '')) || 0;
-        const cost_per_kg = totalWeight ? totalAmount / totalWeight : 0;
-        const remarks = $('input[name="remarks"]').val() || '';
-        const distance_km = parseFloat($('#quote_distance_km').val()) || 0;
-
-        const payload = {
-            trucks,
-            prices,
-            transport,
-            subtotal,
-            gst_rate,
-            total_amount: totalAmount,
-            net_total,
-            cost_per_kg,
-            distance_km,
-            remarks
-        };
+        const payload = buildQuotePayload();
 
         $('#quote_edit_data').val(JSON.stringify(payload));
-        console.log(JSON.stringify(payload));
 
         e.currentTarget.submit();
     });
@@ -497,7 +503,19 @@ $(document).ready(function() {
             return data.text.toLowerCase().includes(term) ? data : null;
         }
     });
+    // ===== AUTO-SELECT LEAD IF LEAD_ID IS IN URL =====
+    (function() {
+        // Check if URL has ?lead_id=123
+        const urlParams = new URLSearchParams(window.location.search);
+        const leadId = urlParams.get('lead_id');
+        if (leadId) {
+            // Set Select2 value
+            const $leadSelect = $('#lead_id');
+            $leadSelect.val(leadId).trigger('change'); // triggers your existing AJAX
+        }
+    })();
 
 });
 </script>
+@stack('scripts')
 @stop

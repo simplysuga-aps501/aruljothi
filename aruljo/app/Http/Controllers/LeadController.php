@@ -129,8 +129,13 @@ class LeadController extends Controller
                 }
             }
 
+            // Redirect based on which button was pressed
+            if ($request->submit_action === 'quote') {
+                return redirect()->route('quotations.create', ['lead_id' => $lead->id])
+                    ->with('success', 'Lead created successfully! You can now create a quotation.');
+            }
 
-            return redirect()->route('leads.index')->with('success', 'Lead added successfully!');
+            return redirect()->route('leads.index')->with('success', 'Lead created successfully!');
         }
 
     /**
@@ -546,8 +551,5 @@ class LeadController extends Controller
             $service->getQuoteReferenceData($products, $distance, $locationId, $includeDraft)
         );
     }
-
-
-
 
 }
