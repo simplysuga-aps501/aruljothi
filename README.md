@@ -1,4 +1,3 @@
-
 To start with this project execute the below commands. 
 
 git clone git@github-aps:simplysuga-aps501/aruljothi.git aruljothi
