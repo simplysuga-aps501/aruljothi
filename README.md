@@ -22,7 +22,6 @@ $user = App\Models\User::where(‘name’,’Kavin’)->first();
 
 $user->assignRole(‘owner’);
 
-
 --Commands to run backup 
 For DB alone:
 php artisan backup:run --only-db
