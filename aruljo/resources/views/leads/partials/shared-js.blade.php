@@ -126,7 +126,7 @@
                     $(distanceInput).val('');
                     $(durationInput).val('');
 
-                    $.get('{{ route('distance.calc') }}', { to_id: ui.item.id })
+                    $.get('{{ route('distance.calc', [], false) }}', { to_id: ui.item.id })
                         .done(function(data) {
                             $(loader).hide();
                             if (data.distance_km != null && data.duration_minutes != null) {
