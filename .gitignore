@@ -32,3 +32,4 @@ aruljo/storage/framework/cache/*
 aruljo/storage/framework/sessions/*
 aruljo/storage/framework/views/*
 
+/.idea/

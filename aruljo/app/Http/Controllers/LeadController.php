@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Lead;
 use App\Models\LeadProductMap;
+use App\Models\Quotation\Quotation;
+use App\Models\Quotation\QuoteVersion;
 use App\Models\User;
 use App\Models\Product\Product;
 use Illuminate\Http\Request;
@@ -127,8 +129,13 @@ class LeadController extends Controller
                 }
             }
 
+            // Redirect based on which button was pressed
+            if ($request->submit_action === 'quote') {
+                return redirect()->route('quotations.create', ['lead_id' => $lead->id])
+                    ->with('success', 'Lead created successfully! You can now create a quotation.');
+            }
 
-            return redirect()->route('leads.index')->with('success', 'Lead added successfully!');
+            return redirect()->route('leads.index')->with('success', 'Lead created successfully!');
         }
 
     /**
@@ -271,14 +278,13 @@ class LeadController extends Controller
         $fullLocation = null;
 
         if ($locationId) {
-            // Fetch location details directly from distance_pincodes
-            $location = $lead->location; // uses belongsTo relationship
+            $location = $lead->location;
 
             if ($location) {
                 $pincode = $location->pincode;
                 $fullLocation = $location->full_location . '-' . $pincode;
 
-                $cache = $location->latestCache; // if you add latestCache() helper in DistancePincode
+                $cache = $location->latestCache;
 
                 if ($cache) {
                     $distance_km = round($cache->distance_km);
@@ -286,6 +292,16 @@ class LeadController extends Controller
                 }
             }
         }
+
+        // 🔹 Fetch quotation linked to this lead (if any)
+        $quotation = Quotation::where('lead_id', $lead->id)
+            ->latest('id')
+            ->first();
+
+        // 🔹 Only check versions if quotation exists
+        $versionId = $quotation
+            ? optional($quotation->versions()->latest('id')->first())->id
+            : null;
 
         return response()->json([
             'id' => $lead->id,
@@ -308,6 +324,8 @@ class LeadController extends Controller
             'current_remark' => '',
             'past_remarks' => explode('~|~', $lead->remarks ?? ''),
             'tags' => $lead->tags->pluck('name')->toArray(),
+            'quotation_id' => $quotation?->id,
+            'version_id'   => $versionId,
         ]);
     }
 
@@ -519,6 +537,19 @@ class LeadController extends Controller
             ->exists();
 
         return response()->json(['exists' => $exists]);
+    }
+    public function getQuoteReferenceData(Request $request)
+    {
+        $products    = $request->input('products', []);
+        $distance    = (float) $request->input('distance_km', 0);
+        $locationId  = $request->input('delivery_location_id');
+        $includeDraft = filter_var($request->input('include_draft', false), FILTER_VALIDATE_BOOLEAN);
+
+        $service = new \App\Services\QuoteCalculatorService();
+
+        return response()->json(
+            $service->getQuoteReferenceData($products, $distance, $locationId, $includeDraft)
+        );
     }
 
 }

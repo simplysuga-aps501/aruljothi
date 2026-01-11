@@ -82,7 +82,7 @@ $(function () {
 
         if (state) {
             $.ajax({
-                url: "{{ route('rates.getDistricts') }}",
+                url: "{{ route('rates.getDistricts',[],false) }}",
                 data: { state },
                 success: function (districts) {
                     let options = '<option value="">-- Select District --</option>';
@@ -106,7 +106,7 @@ $(function () {
 
         if (state && district) {
             $.ajax({
-                url: "{{ route('rates.getPlaces') }}",
+                url: "{{ route('rates.getPlaces',[],false) }}",
                 data: { state, district },
                 success: function (places) {
                     let options = '';

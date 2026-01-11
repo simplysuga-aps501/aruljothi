@@ -155,20 +155,7 @@
                         <div class="col-md-4">
                             <label>&nbsp;</label>
                             <button type="button" class="btn btn-primary w-100" id="calculate_quote_btn">
-                                <i class="fas fa-calculator"></i> Dft Quote
-                            </button>
-                        </div>
-                        <div class="col-md-2">
-                            <label>&nbsp;</label> {{-- Keeps vertical alignment with other inputs --}}
-                            <button type="button" class="btn btn-secondary w-100" id="copy_whatsapp_text">
-                                <i class="fas fa-copy"></i> Copy
-                            </button>
-                        </div>
-
-                        <div class="col-md-2">
-                            <label>&nbsp;</label> {{-- Keeps vertical alignment with other inputs --}}
-                            <button type="button" class="btn btn-success w-100" id="send_whatsapp_btn">
-                                <i class="fab fa-whatsapp"></i>WhatsApp
+                                <i class="fas fa-calculator"></i> Calculate Draft Quote
                             </button>
                         </div>
                         <div class="quote_alert text-danger" style="display:none;"></div>
@@ -201,16 +188,6 @@
                             <small id="edit_followup_days_left" class="text-muted"></small>
                         </div>
 
-                        <!-- Status -->
-                        <div class="col-md-4">
-                            <x-adminlte-select name="status" label="Status" fgroup-class="mb-3" required>
-                                <option value="">Select Status</option>
-                                @foreach ($statuses as $status)
-                                    <option value="{{ $status }}">{{ $status }}</option>
-                                @endforeach
-                            </x-adminlte-select>
-                        </div>
-
                         <!-- Assigned To -->
                         <div class="col-md-4">
                             <x-adminlte-select name="assigned_to" label="Assigned To" fgroup-class="mb-3">
@@ -231,6 +208,28 @@
                             </select>
                         </div>
 
+                        <!-- Status -->
+                        <div class="col-md-4">
+                            <x-adminlte-select name="status" label="Status" fgroup-class="mb-3" required>
+                                <option value="">Select Status</option>
+                                @foreach ($statuses as $status)
+                                    <option value="{{ $status }}">{{ $status }}</option>
+                                @endforeach
+                            </x-adminlte-select>
+                        </div>
+
+                        <div class="col-md-2">
+                            <label>&nbsp;</label> {{-- Keeps vertical alignment with other inputs --}}
+                            <button type="button" class="btn btn-success w-100" id="sendStatusWhatsappBtn">
+                                <i class="fab fa-whatsapp"></i> WhatsApp
+                            </button>
+                        </div>
+                        <div class="col-md-2">
+                            <label>&nbsp;</label> {{-- Keeps vertical alignment with other inputs --}}
+                            <button type="button" class="btn btn-secondary w-100" id="copy_whatsapp_text">
+                                <i class="fas fa-copy"></i> Copy
+                            </button>
+                        </div>
                         <!-- Current Remark -->
                         <div class="col-md-12">
                             <x-adminlte-input name="current_remark" label="New Remark" placeholder="Add a remark"
@@ -260,7 +259,6 @@
     <script>
         $(document).ready(function() {
             var products = @json($productsArray);
-            console.log(products);
             // Open modal with AJAX
             $(document).on('click', '.open-edit-lead-modal', function() {
                 const leadId = $(this).data('lead-id');
@@ -271,6 +269,14 @@
                 modal.find('input:not([type=hidden]), select, textarea').val('');
                 modal.find('.product-pills').empty();
                 modal.find('.product-alert').addClass('d-none').text('');
+                modal.find('.quote_alert').hide().html('');
+                modal.find('input[name="quote_edit_data"]').val('');
+
+                // 🔹 Reset previous quote section completely
+                modal.find('#calcDetailsBody').empty();                 // clear quote table
+                modal.find('#calcDetailsCollapse').collapse('hide');    // collapse quote details
+                modal.find('#estimated_cost').val('');                  // clear estimated cost
+                modal.find('#calculate_quote_btn').text("Draft Quote"); // reset button text
 
                  // Get current tab from URL
                 const urlParams = new URLSearchParams(window.location.search);
@@ -333,8 +339,81 @@
                     // Initialize quote calculator after modal is shown
                     initDistanceDurationEditable();
                     initQuoteCalculator('#editLeadModal');
+
+                    // 🔹 Load related quotation details (read-only mode)
+                    // 🔹 Load related quotation details (read-only mode)
+                    // 🔹 Load related quotation details (read-only mode)
+                    if (data.quotation_id) {
+                        let dataUrl = `/quotations/${data.quotation_id}/data`;
+                        if (data.version_id) dataUrl += `?version_id=${data.version_id}`;
+
+                        $.get(dataUrl, function (quoteData) {
+                            const $calcBody = modal.find('#calcDetailsBody');
+
+                            if (quoteData.versionData) {
+                                modal.find('#calculate_quote_btn').text("Recalculate Quote");
+
+                                // Render read-only quotation view
+                                renderReadOnlyQuote(quoteData.versionData, $calcBody);
+                                modal.find('#calcDetailsCollapse').collapse('show');
+
+                                if (quoteData.versionData.net_total !== undefined) {
+                                    modal.find('#estimated_cost').val(quoteData.versionData.net_total);
+                                }
+
+                            } else {
+                                // 🟡 Quotation exists but has no version data
+                                const createUrl = `/quotations/create?lead_id=${leadId}`;
+                                $calcBody.html(`
+                                    <div class="alert alert-info text-center mb-0">
+                                        <i class="fas fa-info-circle"></i>
+                                        No quote has been generated yet.<br>
+                                        Click <strong>Draft Quote</strong> to create one, or
+                                        <a href="${createUrl}" target="_blank" rel="noopener"
+                                           class="btn btn-sm btn-primary mt-2">
+                                            <i class="fas fa-file-invoice"></i> Create Quotation
+                                        </a>
+                                    </div>
+                                `);
+                                modal.find('#calcDetailsCollapse').collapse('show');
+                                modal.find('#estimated_cost').val('');
+                                modal.find('#calculate_quote_btn').text("Draft Quote");
+                            }
+                        }).fail(function() {
+                            console.error('Failed to load quotation data.');
+                            modal.find('.quote_alert').show().text('Failed to load quotation details.');
+                        });
+
+                    } else {
+                        // 🟡 Lead has no quotation at all
+                        const createUrl = `/quotations/create?lead_id=${leadId}`;
+                        modal.find('#calcDetailsBody').html(`
+                          <div class="alert bg-light border text-center mb-0">
+                              <i class="fas fa-info-circle text-secondary"></i>
+                              No quote has been generated yet.<br>
+                              Click <strong>Draft Quote</strong> for quick quote, or
+                              <a href="${createUrl}" target="_blank" rel="noopener"> Create Quotation
+                              </a>
+                          </div>
+                        `);
+                        modal.find('#calcDetailsCollapse').collapse('show');
+                        modal.find('#estimated_cost').val('');
+                        modal.find('#calculate_quote_btn').text("Draft Quote");
+                    }
+
+                    $(document).on('change', '#editLeadModal select[name="status"]', function() {
+                        const selected = $(this).val();
+                        if (selected === 'Cancelled') {
+                            const send = confirm("Please send a WhatsApp message to inform the customer about cancellation.\n\nDo you want to open WhatsApp now?");
+                            if (send) {
+                                $('#sendStatusWhatsappBtn').trigger('click');
+                            }
+                        }
+                    });
+
                 });
             });
+
         });
     </script>
 @endpush

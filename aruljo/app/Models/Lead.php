@@ -74,4 +74,9 @@ class Lead extends Model implements AuditableContract
     {
         return $this->belongsTo(\App\Models\DistancePincode::class, 'delivery_location_id');
     }
+    public function quotations()
+    {
+        return $this->hasMany(\App\Models\Quotation\Quotation::class, 'lead_id');
+    }
+
 }

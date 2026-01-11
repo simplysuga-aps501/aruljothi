@@ -11,7 +11,7 @@ function initOfficePincodeAutocomplete(pincodeInput, locationInput, locationIdIn
             const pincode = request.term.trim();
             if (pincode.length === 6 && /^\d+$/.test(pincode)) {
                 $.ajax({
-                    url: '{{ route("distance.byPincode") }}',
+                    url: "{{ route('distance.byPincode',[],false) }}",
                     data: { pincode },
                     success: function (data) {
                         if (data?.places?.length > 0) {
