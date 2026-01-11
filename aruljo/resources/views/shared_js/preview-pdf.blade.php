@@ -34,7 +34,7 @@
             quote_edit_data: JSON.stringify(payload) // ✅ include products/trucks
         };
         $.ajax({
-            url: "{{ route('quotations.preview.pdf') }}",
+            url: "{{ route('quotations.preview.pdf',[],false) }}",
             method: "POST",
             data: {
                 _token: '{{ csrf_token() }}',

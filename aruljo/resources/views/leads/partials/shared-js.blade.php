@@ -65,7 +65,7 @@
                     let pincode = request.term.trim();
                     if (pincode.length === 6 && /^\d+$/.test(pincode)) {
                         $.ajax({
-                            url: '{{ route('distance.byPincode') }}',
+                            url: "{{ route('distance.byPincode',[],false) }}",
                             data: { pincode: pincode },
                             success: function(data) {
                                 if (data && data.places && data.places.length > 0) {
@@ -236,7 +236,7 @@
          loader.show();
 
          $.ajax({
-             url: '{{ route("leads.calculate-quote") }}',
+             url: "{{ route('leads.calculate-quote',[],false) }}",
              type: 'POST',
              data: {
                  _token: '{{ csrf_token() }}',

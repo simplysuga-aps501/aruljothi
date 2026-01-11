@@ -78,7 +78,7 @@ $('#confirmPincodeRate').on('click', function () {
 
     // 🔵 1️⃣ Update in DB via AJAX
     $.ajax({
-        url: "{{ route('rates.store') }}",
+        url: "{{ route('rates.store',[],false) }}",
         method: "POST",
         data: {
             _token: "{{ csrf_token() }}",

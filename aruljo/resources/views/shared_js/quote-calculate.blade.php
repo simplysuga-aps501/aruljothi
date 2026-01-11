@@ -36,7 +36,7 @@
 
             // Fetch reference data from backend
             $.ajax({
-                url: '{{ route("leads.reference-data") }}',
+                url: "{{ route('leads.reference-data',[],false) }}",
                 type: 'POST',
                 data: {
                     _token: '{{ csrf_token() }}',

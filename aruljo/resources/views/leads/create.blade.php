@@ -347,7 +347,7 @@
                     lastCheckedNumber = number;
 
                     $.ajax({
-                        url: '{{ route("leads.checkDuplicate") }}',
+                        url: "{{ route('leads.checkDuplicate',[],false) }}",
                         type: 'GET',
                         data: { buyer_contact: number },
                         success: function (response) {
