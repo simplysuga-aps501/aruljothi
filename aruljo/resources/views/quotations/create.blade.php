@@ -239,6 +239,11 @@
                             </div>
                         </div>
                     </div>
+                    {{-- ==================== ADDITIONAL INFORMATION ==================== --}}
+                    <div class="col-md-12 border rounded p-3 bg-light mt-3 quotation-main-section d-none">
+                        @include('quotations.additional_fields')
+                    </div>
+
                     {{-- ==================== PDF DETAILS ==================== --}}
                     <div class="col-md-12 border rounded p-3 bg-light mt-3 quotation-main-section d-none">
                         <h5 class="mb-3 text-primary">Quotation / PDF Details</h5>
@@ -253,7 +258,7 @@
                             </div>
 
                             <div class="col-md-12">
-                                @include('quotations.pdf-terms-builder')
+                                @include('quotations.pdf_terms_builder')
                             </div>
 
                             <div class="col-md-12">
@@ -514,6 +519,7 @@ $(document).ready(function() {
             $leadSelect.val(leadId).trigger('change'); // triggers your existing AJAX
         }
     })();
+
 
 });
 </script>

@@ -19,6 +19,13 @@
                     Set B: The above price includes loading and transportation; unloading is under client’s scope.
                 </label>
             </div>
+
+            <div class="form-check">
+                <input class="form-check-input term-option" type="checkbox" value="The above price includes loading, transportation and unloading." id="terms_set_b">
+                <label class="form-check-label" for="terms_set_b">
+                    Set C: The above price includes loading, transportation and unloading.
+                </label>
+            </div>
         </div>
 
         <div class="col-md-6">

@@ -246,8 +246,34 @@
                 </div>
 
                 <!-- ============================ MODAL FOOTER ============================ -->
-                <div class="modal-footer">
-                    <x-adminlte-button type="submit" label="Update Lead" theme="primary" />
+                <div class="modal-footer border-0">
+                    <div class="container-fluid px-0">
+                        <div class="row mt-2 px-2">
+                            {{-- Cancel --}}
+                            <div class="col-12 col-md-4 mb-2 mb-md-0">
+                                <button type="button" class="btn btn-secondary w-100" data-dismiss="modal">
+                                    <i class="fas fa-times"></i> Cancel
+                                </button>
+                            </div>
+
+                            {{-- Update Lead --}}
+                            <div class="col-12 col-md-4 mb-2 mb-md-0">
+                                <button type="submit" class="btn btn-primary w-100"
+                                    onclick="document.getElementById('edit_submit_action').value='save';">
+                                    <i class="fas fa-save"></i> Update Lead
+                                </button>
+                            </div>
+
+                            {{-- Update & Create Quote --}}
+                            <div class="col-12 col-md-4">
+                                <button type="submit" class="btn btn-success w-100"
+                                    onclick="document.getElementById('edit_submit_action').value='quote';">
+                                    <i class="fas fa-file-invoice-dollar"></i> Update & Create Quote
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <input type="hidden" name="submit_action" id="edit_submit_action" value="save">
                 </div>
                 <input type="hidden" name="tab" id="editLeadTab" value="">
         </form>
@@ -411,6 +437,51 @@
                         }
                     });
 
+                });
+            });
+            /// ================== EDIT LEAD FORM SUBMISSION ==================
+            $('#editLeadForm').on('submit', function(e) {
+                e.preventDefault();
+
+                const $form = $(this);
+                const action = $form.attr('action'); // /leads/3
+                const submitAction = $('#edit_submit_action').val();
+                const leadId = action.split('/').pop();
+
+                const $buttons = $form.find('button[type="submit"]');
+                $buttons.prop('disabled', true);
+
+                $.ajax({
+                    url: action,
+                    type: 'POST', // MUST be POST for Laravel PUT
+                    data: $form.serialize() + '&_method=PUT', // serialized form + override method
+                    success: function(response) {
+                        if (submitAction === 'quote') {
+                            if (response.redirect_to) {
+                                // ✅ Follow backend redirect
+                                window.location.href = response.redirect_to;
+                            } else {
+                                alert('No redirect URL returned by server.');
+                            }
+                        } else {
+                            $('#editLeadModal').modal('hide');
+                            location.reload();
+                        }
+                    },
+                    error: function(xhr) {
+                        if (xhr.status === 422 && xhr.responseJSON?.errors) {
+                            let msg = 'Please fix the following:\n\n';
+                            for (const [field, messages] of Object.entries(xhr.responseJSON.errors)) {
+                                msg += `• ${messages.join(', ')}\n`;
+                            }
+                            alert(msg);
+                        } else {
+                            alert('An error occurred while updating the lead.');
+                        }
+                    },
+                    complete: function() {
+                        $buttons.prop('disabled', false);
+                    }
                 });
             });
 

@@ -262,9 +262,9 @@
             const gst = parseFloat(((subtotal * gstRate) / 100).toFixed(2));
             const net = parseFloat((subtotal + gst).toFixed(2));
 
-            $('#subtotal').text('₹' + subtotal.toFixed(2));
-            $('#gst').text('₹' + gst.toFixed(2));
-            $('#net_total').text('₹' + Math.round(net).toLocaleString('en-IN'));
+            $('#subtotal').text(formatINR(subtotal));
+            $('#gst').text(formatINR(gst));
+            $('#net_total').text(formatINR(net));
 
 
             $('#truck_total_weight').text(
@@ -924,19 +924,17 @@
                 baseCost = fixedRate;
                 rateDisplay = fixedRate;
                 // ⚠️ Warning if missing
-                if (!fixedRate) {
-                    rateCellExtra = `
-                        <div class="rate-message text-danger small mt-1">
-                            ⚠️ Missing fixed rate
-                            <a href="#"
-                               class="text-primary text-decoration-underline open-rate-choice-modal"
-                               data-truck-id="${t.truckId}" data-truck-name="${truck.name}">
-                               Update
-                            </a>
-                        </div>`;
-                } else {
-                    rateCellExtra = `<div class="rate-message text-success small mt-1">✔ Rate set</div>`;
-                }
+                rateCellExtra = `
+                    <div class="rate-message ${!fixedRate ? 'text-danger' : 'text-success'} small mt-1">
+                        ${!fixedRate ? '⚠️ Missing fixed rate' : '✔ Rate set'}
+                        <a href="#"
+                           class="text-primary text-decoration-underline open-rate-choice-modal"
+                           data-truck-id="${t.truckId}"
+                           data-truck-name="${truck.name}"
+                           data-current-rate="${fixedRate || 0}">
+                           ${!fixedRate ? 'Set' : 'Update'}
+                        </a>
+                    </div>`;
             }
 
             const totalCost = baseCost + unloading;
@@ -1045,9 +1043,9 @@
         const net = subtotal + gst;
 
         // Update table footer
-        $('#subtotal').text('₹' + subtotal.toFixed(2));
-        $('#gst').text('₹' + gst.toFixed(2));
-        $('#net_total').text('₹' + Math.round(net).toLocaleString('en-IN'));
+        $('#subtotal').text(formatINR(subtotal));
+        $('#gst').text(formatINR(gst));
+        $('#net_total').text(formatINR(net));
 
 
         // Also update hidden estimated cost field if exists
@@ -1349,4 +1347,53 @@
         return valid;
     }
 
+    // ==========================================================
+        //Recalculate quote when distance or product is changed
+    // ==========================================================
+    // Distance/location changes
+    $(document).on('change', '#quote_distance_km', showQuoteRecalcAlert);
+
+    // Product changes
+    $(document).on('click', '.product-add', showQuoteRecalcAlert);
+    $(document).on('click', '.product-pill-remove', showQuoteRecalcAlert);
+
+    function showQuoteRecalcAlert() {
+        Swal.fire({
+            title: 'Quote Update',
+            html: 'The quote will be recalculated based on the latest distance or product changes.',
+            icon: 'info',
+            width: '300px',
+            showCancelButton: false, // no cancel button
+            confirmButtonText: 'OK',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            didOpen: () => {
+                        const popup = Swal.getPopup();
+                        popup.style.fontSize = '13px';
+                        popup.style.padding = '1rem';
+                        Swal.getTitle().style.fontSize = '15px';
+                        Swal.getConfirmButton().style.fontSize = '13px';
+                    }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Show loader before recalculation
+                $('#quote_loader').show();
+
+                // Trigger the recalculation
+                $('#calculate_quote_btn').trigger('click');
+
+                // Wait a small moment for calc (optional, if your calc sets net total asynchronously)
+                setTimeout(() => {
+                    $('#quote_loader').hide();
+                }, 500); // adjust based on calc time
+            }
+        });
+    }
+    function formatINR(amount) {
+                if (isNaN(amount)) amount = 0;
+                return '₹ ' + amount.toLocaleString('en-IN', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
+            }
 </script>

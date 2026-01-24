@@ -17,6 +17,16 @@
             return;
         }
 
+        // collect additional fields
+        const additional_fields = [];
+        $('.additional-field').each(function() {
+            const heading = $(this).find('input[name*="[heading]"]').val();
+            const content = $(this).find('input[name*="[content]"]').val();
+            if (heading || content) {
+                additional_fields.push({ heading, content });
+            }
+        });
+        console.log(additional_fields);
         // Build quoteData to match controller expectations
         const quoteData = {
             customer_name: $('#customer_name').val(),
@@ -31,7 +41,8 @@
             pdf_terms: $('#terms_preview_box').val(),
             pdf_delivery: $('#pdf_delivery').val(),
             pdf_date: $('#pdf_date').val(),
-            quote_edit_data: JSON.stringify(payload) // ✅ include products/trucks
+            quote_edit_data: JSON.stringify(payload), // ✅ include products/trucks
+            additional_fields: additional_fields
         };
         $.ajax({
             url: "{{ route('quotations.preview.pdf',[],false) }}",

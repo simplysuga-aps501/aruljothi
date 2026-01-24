@@ -81,92 +81,7 @@
                                     <th>Actions</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                @foreach ($leads as $index => $lead)
-                                    <tr>
-                                        <td>{{ $lead->id }}</td>
-                                        @if ($tab === 'all')
-                                            <td>{{ $lead->platform }}</td>
-                                        @endif
-
-
-
-                                        <td>
-                                            <a href="javascript:void(0);" class="open-edit-lead-modal"
-                                                data-lead-id="{{ $lead->id }}">
-
-                                                {{-- Show tags as badges first --}}
-                                                @foreach ($lead->tags as $tag)
-                                                    <span class="badge badge-info">{{ $tag->name }}</span>
-                                                @endforeach
-
-                                                {{-- Then show buyer name --}}
-                                                <span title="{{ $lead->buyer_name }}">
-                                                    {{ \Illuminate\Support\Str::limit($lead->buyer_name, 20) }}
-                                                </span>
-                                            </a>
-                                        </td>
-                                        <td data-order="{{ $lead->lead_date_order ?? '' }}">
-                                            @if ($lead->lead_date_formatted_short)
-                                                <span title="{{ $lead->lead_date_formatted_full }}">
-                                                    {{ $lead->lead_date_formatted_short }}
-                                                    <small class="text-muted">
-                                                        ({{ $lead->lead_date_daysago }})
-                                                    </small>
-                                                </span>
-                                            @else
-                                                <span class="text-muted">—</span>
-                                            @endif
-                                        </td>
-
-                                        <td>
-                                            <a href="tel:{{ $lead->buyer_contact }}"
-                                                onclick="copyPhone(event, '{{ $lead->buyer_contact }}')"
-                                                class="text-primary">{{ $lead->buyer_contact }}</a>
-                                            <a href="https://wa.me/91{{ $lead->buyer_contact }}" target="_blank"
-                                                class="ms-2">
-                                                <x-adminlte-button label="" icon="fab fa-whatsapp" theme="success" />
-                                            </a>
-                                        </td>
-                                        <td>{{ $lead->status }}</td>
-                                        <td>{{ $lead->assigned_to }}</td>
-                                        <td
-                                            @if ($lead->followup_order) data-order="{{ $lead->followup_order }}" @endif>
-                                            @if ($lead->followup_formatted)
-                                                <span
-                                                    class="
-                                                   {{ $lead->followup_is_today ? 'bg-warning text-dark px-2 py-1 rounded' : '' }}
-                                                   {{ $lead->followup_is_past ? 'bg-danger text-white px-2 py-1 rounded' : '' }}
-                                               ">
-                                                    {{ $lead->followup_formatted }}
-                                                </span>
-                                            @else
-                                                -
-                                            @endif
-                                        </td>
-
-                                        <td data-order="{{ $lead->last_updated_order }}">
-                                            <div class="d-flex align-items-center">
-                                                <small style="display:inline-block; min-width:70px;">
-                                                    {{ $lead->last_updated_text }}
-                                                </small>
-                                                <a href="{{ route('leads.audits', $lead->id) }}"
-                                                    class="btn btn-xs btn-outline-info ml-1" title="View Logs">
-                                                    <i class="fas fa-sticky-note"></i>
-                                                </a>
-                                                @role('admin')
-                                                    <i class="fas fa-trash text-danger"
-                                                        style="cursor:pointer; font-size:0.85rem; margin-left:8px;"
-                                                        data-toggle="modal" data-target="#deleteModal"
-                                                        onclick="setDeleteAction('{{ route('leads.destroy', $lead->id) }}')"></i>
-                                                @endrole
-                                            </div>
-
-                    </div>
-                    </td>
-                    </tr>
-                    @endforeach
-                    </tbody>
+                            <tbody></tbody>
                     </table>
                     @if ($tab === 'all')
                         <div class="alert alert-info py-2 px-3">
@@ -263,37 +178,33 @@
     @include('shared_js.product-autocomplete')
     <script>
         $(document).ready(function() {
-            new DataTable('#leads_table', {
-                responsive: true,
-                stateSave: true,
-                order: [],
-                // ordering: true, // allow sorting
-                columnControl: [
-                    ['orderAsc', 'orderDesc', 'search']
-                ],
-                language: {
-                    emptyTable: "No leads available for this tab."
-                },
-                pageLength: 25, // default selection
-                lengthMenu: [
-                    [10, 25, 50, 100, -1],
-                    [10, 25, 50, 100, "All"]
-                ],
-                stateSaveParams: function(settings, data) {
-                    // Always reset ordering before saving state
-                    data.order = [];
-                },
+            $('#leads_table').DataTable({
+                    processing: true,
+                    serverSide: true,
+                    ajax: "{{ route('leads.index', ['tab' => $tab]) }}",
+                    columns: [
+                        {data: 'DT_RowIndex', name: 'DT_RowIndex', orderable:false, searchable:false},
+                        @if ($tab === 'all')
+                            {data: 'platform', name: 'platform'},
+                        @endif
+                        {data: 'buyer', name: 'buyer_name'},
+                        {data: 'lead_date', name: 'lead_date'},
+                        {data: 'buyer_contact', name: 'buyer_contact'},
+                        {data: 'status', name: 'status'},
+                        {data: 'assigned_to', name: 'assigned_to'},
+                        {data: 'follow_up_date', name: 'follow_up_date'},
+                        {data: 'actions', name: 'actions', orderable:false, searchable:false},
+                    ],
+                    responsive: true,
+                    pageLength: 25,
+                    order: [],
+                    language: { emptyTable: "No leads available for this tab." }
+                });
+                setTimeout(() => {
+                    $('#flashSuccess').fadeOut();
+                }, 3000);
 
-                initComplete: function() {
-                    document.querySelector('#leads_table').classList.remove('opacity-0');
-                }
             });
-
-            setTimeout(() => {
-                $('#flashSuccess').fadeOut();
-            }, 3000);
-        });
-
         function setDeleteAction(actionUrl) {
             document.getElementById('deleteForm').setAttribute('action', actionUrl);
         }

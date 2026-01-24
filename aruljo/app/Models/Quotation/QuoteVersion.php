@@ -71,4 +71,9 @@ class QuoteVersion extends Model
     {
         return $this->belongsTo(DistancePincode::class, 'delivery_location_id');
     }
+    public function additionalFields()
+    {
+        return $this->hasMany(QuoteAdditionalField::class, 'quote_version_id')->orderBy('sort_order');
+    }
+
 }

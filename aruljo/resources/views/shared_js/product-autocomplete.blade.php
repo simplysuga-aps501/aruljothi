@@ -75,7 +75,7 @@ function initProductPills(containerSelector, productsList) {
                 var price = productObj ? parseFloat(productObj.price) : 0;
 
                 var pill = $('<span class="pill badge badge-info mr-1 mb-1">' + name + ' , ' + qty +
-                    ' <i class="fas fa-times ml-1" style="cursor:pointer;"></i></span>');
+                    ' <i class="product-pill-remove fas fa-times ml-1" style="cursor:pointer;"></i></span>');
 
                 pill.data({ name, id, sku, qty, weight, price });
 
@@ -89,7 +89,8 @@ function initProductPills(containerSelector, productsList) {
         }
 
         // ---------------- RE-BIND PILL CLICK (EDIT MODE) ----------------
-        pillsContainer.find('.pill').off('click').on('click', function (e) {
+        // ✅ Use delegated event binding so it works for newly added pills too
+        pillsContainer.off('click', '.pill').on('click', '.pill', function (e) {
             if ($(e.target).is('i')) return; // ignore delete icon
             const pill = $(this);
             searchInput.val(pill.data('name'));
@@ -97,6 +98,7 @@ function initProductPills(containerSelector, productsList) {
             pill.remove();
             updateProductTextarea(pillsContainer, textarea);
         });
+
     });
 }
 

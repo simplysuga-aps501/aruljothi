@@ -18,7 +18,8 @@
         "spatie/laravel-activitylog": "^4.10",
         "spatie/laravel-backup": "8.8",
         "spatie/laravel-permission": "^6.20",
-        "spatie/laravel-tags": "^4.10"
+        "spatie/laravel-tags": "^4.10",
+        "yajra/laravel-datatables-oracle": "^10.11"
     },
     "require-dev": {
         "fakerphp/faker": "^1.9.1",
@@ -34,7 +35,10 @@
             "App\\": "app/",
             "Database\\Factories\\": "database/factories/",
             "Database\\Seeders\\": "database/seeders/"
-        }
+        },
+        "files": [
+            "app/Helpers/helpers.php"
+        ]
     },
     "autoload-dev": {
         "psr-4": {

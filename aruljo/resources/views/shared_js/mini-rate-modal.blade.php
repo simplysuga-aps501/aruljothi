@@ -32,12 +32,14 @@
 let currentTruckContext = {};
 let currentRateCell = null;
 
-// 🟡 Open modal on “Update” click
+// 🟡 Open modal on “Set” or “Update” click
 $(document).on('click', '.open-rate-choice-modal', function (e) {
     e.preventDefault();
 
     const truckId = $(this).data('truck-id');
     const truckName = $(this).data('truck-name');
+    const currentRate = parseFloat($(this).data('current-rate')) || 0;
+
     const delivery_location_id = $('#quote_delivery_location_id, .delivery_location_id').val();
     const locationName = $('#quote_delivery_location').val() || 'Current Location';
 
@@ -48,13 +50,15 @@ $(document).on('click', '.open-rate-choice-modal', function (e) {
 
     currentRateCell = $(this).closest('td');
 
-    // Prefill existing rate
-    const existingRate = parseFloat(currentRateCell.find('input.fixed-rate').val()) || '';
-    $('#miniRateValue').val(existingRate);
+    // Prefill existing rate if any
+    $('#miniRateValue').val(currentRate > 0 ? currentRate : '');
 
     // Set labels
     $('#modalTruckName').text(`Truck: ${truckName}`);
     $('#modalLocationName').text(`Location: ${locationName}`);
+
+    // Update modal title dynamically
+    $('#chooseRateUpdateLabel').text(currentRate > 0 ? 'Update Fixed Rate' : 'Set New Fixed Rate');
 
     // Show modal
     $('#chooseRateUpdateModal').modal('show');
@@ -64,7 +68,10 @@ $(document).on('click', '.open-rate-choice-modal', function (e) {
 // 🟢 Confirm & update rate (DB + screen)
 $('#confirmPincodeRate').on('click', function () {
     const rate = parseFloat($('#miniRateValue').val());
-    if (isNaN(rate) || rate <= 0) return alert('Please enter a valid rate');
+    if (isNaN(rate) || rate <= 0) {
+        SwalCompact.alert('Invalid Input', 'Please enter a valid rate.');
+        return;
+    }
 
     const $button = $('#confirmPincodeRate');
     const $spinner = $button.find('.spinner-border');
@@ -76,9 +83,9 @@ $('#confirmPincodeRate').on('click', function () {
     $text.text('Updating...');
     $button.prop('disabled', true);
 
-    // 🔵 1️⃣ Update in DB via AJAX
+    // 🔵 Update or create rate in DB
     $.ajax({
-        url: "{{ route('rates.store',[],false) }}",
+        url: "{{ route('rates.store', [], false) }}",
         method: "POST",
         data: {
             _token: "{{ csrf_token() }}",
@@ -87,7 +94,7 @@ $('#confirmPincodeRate').on('click', function () {
             location_id: [locationId]
         },
         success: function () {
-            // ✅ 2️⃣ Update all rows for same truck type in screen
+            // ✅ Update all matching rows in table
             $('#transportTable tr').each(function () {
                 const $row = $(this);
                 const link = $row.find('.open-rate-choice-modal');
@@ -95,7 +102,8 @@ $('#confirmPincodeRate').on('click', function () {
 
                 if (rowTruckId === truckId) {
                     $row.find('input.fixed-rate').val(rate.toFixed(2));
-                    $row.find('.rate-message').html(`<div class="text-success small mt-1">✔ Rate updated</div>`);
+                    $row.find('.rate-message')
+                        .html(`<div class="text-success small mt-1">✔ Rate updated</div>`);
 
                     const unloading = parseFloat($row.find('.unloading-cost').val()) || 0;
                     const total = rate + unloading;
@@ -103,7 +111,7 @@ $('#confirmPincodeRate').on('click', function () {
                 }
             });
 
-            // ✅ 3️⃣ Update in-memory cache
+            // ✅ Update in-memory cache
             window.lastDistrictRates = window.lastDistrictRates || [];
             const match = window.lastDistrictRates.find(r =>
                 r.truck_type_id == truckId && r.location_id == locationId
@@ -118,15 +126,15 @@ $('#confirmPincodeRate').on('click', function () {
                 });
             }
 
-            // ✅ 4️⃣ Close modal & refresh totals
+            // ✅ Close modal & refresh totals
             $('#chooseRateUpdateModal').modal('hide');
             updateTransportTotal();
+
+            Swal.fire('Success', 'Rate saved successfully!', 'success');
         },
         error: function (xhr) {
             console.error(xhr.responseText);
-            currentRateCell.find('.rate-message').html(
-                `<div class="text-danger small mt-1">✖ Failed to update rate</div>`
-            );
+            Swal.fire('Error', 'Failed to update rate.', 'error');
         },
         complete: function () {
             $spinner.addClass('d-none');
@@ -136,5 +144,5 @@ $('#confirmPincodeRate').on('click', function () {
     });
 });
 </script>
-
 @endpush
+

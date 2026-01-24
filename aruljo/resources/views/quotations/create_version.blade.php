@@ -184,7 +184,7 @@
                 </div>
                 {{-- ==================== CUSTOMER DETAILS ==================== --}}
                 <div class="col-md-12 border rounded p-3 bg-light mt-3">
-                    <h5 class="mb-3 text-primary">Customer Information</h5>
+                    <h6 class="mb-3 text-primary">Customer Information</h5>
 
                     <div class="row">
                         {{-- Name --}}
@@ -254,6 +254,11 @@
                         </div>
                     </div>
                 </div>
+                {{-- ==================== ADDITIONAL INFORMATION ==================== --}}
+                <div class="col-md-12 border rounded p-3 bg-light mt-3 ">
+                    <h6 class="mb-3 text-primary">Additional Information</h6>
+                    @include('quotations.additional_fields')
+                </div>
                 {{-- ==================== PDF DETAILS ==================== --}}
                 <div class="col-md-12 border rounded p-3 bg-light mt-3 ">
                     <h6 class="mb-3 text-primary">Quotation / PDF Details</h6>
@@ -269,7 +274,7 @@
                                 label="Subject" placeholder="Quotation subject"/>
                         </div>
                         <div class="col-md-12">
-                            @include('quotations.pdf-terms-builder')
+                            @include('quotations.pdf_terms_builder')
                         </div>
 
                         <div class="col-md-12">
@@ -493,6 +498,52 @@ $(document).ready(function () {
                 data.versionData.pdf?.pdf_delivery ||
                 "Delivery will be made to the address mentioned above within the agreed timeline."
             );
+
+            // ===== PREFILL ADDITIONAL FIELDS =====
+            $('#additional-fields-container').empty(); // clear existing fields
+
+            if (Array.isArray(data.versionData.additionalFields)) {
+                let fieldIndex = 0;
+                data.versionData.additionalFields.forEach(field => {
+                    const html = `
+                        <div class="additional-field row mb-2">
+                            <div class="col-md-5">
+                                <label for="additional_fields_${fieldIndex}_heading">Heading</label>
+                                <input type="text"
+                                       class="form-control"
+                                       id="additional_fields_${fieldIndex}_heading"
+                                       name="additional_fields[${fieldIndex}][heading]"
+                                       value="${field.heading || ''}"
+                                       placeholder="Heading" />
+                            </div>
+                            <div class="col-md-5">
+                                <label for="additional_fields_${fieldIndex}_content">Content</label>
+                                <input type="text"
+                                       class="form-control"
+                                       id="additional_fields_${fieldIndex}_content"
+                                       name="additional_fields[${fieldIndex}][content]"
+                                       value="${field.content || ''}"
+                                       placeholder="Content" />
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end">
+                                <button type="button" class="btn btn-danger remove-field w-100">
+                                    <i class="fas fa-times"></i> Remove
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    $('#additional-fields-container').append(html);
+                    fieldIndex++;
+                });
+            } else {
+                // If no additional fields, render one empty field as default
+                $('#add-field').trigger('click');
+            }
+
+            // Remove handler
+            $(document).off('click', '.remove-field').on('click', '.remove-field', function() {
+                $(this).closest('.additional-field').remove();
+            });
 
             initProductPills(".product-pills-container", products);
             $(".product-pills-container .product-search").autocomplete({

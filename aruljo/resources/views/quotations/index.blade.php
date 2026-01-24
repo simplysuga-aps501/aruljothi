@@ -34,65 +34,6 @@
                                     <th>Actions</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                @foreach ($quotations as $quotation)
-                                    <tr>
-                                        <td>{{ $quotation->quote_number }}</td>
-                                        <td>{{ $quotation->lead->id }}</td>
-                                        <td>
-                                            @if($quotation->lead)
-                                                <a href="{{ route('quotations.create-version', $quotation->id) }}">
-                                                    {{ $quotation->lead->buyer_name }}
-                                                </a>
-                                            @else
-                                                -
-                                            @endif
-                                        </td>
-                                        <td>
-                                            @if ($quotation->lead && $quotation->lead->buyer_contact)
-                                                @php
-                                                    // Clean and normalize phone number
-                                                    $contact = preg_replace('/\D/', '', $quotation->lead->buyer_contact);
-                                                    if (strlen($contact) == 10) {
-                                                        $contact = '91' . $contact; // Add country code if missing
-                                                    }
-                                                    $whatsappUrl = "https://wa.me/{$contact}";
-                                                    $callUrl = "tel:+{$contact}";
-                                                @endphp
-
-                                                {{-- Click to Call --}}
-                                                <a href="{{ $callUrl }}"
-                                                   class="text-primary"
-                                                   title="Click to call">
-                                                    {{ $quotation->lead->buyer_contact }}
-                                                </a>
-
-                                                {{-- WhatsApp link --}}
-                                                <a href="{{ $whatsappUrl }}"
-                                                   target="_blank"
-                                                   class="text-success ml-2"
-                                                   title="Chat on WhatsApp">
-                                                    <i class="fab fa-whatsapp fa-lg"></i>
-                                                </a>
-                                            @else
-                                                -
-                                            @endif
-                                        </td>
-                                        <td>{{ number_format($quotation->total_amount, 2) }}</td>
-                                        <td>{{ $quotation->modifier->name ?? $quotation->creator->name ?? '-' }}</td>
-                                        <td>{{ $quotation->updated_at?->format('d-M-Y H:i') }}</td>
-                                        <td>
-                                            <div class="d-flex align-items-center">
-                                                {{-- PDF Download --}}
-                                                <button class="btn btn-xs btn-danger ml-1 download-pdf" title="Download PDF"
-                                                        data-id="{{ $quotation->id }}">
-                                                    <i class="fas fa-file-pdf"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
                         </table>
                     </div>
                 </div>
@@ -125,18 +66,31 @@
     @include('shared_js.pdf-download')
     <script>
         $(document).ready(function() {
-            new DataTable('#quotationsTable', {
-                responsive: true,
-                pageLength: 25,
-                order: [[0, 'desc']],
-                language: {
-                    emptyTable: "No quotations found."
-                },
-                stateSave: true,
-                stateSaveParams: function(settings, data) {
-                    data.order = [];
-                }
+            $(function () {
+                $('#quotationsTable').DataTable({
+                    processing: true,
+                    serverSide: true,
+                    ajax: "{{ route('quotations.index') }}",
+                    columns: [
+                        { data: 'quote_number', name: 'quote_number' },
+                        { data: 'lead_no', name: 'lead.id', orderable: false },
+                        { data: 'buyer_name', name: 'lead.buyer_name', orderable: false },
+                        { data: 'contact', name: 'lead.buyer_contact', orderable: false, searchable: false },
+                        { data: 'amount', name: 'total_amount' },
+                        { data: 'modified_by', name: 'modifier.name', orderable: false },
+                        { data: 'last_updated', name: 'updated_at' },
+                        { data: 'actions', name: 'actions', orderable: false, searchable: false }
+                    ],
+                    order: [[0, 'desc']],
+                    responsive: true,
+                    pageLength: 25,
+                    language: { emptyTable: "No quotations found." },
+                });
+
+                // Optional: fade success message
+                setTimeout(() => $('#flashSuccess').fadeOut(), 3000);
             });
+
 
             setTimeout(() => $('#flashSuccess').fadeOut(), 3000);
 

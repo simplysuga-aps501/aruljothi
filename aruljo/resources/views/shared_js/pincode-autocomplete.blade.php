@@ -86,7 +86,7 @@
                         .done(function(data) {
                             $(loader).hide();
                             if (data.distance_km != null && data.duration_minutes != null) {
-                                $(distanceInput).val(Math.round(parseFloat(data.distance_km)));
+                                $(distanceInput).val(Math.round(parseFloat(data.distance_km))).trigger('change');
                                 $(durationInput).val(Math.round(parseFloat(data.duration_minutes)));
                                 $error.hide();
                             } else {

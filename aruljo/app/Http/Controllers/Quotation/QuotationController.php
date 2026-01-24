@@ -14,6 +14,7 @@ use App\Models\Quotation\QuoteVersion;
 use App\Models\Quotation\QuoteTruck;
 use App\Models\Quotation\QuoteTruckProduct;
 use App\Models\Quotation\QuotePriceDetail;
+use App\Models\Quotation\QuoteAdditionalField;
 
 use App\Models\Product\Product;
 use App\Models\Lead;
@@ -24,19 +25,53 @@ use App\Models\Transport\TruckCapacity;
 use App\Models\Transport\TpKmMultiplier;
 use App\Models\Customer;
 use Illuminate\Support\Str;
+use Yajra\DataTables\Facades\DataTables;
 
 class QuotationController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $quotations = Quotation::with(['lead', 'creator', 'versions', 'activeVersion'])
+        if ($request->ajax()) {
+            $query = Quotation::with(['lead', 'creator', 'modifier', 'activeVersion'])
                 ->whereHas('lead', function ($q) {
                     $q->where('status', '!=', 'Cancelled');
                 })
-                ->latest()
-                ->get();
+                ->latest();
 
-        return view('quotations.index', compact('quotations'));
+            return DataTables::of($query)
+                ->addColumn('lead_no', fn($q) => $q->lead->id ?? '-')
+                ->addColumn('buyer_name', function ($q) {
+                    if (!$q->lead) return '-';
+                    $url = route('quotations.create-version', $q->id);
+                    return '<a href="'.$url.'">'.$q->lead->buyer_name.'</a>';
+                })
+                ->addColumn('contact', function ($q) {
+                    if (!$q->lead || !$q->lead->buyer_contact) return '-';
+                    $contact = preg_replace('/\D/', '', $q->lead->buyer_contact);
+                    if (strlen($contact) == 10) $contact = '91' . $contact;
+                    $whatsappUrl = "https://wa.me/{$contact}";
+                    $callUrl = "tel:+{$contact}";
+                    return '
+                        <a href="'.$callUrl.'" class="text-primary" title="Click to call">'
+                            .$q->lead->buyer_contact.'</a>
+                        <a href="'.$whatsappUrl.'" target="_blank" class="text-success ml-2" title="Chat on WhatsApp">
+                            <i class="fab fa-whatsapp fa-lg"></i>
+                        </a>
+                    ';
+                })
+                ->addColumn('amount', fn($q) => formatIndianCurrency($q->total_amount))
+                ->addColumn('modified_by', fn($q) => $q->modifier->name ?? $q->creator->name ?? '-')
+                ->addColumn('last_updated', fn($q) => $q->updated_at?->format('d-M-Y H:i'))
+                ->addColumn('actions', function ($q) {
+                    return '<button class="btn btn-xs btn-danger download-pdf" data-id="'.$q->id.'">
+                                <i class="fas fa-file-pdf"></i>
+                            </button>';
+                })
+                ->rawColumns(['buyer_name', 'contact', 'actions'])
+                ->make(true);
+        }
+
+        return view('quotations.index');
     }
 
     public function create()
@@ -199,6 +234,19 @@ class QuotationController extends Controller
                 'pdf_delivery' => $request->pdf_delivery ?? 'Materials are readily available. We can supply your requirement within 2 days as per your delivery schedule after placing your order.',
 
             ]);
+            // 🧩 Save Additional Fields
+            if ($request->filled('additional_fields')) {
+                foreach ($request->input('additional_fields') as $index => $field) {
+                    if (!empty($field['heading']) && !empty($field['content'])) {
+                        QuoteAdditionalField::create([
+                            'quote_version_id' => $version->id, // or $version->quotation_id (same)
+                            'heading'       => $field['heading'],
+                            'content'       => $field['content'],
+                            'sort_order'  => $index,
+                        ]);
+                    }
+                }
+            }
 
             // 🛻 Trucks + Products
             foreach ($request->trucks as $truckData) {
@@ -375,7 +423,7 @@ class QuotationController extends Controller
     public function previewPdf(Request $request)
     {
         try {
-            // Decode your live form data from JS
+            // Decode the JS payload (quote data)
             $payload = [];
             if ($request->filled('quote_edit_data')) {
                 $decoded = json_decode($request->quote_edit_data, true);
@@ -384,8 +432,8 @@ class QuotationController extends Controller
                 }
             }
 
-            // Build a mock quotation object (no DB save)
-            $quotation = (object) [
+            // Mock quotation (not saved)
+            $quotation = (object)[
                 'quote_number' => 'PREVIEW',
                 'modifier' => Auth::user(),
                 'lead' => (object)[
@@ -395,8 +443,8 @@ class QuotationController extends Controller
                 ],
             ];
 
-            // Build mock version object
-            $version = (object) [
+            // Mock version (like Version model)
+            $version = (object)[
                 'version_number' => 0,
                 'customer_name' => $request->customer_name,
                 'customer_contact' => $request->customer_contact,
@@ -413,12 +461,12 @@ class QuotationController extends Controller
                 'gst_rate' => 18,
             ];
 
-            // ✅ Rebuild priceDetails array from JS payload
+            // 🔹 Convert price details (from JS)
             $version->priceDetails = collect($payload['prices'] ?? [])->map(function ($p) {
                 return (object)[
                     'product' => (object)[
                         'name' => $p['product_name'] ?? 'Product',
-                        'unit' => (object)['name' => 'Nos']
+                        'unit' => (object)['name' => $p['unit_name'] ?? 'Nos'],
                     ],
                     'unit_price' => $p['unit_price'] ?? 0,
                     'transport_unit' => $p['transport_unit'] ?? 0,
@@ -428,16 +476,28 @@ class QuotationController extends Controller
                 ];
             });
 
+            // 🔹 Trucks
             $version->trucks = collect($payload['trucks'] ?? [])->map(fn($t) => (object)$t);
 
-            // 🔹 Prepare data identical to downloadVersion()
+            // ✅ NEW: Add support for Additional Fields
+            // These come from your form inputs, probably like additional_fields[0][heading], additional_fields[0][content]
+            $additional = collect($request->input('additional_fields', []))
+                ->filter(fn($f) => !empty($f['heading']) || !empty($f['content']))
+                ->map(fn($f) => (object)[
+                    'heading' => $f['heading'] ?? '',
+                    'content' => $f['content'] ?? '',
+                ]);
+
+            $version->additionalFields = $additional;
+
+            // Final data passed to view
             $data = [
                 'quotation' => $quotation,
-                'version'   => $version,
-                'trucks'    => $version->trucks,
+                'version' => $version,
+                'trucks' => $version->trucks,
             ];
 
-            // 🧾 Reuse the same PDF blade
+            // Generate PDF
             $pdf = \PDF::setOptions([
                 'isRemoteEnabled' => false,
                 'chroot' => public_path(),
@@ -448,10 +508,11 @@ class QuotationController extends Controller
                 ->header('Content-Type', 'application/pdf');
 
         } catch (\Throwable $e) {
-            \Log::error('❌ Preview PDF failed: '.$e->getMessage());
+            \Log::error('❌ Preview PDF failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
             return response()->json(['error' => 'PDF generation failed.'], 500);
         }
     }
+
 
     public function fetchQuotationData($id)
     {
@@ -460,6 +521,7 @@ class QuotationController extends Controller
             'creator',
             'versions.trucks.products.product',
             'versions.priceDetails.product',
+            'versions.additionalFields',
         ])->findOrFail($id);
 
         // ✅ Allow ?version_id=xx to fetch that specific version
@@ -516,6 +578,17 @@ class QuotationController extends Controller
 
         // ✅ Full quote structure (trucks, price, etc.)
         $versionData = $this->getDbVersionData($version->id)->getData(true);
+
+        // Additional fields for this version
+        $additionalFields = $version->additionalFields
+            ->sortBy('sort_order')
+            ->map(fn($f) => [
+                'heading' => $f->heading,
+                'content' => $f->content,
+            ])->values()->toArray();
+
+        // Merge additional fields into versionData
+        $versionData['additionalFields'] = $additionalFields;
 
         // ✅ Merge versionData into main response
         return response()->json([
@@ -674,6 +747,7 @@ class QuotationController extends Controller
             'trucks.truckType',
             'trucks.products.product',
             'priceDetails.product',
+            'additionalFields',
         ])->findOrFail($versionId);
 
         // 🟢 Access lead details through quotation
@@ -775,6 +849,14 @@ class QuotationController extends Controller
                 'pdf_terms' => $version->pdf_terms ?? 'The above price includes loading and transportation. Unloading is under client scope.',
                 'pdf_delivery' => $version->pdf_delivery ?? 'Materials are readily available. We can supply your requirement within 2 days as per your delivery schedule after placing your order.',
             ],
+
+            // 🟢 Additional fields
+            'additionalFields' => $version->additionalFields
+                ->sortBy('sort_order') // optional, keep original order
+                ->map(fn($f) => [
+                    'heading' => $f->heading,
+                    'content' => $f->content,
+                ])->values()->toArray(),
 
             // 🟢 Static lists
             'available_trucks' => TruckType::select(

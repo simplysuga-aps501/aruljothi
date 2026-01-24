@@ -3,21 +3,22 @@
 namespace App\Exports;
 
 use App\Models\Lead;
-use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
+use Maatwebsite\Excel\Concerns\WithChunkReading;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class LeadsExport implements FromCollection, WithHeadings, WithMapping, WithStyles, WithColumnWidths
+class LeadsExport implements FromQuery, WithHeadings, WithMapping, WithStyles, WithColumnWidths, WithChunkReading
 {
     /**
-     * Fetch all leads (including soft-deleted)
+     * Use a query instead of fetching everything
      */
-    public function collection()
+    public function query()
     {
-        return Lead::with(['location'])->withTrashed()->orderBy('id', 'desc')->get();
+        return Lead::with(['location'])->withTrashed()->orderBy('id', 'desc');
     }
 
     /**
@@ -49,19 +50,15 @@ class LeadsExport implements FromCollection, WithHeadings, WithMapping, WithStyl
     }
 
     /**
-     * Map each lead record to export row
+     * Map each lead to row
      */
     public function map($lead): array
     {
         $location = $lead->location;
 
-        // Combine location details (as shown in UI)
-        $deliveryLocation = 'N/A';
-        if ($location) {
-            $deliveryLocation = "{$location->place}, {$location->district}, {$location->state} - {$location->pincode}";
-        }
-
-
+        $deliveryLocation = $location
+            ? "{$location->place}, {$location->district}, {$location->state} - {$location->pincode}"
+            : 'N/A';
 
         return [
             $lead->id,
@@ -87,35 +84,35 @@ class LeadsExport implements FromCollection, WithHeadings, WithMapping, WithStyl
     }
 
     /**
-     * Set column widths
+     * Column widths
      */
     public function columnWidths(): array
     {
         return [
-            'A' => 6,   // ID
-            'B' => 20,  // Platform
-            'C' => 20,  // Lead Date
-            'D' => 25,  // Buyer Name
-            'E' => 25,  // Buyer Location
-            'F' => 15,  // Buyer Contact
-            'G' => 25,  // Platform Keyword
-            'H' => 40,  // Product Detail
-            'I' => 40,  // Delivery Location
-            'J' => 20,  // Expected Delivery Date
-            'K' => 40,  // Remarks
-            'L' => 20,  // Follow Up Date
-            'M' => 15,  // Status
-            'N' => 20,  // Assigned To
-            'O' => 30,  // User Log
-            'P' => 20,  // Modified By
-            'Q' => 20,  // Deleted At
-            'R' => 20,  // Created At
-            'S' => 20,  // Updated At
+            'A' => 6,
+            'B' => 20,
+            'C' => 20,
+            'D' => 25,
+            'E' => 25,
+            'F' => 15,
+            'G' => 25,
+            'H' => 40,
+            'I' => 40,
+            'J' => 20,
+            'K' => 40,
+            'L' => 20,
+            'M' => 15,
+            'N' => 20,
+            'O' => 30,
+            'P' => 20,
+            'Q' => 20,
+            'R' => 20,
+            'S' => 20,
         ];
     }
 
     /**
-     * Add styles (bold header + borders)
+     * Styles
      */
     public function styles(Worksheet $sheet)
     {
@@ -123,5 +120,13 @@ class LeadsExport implements FromCollection, WithHeadings, WithMapping, WithStyl
         $sheet->getStyle('A1:S1')->getBorders()->getBottom()->setBorderStyle('thin');
         $sheet->getDefaultRowDimension()->setRowHeight(18);
         return [];
+    }
+
+    /**
+     * Chunk size for query
+     */
+    public function chunkSize(): int
+    {
+        return 1000; // fetch 1000 rows at a time
     }
 }

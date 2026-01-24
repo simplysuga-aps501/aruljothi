@@ -311,15 +311,7 @@
          drafts.forEach((truckData, i) => {
              let totalWeight = 0;
 
-             // main truck row
-             html += `
-                 <tr>
-                     <td>${i + 1}</td>
-                     <td>${getTruckName(trucks, truckData.truck_id)}</td>
-                     <td>${truckData.body_type || 'Truck'}</td>`;
-
-             // loop products inside this truck directly
-             truckData.items.forEach(item => {
+             truckData.items.forEach((item, j) => {
                  const p = products.find(p => p.id === item.product_id);
                  const allocated = parseFloat(item.qty || 0);
                  const requested = parseFloat(item.requested_qty || 0);
@@ -328,14 +320,19 @@
                  const maxAllowed = parseFloat(item.max_allowed_qty || 0);
 
                  html += `
-                     <td>${p ? p.sku : '-'}</td>
+                     <tr>
+                         ${j === 0 ? `<td rowspan="${truckData.items.length}">${i + 1}</td>` : ''}
+                         ${j === 0 ? `<td rowspan="${truckData.items.length}">${getTruckName(trucks, truckData.truck_id)}</td>` : ''}
+                         ${j === 0 ? `<td rowspan="${truckData.items.length}">${truckData.body_type || 'Truck'}</td>` : ''}
+
+                         <td>${p ? p.sku : '-'}</td>
                          <td>${maxAllowed}</td>
                          <td>${allocated} – ${requested}</td>
-                         <td>${Math.round(weight)} kg</td>`;
+                         <td>${Math.round(weight)} kg</td>
+                     </tr>`;
              });
 
              html += `
-                 </tr>
                  <tr class="table-light text-end">
                      <td colspan="6"><strong>Truck ${i + 1} Total:</strong></td>
                      <td>${Math.round(totalWeight)} kg</td>
