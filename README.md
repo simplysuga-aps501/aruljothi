@@ -5,6 +5,7 @@ git clone git@github-aps:simplysuga-aps501/aruljothi.git aruljothi
 
 cd aruljothi/aruljo
 
+
 cp .env.example .env
 
 composer install --no-dev --optimize-autoloader
