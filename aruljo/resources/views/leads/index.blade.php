@@ -181,7 +181,7 @@
             $('#leads_table').DataTable({
                     processing: true,
                     serverSide: true,
-                    ajax: "{{ route('leads.index', ['tab' => $tab]) }}",
+                    ajax: "{{ route('leads.index', ['tab' => $tab]), [] , false }}",
                     columns: [
                         {data: 'DT_RowIndex', name: 'DT_RowIndex', orderable:false, searchable:false},
                         @if ($tab === 'all')

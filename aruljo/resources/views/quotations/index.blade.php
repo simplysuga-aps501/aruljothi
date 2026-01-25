@@ -70,7 +70,7 @@
                 $('#quotationsTable').DataTable({
                     processing: true,
                     serverSide: true,
-                    ajax: "{{ route('quotations.index') }}",
+                    ajax: "{{ route('quotations.index'),[],false }}",
                     columns: [
                         { data: 'quote_number', name: 'quote_number' },
                         { data: 'lead_no', name: 'lead.id', orderable: false },
