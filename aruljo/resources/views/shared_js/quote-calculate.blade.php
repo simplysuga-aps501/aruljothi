@@ -110,10 +110,7 @@
     // ================================================================
     // Master function to render all quote calculation tables
     function renderManualQuoteTables(data, $target) {
-        console.log('🔍 renderManualQuoteTables start', {
-          oldDistrictRates: window.lastDistrictRates,
-          incomingDistrictRates: data.district_rates
-        });
+
         // Extract data arrays from response
         const trucks = data.available_trucks || [];
         const products = data.available_products || [];
@@ -130,7 +127,7 @@
         window.lastKmMultipliers = multipliers;
         window.lastDistance = distance;
         window.truck_capacities = capacities;
-
+        console.log(window.lastKmMultipliers);
         // 1️⃣ Build base structure (empty tables)
         $target.html(buildTruckAllocationHTML(trucks, products));
         $target.append(buildTransportTableHTML(distance));
@@ -207,27 +204,48 @@
 
         // 4️⃣ EDIT MODE LOGIC — display DB data only (no recalculation)
         if (data.is_edit_mode) {
-            // Prefill transport costs exactly from DB
             const $tbody = $('#transportTable tbody');
             $tbody.empty();
 
             (data.transport || []).forEach((row, i) => {
-                const rate = parseFloat(row.rate || 0).toFixed(2);
-                const unloading = parseFloat(row.unloading || 0).toFixed(2);
-                const cost = parseFloat(row.cost || 0).toFixed(2);
+                const rate = parseFloat(row.rate || 0);
+                const unloading = parseFloat(row.unloading || 0);
+                const cost = parseFloat(row.cost || 0);
                 const multiplier = row.multiplier || (data.distance_km < 150 ? '1' : '-');
                 const distanceVal = parseFloat(row.distance || data.distance_km || 0).toFixed(1);
+                const isOpenBody = (row.body_type || '').toLowerCase() === 'open';
+
+                // 🟢 Label + link setup just like refreshTransportTable
+                let rateTypeLabel = isOpenBody ? 'Rate/km' : 'Fixed Rate (₹)';
+                let rateCellExtra = '';
+
+                if (!isOpenBody) {
+                    const fixedRate = rate;
+                    rateCellExtra = `
+                        <div class="rate-message ${!fixedRate ? 'text-danger' : 'text-success'} small mt-1">
+                            ${!fixedRate ? '⚠️ Missing fixed rate' : '✔ Rate set'}
+                            <a href="#"
+                               class="text-primary text-decoration-underline open-rate-choice-modal"
+                               data-truck-id="${row.truck_type_id || ''}"
+                               data-truck-name="${row.truck_name || ''}"
+                               data-current-rate="${fixedRate || 0}">
+                               ${!fixedRate ? 'Set' : 'Update'}
+                            </a>
+                        </div>`;
+                }
 
                 $tbody.append(`
-                    <tr>
+                    <tr class="allocation-row">
                         <td>${i + 1}</td>
-                        <td>${row.truck_name}</td>
+                        <td>${row.truck_name}<br><small class="text-muted">${row.body_type}</small></td>
                         <td>
                             <input type="number"
-                                class="form-control form-control-sm ${data.distance_km < 150 ? 'rate-km' : 'fixed-rate'}"
-                                value="${rate}" step="0.01">
+                                class="form-control form-control-sm ${isOpenBody ? 'rate-km' : 'fixed-rate'}"
+                                value="${rate.toFixed(2)}" step="0.01">
+                            <label class="small text-muted">${rateTypeLabel}</label>
+                            ${rateCellExtra}
                         </td>
-                        <td>${multiplier}</td>
+                        <td class="multiplier">${isOpenBody ? multiplier : '-'}</td>
                         <td>
                             <input type="number"
                                 class="form-control form-control-sm transport-distance"
@@ -236,14 +254,14 @@
                         <td>
                             <input type="number"
                                 class="form-control form-control-sm unloading-cost"
-                                value="${unloading}" step="0.01">
+                                value="${unloading.toFixed(2)}" step="0.01">
                         </td>
-                        <td class="transport-cost">₹${cost}</td>
+                        <td class="transport-cost">₹${cost.toFixed(2)}</td>
                     </tr>
                 `);
             });
 
-            // Prefill price table directly from DB data
+            // 🟢 Prefill price table
             $('#priceTable tbody tr').each(function () {
                 const productId = parseInt($(this).data('product-id'));
                 const db = (data.available_products || []).find(p => p.id === productId);
@@ -256,7 +274,7 @@
                 $(this).find('.total').text('₹' + (db.total_price || 0));
             });
 
-            // Prefill totals section with 2-decimal precision
+            // 🟢 Prefill totals
             const subtotal = parseFloat(data.subtotal || 0);
             const gstRate = parseFloat(data.gst_rate || 18);
             const gst = parseFloat(((subtotal * gstRate) / 100).toFixed(2));
@@ -266,7 +284,6 @@
             $('#gst').text(formatINR(gst));
             $('#net_total').text(formatINR(net));
 
-
             $('#truck_total_weight').text(
                 data.total_weight ? parseFloat(data.total_weight).toFixed(0) + ' kg' : ''
             );
@@ -274,10 +291,11 @@
                 '₹' + parseFloat(data.total_transport || 0).toFixed(2)
             );
 
-
-            // Don't recalculate anything in edit mode
+            // ✅ Use same editable structure as refreshTransportTable
+            updateTransportTotal();
             return;
         }
+
 
         // 5️⃣ Default (create mode) - perform initial calculations
         updateTotalWeight();
@@ -492,34 +510,45 @@
             const dist = parseFloat($row.find('td:nth-child(5) input').val()) || 0;
             const unloading = parseFloat($row.find('.unloading-cost').val()) || 0;
 
-            let newTotal = 0;
+            // ✅ determine body type from text cell
+            const bodyText = ($row.find('td:nth-child(2) small').text() || '').trim().toLowerCase();
 
-            // Handle per-km vs fixed-rate logic
-            if (distance < 150) {
+            let newTotal = 0;
+            if (bodyText === 'open') {
+                console.log(multiplier);
+                // open → per km
                 newTotal = (rate * multiplier * dist) + unloading;
             } else {
-                newTotal = rate + unloading; // Fixed rate + unloading
+                // truck → fixed
+                newTotal = rate + unloading;
             }
 
             $row.find('.transport-cost').text('₹' + newTotal.toFixed(2));
             updateTransportTotal();
         });
 
+
         // When unloading charge changes, update total cost immediately
         $target.on('input', '.unloading-cost', function () {
             const $row = $(this).closest('tr');
             const unloading = parseFloat($(this).val()) || 0;
             const rate = parseFloat($row.find('input.rate-km, input.fixed-rate').val()) || 0;
-            const multiplier = parseFloat($row.find('.multiplier').text()) || 1;
+            const multiplierText = $row.find('.multiplier').text();
+            const multiplier = multiplierText && multiplierText !== '-' ? parseFloat(multiplierText) || 1 : 1;
             const dist = parseFloat($row.find('td:nth-child(5) input').val()) || 0;
 
-            // Compute base cost (depends on distance type)
-            const baseCost = (window.lastDistance && window.lastDistance < 150)
-                ? rate * multiplier * dist
-                : rate;
+            // ✅ Determine body type from current row (Open vs Truck)
+            const bodyText = ($row.find('td:nth-child(2) small').text() || '').trim().toLowerCase();
+            const isOpen = bodyText === 'open';
+
+            // ✅ Compute base cost based on current body type, not global distance
+            const baseCost = isOpen
+                ? rate * multiplier * dist     // Open body → per km
+                : rate;                        // Truck → fixed rate
 
             const newTotal = baseCost + unloading;
             $row.find('.transport-cost').text('₹' + newTotal.toFixed(2));
+
             updateTransportTotal();
         });
 
@@ -529,17 +558,30 @@
             const newDistance = parseFloat($(this).val()) || 0;
             const rate = parseFloat($row.find('input.rate-km, input.fixed-rate').val()) || 0;
             const unloading = parseFloat($row.find('.unloading-cost').val()) || 0;
-            const multiplierText = $row.find('.multiplier').text();
-            const multiplier = multiplierText && multiplierText !== '-' ? parseFloat(multiplierText) || 1 : 1;
 
-            // Update total cost for that row
+            // 🟢 1️⃣ Get km_multipliers (assuming it's globally available)
+            // Example: window.kmMultipliers = [{min_km:0, max_km:50, multiplier:1}, ...];
+            let newMultiplier = 1;
+            if (window.lastKmMultipliers && Array.isArray(window.lastKmMultipliers)) {
+                const found = window.lastKmMultipliers.find(m =>
+                    newDistance >= m.min_km && newDistance <= m.max_km
+                );
+                if (found) newMultiplier = parseFloat(found.multiplier) || 1;
+            }
+            // 🟢 2️⃣ Update multiplier cell in the table
+            $row.find('.multiplier').text(newMultiplier.toFixed(2));
+
+            // 🟢 3️⃣ Continue cost calculation
+            const bodyText = ($row.find('td:nth-child(2) small').text() || '').trim().toLowerCase();
+
             let total = 0;
-            if (window.lastDistance < 150) {
-                total = (rate * multiplier * newDistance) + unloading;
+            if (bodyText === 'open') {
+                total = (rate * newMultiplier * newDistance) + unloading;
             } else {
                 total = rate + unloading;
             }
 
+            // 🟢 4️⃣ Update UI
             $row.find('.transport-cost').text('₹' + total.toFixed(2));
             updateTransportTotal();
         });
@@ -894,10 +936,10 @@
             if (!truck) return;
 
             const isOpenBody = t.bodyType.toLowerCase() === 'open';
-            const unloading =
-                distance < 150
-                    ? parseFloat(truck.unloading_charges_below_150 || 0)
-                    : parseFloat(truck.unloading_charges_above_150 || 0);
+            // ✅ Unloading is purely based on body type
+            const unloading = isOpenBody
+                ? parseFloat(truck.unloading_charges_below_150 || 0)  // Open → use "below_150" field
+                : parseFloat(truck.unloading_charges_above_150 || 0); // Truck → use "above_150" field
 
             let rateDisplay = 0;
             let baseCost = 0;
@@ -949,7 +991,7 @@
                         <label class="small text-muted">${rateTypeLabel}</label>
                         ${rateCellExtra}
                     </td>
-                    <td>${isOpenBody ? multiplier : '-'}</td>
+                    <td class="multiplier">${isOpenBody ? multiplier : '-'}</td>
                     <td>
                         <input type="number" class="form-control form-control-sm transport-distance"
                             value="${distance.toFixed(1)}" min="1" step="0.1">
@@ -1124,13 +1166,10 @@
             let effectiveRatePerKm = 0;
             let effectiveFixedRate = 0;
 
-            if (distance && distance < 150) {
-                effectiveRatePerKm = ratePerKm;
-                effectiveFixedRate = 0;
-            } else {
-                effectiveRatePerKm = 0;
-                effectiveFixedRate = fixedRate || ratePerKm; // fallback if same field reused
-            }
+            const isOpen = (bodyType || '').toLowerCase() === 'open';
+            effectiveRatePerKm = isOpen ? ratePerKm : 0;
+            effectiveFixedRate = isOpen ? 0 : fixedRate;
+
 
             // Total weight from subtotal row
             const totalWeight =

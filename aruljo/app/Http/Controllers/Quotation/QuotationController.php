@@ -809,6 +809,8 @@ class QuotationController extends Controller
             // 🟢 Transport summary
             'transport' => $version->trucks->map(fn($t) => [
                 'truck_name'  => $t->truckType->name ?? '',
+                'truck_type_id' => $t->truck_type_id,
+                'body_type'   => $t->body_type,
                 'rate'        => $t->rate_per_km > 0 ? $t->rate_per_km : ($t->fixed_rate ?? 0),
                 'rate_per_km' => $t->rate_per_km ?? 0,
                 'fixed_rate'  => $t->fixed_rate ?? 0,
