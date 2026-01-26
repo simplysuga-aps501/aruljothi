@@ -9,7 +9,7 @@ class Template extends Model
 {
     use HasFactory;
     protected $table = 'prod_templates';
-    protected $fillable = ['name', 'modified_by'];
+    protected $fillable = ['name', 'abbreviation','modified_by'];
 
     public function parameterConfigs()
     {
