@@ -41,11 +41,15 @@ class ParameterConfigSeeder extends Seeder
                     continue;
                 }
 
-                ParameterConfig::create([
-                    'prod_template_id'  => $templateIdMap[$templateName], // resolved ID
-                    'prod_parameter_id' => $paramIdMap[$paramName],       // resolved ID
-                    'modified_by'          => 1,
-                ]);
+                ParameterConfig::updateOrCreate(
+                    [
+                        'prod_template_id'  => $templateIdMap[$templateName],
+                        'prod_parameter_id' => $paramIdMap[$paramName],
+                    ],
+                    [
+                        'modified_by' => 1,
+                    ]
+                );
             }
         }
     }

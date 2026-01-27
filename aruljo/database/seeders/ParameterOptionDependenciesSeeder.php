@@ -39,10 +39,14 @@ class ParameterOptionDependenciesSeeder extends Seeder
                     continue;
                 }
 
-                ParameterOptionDependency::create([
-                    'option_id'             => $optionId,
-                    'req_param_id' => $paramIdMap[$paramName],
-                ]);
+                ParameterOptionDependency::updateOrCreate(
+                    [
+                        'option_id'   => $optionId,
+                        'req_param_id'=> $paramIdMap[$paramName],
+                    ],
+                    [] // no additional fields to update
+                );
+
             }
         }
     }

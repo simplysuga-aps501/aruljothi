@@ -11,7 +11,7 @@ use App\Models\Product\Template;
 use App\Models\Product\ParameterUnit;
 
 
-class AddParameterCoverShapeSeeder extends Seeder
+class AddNewProductSeeder extends Seeder
 {
     public function run(): void
     {
@@ -114,6 +114,8 @@ class AddParameterCoverShapeSeeder extends Seeder
         // ---------------------------
         $shapeOptionMap = ParameterOptionConfig::where('prod_parameter_id', $shapeCover->id)
             ->pluck('id','parameter_option');
+        // Delete old dependencies to make reseeding safe
+        ParameterOptionDependency::whereIn('option_id', $shapeOptionMap)->delete();
 
         $shapeDependencies = [
             'Round'  => ['Diameter', 'Thickness'],
@@ -262,6 +264,49 @@ class AddParameterCoverShapeSeeder extends Seeder
                 );
             }
         }
+        // ---------------------------
+        // 6️⃣ Cement Pillar Type Parameter
+        // ---------------------------
+        $typeParam = Parameter::firstOrCreate(
+            ['name' => 'Type'],
+            [
+                'description' => 'Type of Cement Pillar',
+                'input_type' => 'select',
+                'modified_by' => 1,
+            ]
+        );
+
+        // ✅ Add the possible options
+        $typeOptions = [
+            ['parameter_option' => 'Plain End',     'abbreviation' => 'PE'],
+            ['parameter_option' => 'U Shaped Top',  'abbreviation' => 'UST'],
+            ['parameter_option' => 'With Rod',      'abbreviation' => 'WR'],
+        ];
+
+        foreach ($typeOptions as $opt) {
+            ParameterOptionConfig::firstOrCreate(
+                [
+                    'prod_parameter_id' => $typeParam->id,
+                    'parameter_option'  => $opt['parameter_option'],
+                ],
+                [
+                    'abbreviation' => $opt['abbreviation'],
+                    'modified_by'  => 1,
+                ]
+            );
+        }
+
+        // ✅ Link the parameter to Cement Pillars template
+        ParameterConfig::updateOrCreate(
+            [
+                'prod_template_id'  => $pillarTemplate->id,
+                'prod_parameter_id' => $typeParam->id,
+            ],
+            [
+                'allow_custom_unit' => false,
+                'modified_by' => 1,
+            ]
+        );
 
         $this->command->info("✅ New products added: Kerb Stones (mm) and Cement Pillars (in/ft units).");
 

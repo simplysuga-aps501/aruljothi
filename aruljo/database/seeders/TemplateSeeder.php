@@ -21,7 +21,14 @@ class TemplateSeeder extends Seeder
         ];
 
         foreach ($data as $item) {
-            Template::create($item);
+            Template::updateOrCreate(
+                ['name' => $item['name']], // unique key
+                [
+                    'abbreviation' => $item['abbreviation'],
+                    'modified_by'  => $item['modified_by'],
+                ]
+            );
+
         }
     }
 }

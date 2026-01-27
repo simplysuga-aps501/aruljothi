@@ -6,7 +6,7 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use App\Models\Product\Parameter;
 
-class ParameterUnitsSeeder extends Seeder
+class ParameterUnitSeeder extends Seeder
 {
     public function run(): void
     {

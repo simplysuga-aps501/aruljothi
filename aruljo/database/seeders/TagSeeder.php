@@ -19,9 +19,10 @@ class TagSeeder extends Seeder
         ];
 
         foreach ($tags as $tag) {
-            Tag::firstOrCreate([
-                'name->en' => $tag
-            ]);
+            Tag::updateOrCreate(
+                    ['name->en' => $tag], // unique key
+                    [] // no additional fields to update for now
+                );
         }
     }
 }

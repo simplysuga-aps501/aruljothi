@@ -3,6 +3,7 @@
 namespace App\Imports;
 
 use App\Models\DistancePincode;
+use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
@@ -15,25 +16,28 @@ class DistancePincodesImport implements ToModel, WithHeadingRow, WithChunkReadin
         $latitude  = is_numeric($row['latitude'])  ? (float)$row['latitude']  : null;
         $longitude = is_numeric($row['longitude']) ? (float)$row['longitude'] : null;
 
-        // Skip row if coordinates are invalid
+        // Skip invalid coordinates
         if ($latitude === null || $longitude === null || $latitude < -90 || $latitude > 90 || $longitude < -180 || $longitude > 180) {
-            // You can log or just skip silently
-            \Log::warning("Skipping invalid coordinates for place: {$row['place']}", $row);
-            return null; // Returning null tells Laravel Excel to skip this row
+            Log::warning("Skipping invalid coordinates for place: {$row['place']}", $row);
+            return null;
         }
 
-        return new DistancePincode([
-            'state'     => $row['state'],
-            'district'  => $row['district'],
-            'place'     => $row['place'],
-            'pincode'   => $row['pincode'],
-            'latitude'  => $latitude,
-            'longitude' => $longitude,
-        ]);
+        // ✅ Use updateOrCreate to prevent duplicates
+        DistancePincode::updateOrCreate(
+            ['pincode' => $row['pincode']], // unique key
+            [
+                'state'     => $row['state'] ?? null,
+                'district'  => $row['district'] ?? null,
+                'place'     => $row['place'] ?? null,
+                'latitude'  => $latitude,
+                'longitude' => $longitude,
+            ]
+        );
+
+        // Returning null prevents Laravel Excel from trying to "insert" this again.
+        return null;
     }
 
-
-    // 👇 process 1000 rows at a time
     public function chunkSize(): int
     {
         return 1000;

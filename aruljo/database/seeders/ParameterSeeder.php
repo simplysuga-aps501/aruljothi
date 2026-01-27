@@ -32,16 +32,19 @@ class ParameterSeeder extends Seeder
         ];
 
         foreach ($parameters as $param) {
-            Parameter::create([
-                'name'         => $param['name'],
-                'description'  => $param['description'] ?? null,
-                'input_type'   => $param['input_type'],
-                'abbreviation' => $param['abbreviation'] ?? null,
-                'unit'         => $param['unit'] ?? null,
-                'modified_by'  => null,
-                'created_at'   => $now,
-                'updated_at'   => $now,
-            ]);
+            Parameter::updateOrCreate(
+                ['name' => $param['name']], // unique key
+                [
+                    'description'  => $param['description'] ?? null,
+                    'input_type'   => $param['input_type'],
+                    'abbreviation' => $param['abbreviation'] ?? null,
+                    'unit'         => $param['unit'] ?? null,
+                    'modified_by'  => null,
+                    'updated_at'   => $now,
+                    'created_at'   => $now,
+                ]
+            );
+
         }
     }
 }

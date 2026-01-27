@@ -53,14 +53,19 @@ class ParameterOptionConfigSeeder extends Seeder
             $parameter = Parameter::where('name', $entry['parameter_name'])->first();
 
             if ($parameter) {
-                ParameterOptionConfig::create([
-                    'prod_parameter_id' => $parameter->id,
-                    'parameter_option'  => $entry['parameter_option'],
-                    'abbreviation'      => $entry['abbreviation'],
-                    'modified_by'       => null,
-                    'created_at'        => $now,
-                    'updated_at'        => $now,
-                ]);
+                ParameterOptionConfig::updateOrCreate(
+                    [
+                        'prod_parameter_id' => $parameter->id,
+                        'parameter_option'  => $entry['parameter_option'],
+                    ],
+                    [
+                        'abbreviation' => $entry['abbreviation'],
+                        'modified_by'  => 1,
+                        'created_at'   => $now,  // will be used only on insert
+                        'updated_at'   => $now,  // will be used on insert and update
+                    ]
+                );
+
             }
         }
     }
