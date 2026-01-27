@@ -8,6 +8,8 @@ use App\Models\Product\ParameterConfig;
 use App\Models\Product\ParameterOptionConfig;
 use App\Models\Product\ParameterOptionDependency;
 use App\Models\Product\Template;
+use App\Models\Product\ParameterUnit;
+
 
 class AddParameterCoverShapeSeeder extends Seeder
 {
@@ -133,6 +135,72 @@ class AddParameterCoverShapeSeeder extends Seeder
 
         $this->command->info("✅ Cover template updated with Shape (Cover), Handle, Partition, Holes and dependencies.");
 
+        // Ensure Breadth parameter exists
+        $breadthParam = Parameter::firstOrCreate(
+            ['name' => 'Breadth'],
+            [
+                'input_type'  => 'number',
+                'description' => 'Breadth',
+                'unit'        => 'IN', // Default for global usage
+                'modified_by' => 1
+            ]
+        );
+
+        // ---------------------------
+        // 🔹 Backfill existing ParameterConfig for all templates
+        // ---------------------------
+
+        // First, get all existing parameter units
+        $unitMap = ParameterUnit::pluck('id', 'unit')->toArray(); // ['MM' => 1, 'IN' => 2, 'FT' => 3]
+
+        $allConfigs = ParameterConfig::all();
+
+        foreach ($allConfigs as $config) {
+            $param = Parameter::find($config->prod_parameter_id);
+            if (!$param) continue;
+
+            $updated = false;
+
+            // 1️⃣ Map the string unit to parameter_units table
+            if (is_null($config->unit_id) && !empty($param->unit)) {
+                if (isset($unitMap[$param->unit])) {
+                    $config->unit_id = $unitMap[$param->unit];
+                    $updated = true;
+                } else {
+                    // If the unit string does not exist, create it
+                    $newUnit = ParameterUnit::create([    'prod_parameter_id' => $param->id, 'unit' => $param->unit, 'modified_by' => 1]);
+                    $unitMap[$param->unit] = $newUnit->id;
+                    $config->unit_id = $newUnit->id;
+                    $updated = true;
+                }
+            }
+
+            // 2️⃣ Ensure allow_custom_unit has a default value
+            if (is_null($config->allow_custom_unit)) {
+                $config->allow_custom_unit = false;
+                $updated = true;
+            }
+
+            if ($updated) {
+                $config->modified_by = 1;
+                $config->save();
+            }
+        }
+
+        // First, get or create all units we need
+        $unitsToEnsure = ['MM', 'IN', 'FT'];
+        $unitMap = ParameterUnit::whereIn('unit', $unitsToEnsure)
+            ->pluck('id', 'unit')
+            ->toArray();
+
+        // Create missing units
+        foreach ($unitsToEnsure as $unitName) {
+            if (!isset($unitMap[$unitName])) {
+                $newUnit = ParameterUnit::create(['unit' => $unitName, 'modified_by' => 1]);
+                $unitMap[$unitName] = $newUnit->id;
+            }
+        }
+
         // ---------------------------
         // 4️⃣ New product: Kerb Stones
         // ---------------------------
@@ -141,13 +209,26 @@ class AddParameterCoverShapeSeeder extends Seeder
             ['abbreviation' => 'KBS', 'modified_by' => 1]
         );
 
-        foreach (['Length','Width','Height'] as $pname) {
-            $param = Parameter::where('name',$pname)->first();
-            if ($param) {
-                ParameterConfig::firstOrCreate([
-                    'prod_template_id' => $kerbTemplate->id,
-                    'prod_parameter_id'=> $param->id,
-                ],['modified_by'=>1]);
+        $kerbUnits = [
+            'Length' => 'MM',
+            'Breadth' => 'MM',
+            'Height' => 'MM',
+        ];
+
+        foreach ($kerbUnits as $pname => $unit) {
+            $param = Parameter::where('name', $pname)->first();
+            if ($param && isset($unitMap[$unit])) {
+                ParameterConfig::updateOrCreate(
+                    [
+                        'prod_template_id' => $kerbTemplate->id,
+                        'prod_parameter_id'=> $param->id,
+                    ],
+                    [
+                        'unit_id' => $unitMap[$unit],   // ✅ Save unit ID, not string
+                        'allow_custom_unit' => false,
+                        'modified_by'=>1
+                    ]
+                );
             }
         }
 
@@ -158,51 +239,31 @@ class AddParameterCoverShapeSeeder extends Seeder
             ['name' => 'Cement Pillars'],
             ['abbreviation' => 'CP', 'modified_by' => 1]
         );
-        // ---------------------------
-        // Ensure Breadth parameter exists
-        // ---------------------------
-        $breadthParam = Parameter::firstOrCreate(
-            ['name' => 'Breadth'],
-            [
-                'input_type'  => 'number',
-                'description' => 'Breadth',
-                'unit'        => 'MM',
-                'modified_by' => 1
-            ]
-        );
 
-        // ---------------------------
-        // Attach Breadth to Kerb Stones
-        // ---------------------------
-        $kerbTemplate = Template::firstOrCreate(
-            ['name' => 'Kerb Stones'],
-            ['abbreviation' => 'KBS', 'modified_by' => 1]
-        );
+        $pillarUnits = [
+            'Length'  => 'IN',
+            'Breadth' => 'IN',
+            'Height'  => 'FT',
+        ];
 
-        foreach (['Length','Breadth','Height'] as $pname) {
+        foreach ($pillarUnits as $pname => $unit) {
             $param = Parameter::where('name', $pname)->first();
-            if ($param) {
-                ParameterConfig::firstOrCreate([
-                    'prod_template_id' => $kerbTemplate->id,
-                    'prod_parameter_id'=> $param->id,
-                ], ['modified_by'=>1]);
+            if ($param && isset($unitMap[$unit])) {
+                ParameterConfig::updateOrCreate(
+                    [
+                        'prod_template_id' => $pillarTemplate->id,
+                        'prod_parameter_id'=> $param->id,
+                    ],
+                    [
+                        'unit_id' => $unitMap[$unit],  // ✅ Save unit ID
+                        'allow_custom_unit' => false,
+                        'modified_by'=>1
+                    ]
+                );
             }
         }
 
+        $this->command->info("✅ New products added: Kerb Stones (mm) and Cement Pillars (in/ft units).");
 
-        // Type options for Cement Pillars
-        $typeParam = Parameter::firstOrCreate(
-            ['name' => 'Type'],
-            ['input_type' => 'select', 'modified_by' => 1]
-        );
-        $typeOptions = ['Plain End','With Rod','U-shaped Top'];
-        foreach ($typeOptions as $opt) {
-            ParameterOptionConfig::firstOrCreate([
-                'prod_parameter_id' => $typeParam->id,
-                'parameter_option' => $opt,
-            ], ['modified_by'=>1]);
-        }
-
-        $this->command->info("✅ New products added: Kerb Stones and Cement Pillars.");
     }
 }

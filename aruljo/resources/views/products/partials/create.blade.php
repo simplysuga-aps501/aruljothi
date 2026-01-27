@@ -360,7 +360,7 @@
     // ==================================================
     // PARAMETER RENDER FUNCTIONS
     // ==================================================
-    function generateParameterHTML(param) {
+    function generateParameterHTML(param, unitText = '') {
         let html = `<div class="form-group col-md-3">
                         <label>${param.name}</label>`;
 
@@ -377,31 +377,34 @@
                 html += `</select>`;
             }
             else if (param.input_type === 'number') {
-            html += `<div class="input-group">
-                        <input type="number" step="0.01" min="0"
-                               class="form-control param-input"
-                               data-parameter-id="${param.id}"
-                               name="parameters[${param.id}][value]"
-                               data-description="${param.description || ''}"
-                               placeholder="Enter ${param.name}" required>
-                        <div class="input-group-append">
-                            <span class="input-group-text bg-light param-unit">
-                                ${param.unit ? param.unit : ''}
-                            </span>
-                        </div>
-                     </div>`;
-        }
+                html += `<div class="input-group">
+                            <input type="number" step="0.01" min="0"
+                                   class="form-control param-input"
+                                   data-parameter-id="${param.id}"
+                                   name="parameters[${param.id}][value]"
+                                   data-description="${param.description || ''}"
+                                   placeholder="Enter ${param.name}" required>
+                            <div class="input-group-append">
+                                <span class="input-group-text bg-light param-unit">
+                                    ${unitText}
+                                </span>
+                            </div>
+                         </div>`;
+            }
 
         html += `</div>`;
         return html;
     }
 
+
     function renderParameters() {
         $('#parameterFields').empty();
         allConfigs.forEach(config => {
-            $('#parameterFields').append(generateParameterHTML(config.parameter));
+            const unitText = config.unit ? config.unit.unit : ''; // ✅ from relation
+            $('#parameterFields').append(generateParameterHTML(config.parameter, unitText));
         });
     }
+
     /*
     // ==================================================
     // AUTO-CALCULATE TRUCK CAPACITY

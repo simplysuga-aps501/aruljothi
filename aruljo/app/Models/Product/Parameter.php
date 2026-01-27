@@ -26,9 +26,13 @@ class Parameter extends Model
 
     public function template()
     {
-        return $this->belongsTo(template::class);
+        return $this->belongsTo(Template::class, 'prod_template_id');
     }
-
+    // One parameter can have multiple units
+    public function units()
+    {
+        return $this->hasMany(ParameterUnit::class, 'prod_parameter_id');
+    }
     public function modifiedBy()
     {
         return $this->belongsTo(\App\Models\User::class, 'modified_by');

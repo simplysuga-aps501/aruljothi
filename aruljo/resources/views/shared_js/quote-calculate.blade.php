@@ -1104,8 +1104,8 @@
         const totalWeight = parseFloat(totalWeightText) || 0;
 
         // 3️⃣ Avoid division by zero
-        if (!totalTransport || !totalWeight) {
-            console.warn('⚠️ Transport per unit skipped — missing total transport or total weight');
+        if (!totalWeight) {
+            console.warn('⚠️ Transport per unit skipped — missing total weight');
             return;
         }
 

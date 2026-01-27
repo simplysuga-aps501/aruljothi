@@ -12,21 +12,26 @@ class ParameterConfig extends Model
     protected $table = 'prod_parameter_configs';
 
     protected $fillable = [
-        'product_template_id',
+        'prod_template_id',
         'prod_parameter_id',
+        'unit_id',
+        'allow_custom_unit',
         'modified_by',
     ];
 
     public function template()
     {
-        return $this->belongsTo(template::class, 'product_template_id');
+        return $this->belongsTo(template::class, 'prod_template_id');
     }
 
     public function parameter()
     {
         return $this->belongsTo(Parameter::class, 'prod_parameter_id');
     }
-
+    public function unit()
+    {
+        return $this->belongsTo(ParameterUnit::class, 'unit_id');
+    }
     public function modifiedBy()
     {
         return $this->belongsTo(\App\Models\User::class, 'modified_by');

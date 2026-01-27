@@ -39,11 +39,10 @@ class ProductController extends Controller
     {
         $configs = ParameterConfig::with([
             'parameter.options.dependencies.parameter.options',
-            // removed parameter.units relation (no separate table now)
+            'unit', // ✅ include unit from prod_paramter_unit
         ])
         ->where('prod_template_id', $templateId)
         ->get();
-
         return response()->json([
             'configs' => $configs,
         ]);
