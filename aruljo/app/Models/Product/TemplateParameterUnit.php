@@ -5,21 +5,21 @@ namespace App\Models\Product;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class ParameterConfig extends Model
+class TemplateParameterUnit extends Model
 {
     use HasFactory;
-
-    protected $table = 'prod_parameter_configs';
 
     protected $fillable = [
         'prod_template_id',
         'prod_parameter_id',
+        'unit_id',
+        'allow_custom_unit',
         'modified_by',
     ];
 
     public function template()
     {
-        return $this->belongsTo(template::class, 'prod_template_id');
+        return $this->belongsTo(Template::class, 'prod_template_id');
     }
 
     public function parameter()
@@ -27,8 +27,8 @@ class ParameterConfig extends Model
         return $this->belongsTo(Parameter::class, 'prod_parameter_id');
     }
 
-    public function modifiedBy()
+    public function unit()
     {
-        return $this->belongsTo(\App\Models\User::class, 'modified_by');
+        return $this->belongsTo(ParameterUnit::class, 'unit_id');
     }
 }

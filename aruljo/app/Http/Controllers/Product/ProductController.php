@@ -9,6 +9,7 @@ use App\Models\Product\Unit;
 use App\Models\Product\Hsncode;
 use App\Models\Product\ParameterConfig;
 use App\Models\Product\ParameterValue;
+use App\Models\Product\TemplateParameterUnit;
 use App\Models\Transport\TruckType;
 use App\Models\Transport\TruckCapacity;
 use Illuminate\Http\Request;
@@ -37,14 +38,27 @@ class ProductController extends Controller
      */
     public function getParameters($templateId)
     {
-        $configs = ParameterConfig::with([
-            'parameter.options.dependencies.parameter.options',
-            'unit', // ✅ include unit from prod_paramter_unit
-        ])
-        ->where('prod_template_id', $templateId)
-        ->get();
+       $configs = ParameterConfig::with([
+           'parameter.options.dependencies.parameter.options',
+       ])
+       ->where('prod_template_id', $templateId)
+       ->get();
+
+       // Attach unit from TemplateParameterUnit
+       $configs->each(function ($config) use ($templateId) {
+           $mapping = TemplateParameterUnit::with('unit')
+               ->where('prod_template_id', $templateId)
+               ->where('prod_parameter_id', $config->prod_parameter_id)
+               ->first();
+
+           $config->unit = $mapping?->unit?->unit; // null if either is missing
+       });
+       $units = TemplateParameterUnit::with('unit') // make sure the 'unit' relation exists in the model
+                   ->where('prod_template_id', $templateId)
+                   ->get();
         return response()->json([
             'configs' => $configs,
+            'units' => $units,
         ]);
     }
 

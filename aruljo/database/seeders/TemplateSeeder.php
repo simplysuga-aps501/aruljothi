@@ -18,6 +18,8 @@ class TemplateSeeder extends Seeder
             ['name' => 'water tank',      'abbreviation' => 'WTK',  'modified_by' => 1],
             ['name' => 'cover',           'abbreviation' => 'CVR',  'modified_by' => 1],
             ['name' => 'manhole cover',   'abbreviation' => 'MHC',  'modified_by' => 1],
+            ['name' => 'cement pillar',   'abbreviation' => 'CMP',  'modified_by' => 1],
+            ['name' => 'kerb stone',   'abbreviation' => 'KBS',  'modified_by' => 1],
         ];
 
         foreach ($data as $item) {

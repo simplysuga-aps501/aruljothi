@@ -153,8 +153,10 @@
                 url: `/products/template/${templateId}/parameters`,
                 method: 'GET',
                 success: function (response) {
-                    allConfigs = response.configs; // save configs globally
-                    console.log(allConfigs);
+                    allConfigs = response.configs;
+                    allUnits = response.units;
+                    console.log(allConfigs);// save configs globally
+                    console.log(allUnits);
                     renderParameters(); // render fields
                 },
                 error: function (xhr) {
@@ -281,7 +283,6 @@
                     truckCapacities[truckId][variant] = capacity;
                 }
             });
-            console.log(quotePrice);
             // Send data
             $.ajax({
                 url: '/products',
@@ -338,7 +339,6 @@
         // Find option
         let optionObj = config.parameter.options.find(o => o.parameter_option === selectedOption);
         if (!optionObj) return;
-
         // Add dependencies
         if (optionObj.dependencies?.length) {
             let $lastInserted = $(this).closest('.col-md-3');
@@ -348,8 +348,13 @@
                 if ($existing.length) {
                     $existing.closest('.form-group').remove(); // remove duplicate
                 }
+                const unitMap = {};
+                allUnits.forEach(u => {
+                    unitMap[u.prod_parameter_id] = u.unit.unit||''; // or u.unit.name if it's an object
+                });
+                const unitText = unitMap[dep.parameter.id] || '';
 
-                let html = generateParameterHTML(dep.parameter);
+                let html = generateParameterHTML(dep.parameter,unitText);
                 let $element = $(html).addClass(`dependent-of-${paramId}`);
                 $element.insertAfter($lastInserted);
                 $lastInserted = $element;
@@ -361,6 +366,7 @@
     // PARAMETER RENDER FUNCTIONS
     // ==================================================
     function generateParameterHTML(param, unitText = '') {
+
         let html = `<div class="form-group col-md-3">
                         <label>${param.name}</label>`;
 
@@ -399,11 +405,21 @@
 
     function renderParameters() {
         $('#parameterFields').empty();
+
+        // First, make a lookup map: parameter_id → unit name
+        const unitMap = {};
+        allUnits.forEach(u => {
+            unitMap[u.prod_parameter_id] = u.unit.unit; // or u.unit.name if it's an object
+        });
+
+        // Now render parameters with their corresponding units
         allConfigs.forEach(config => {
-            const unitText = config.unit ? config.unit.unit : ''; // ✅ from relation
+            const unitText = unitMap[config.prod_parameter_id] || ''; // lookup
+            console.log(unitText);
             $('#parameterFields').append(generateParameterHTML(config.parameter, unitText));
         });
     }
+
 
     /*
     // ==================================================

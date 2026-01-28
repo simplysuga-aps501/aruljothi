@@ -18,6 +18,10 @@ class ParameterOptionConfigSeeder extends Seeder
             ['parameter_name' => 'Shape', 'parameter_option' => 'Round',  'abbreviation' => 'RND'],
             ['parameter_name' => 'Shape', 'parameter_option' => 'Square', 'abbreviation' => 'SQR'],
 
+            // Shape - Cover
+            ['parameter_name' => 'Shape(Cover)', 'parameter_option' => 'Round(C)',  'abbreviation' => 'RND'],
+            ['parameter_name' => 'Shape(Cover)', 'parameter_option' => 'Square(C)', 'abbreviation' => 'SQR'],
+
             // Cover
             ['parameter_name' => 'Cover', 'parameter_option' => 'With Lid',    'abbreviation' => 'LID'],
             ['parameter_name' => 'Cover', 'parameter_option' => 'Without Lid', 'abbreviation' => null],
@@ -36,16 +40,29 @@ class ParameterOptionConfigSeeder extends Seeder
             // Handle
             ['parameter_name' => 'Handle', 'parameter_option' => 'With Handle',    'abbreviation' => 'HDL'],
             ['parameter_name' => 'Handle', 'parameter_option' => 'Without Handle', 'abbreviation' => null],
+            ['parameter_name' => 'Handle', 'parameter_option' => 'Adjustable Handle', 'abbreviation' => 'AHDL'],
 
             // Partition
             ['parameter_name' => 'Partition', 'parameter_option' => 'Two Halves',   'abbreviation' => '2H'],
             ['parameter_name' => 'Partition', 'parameter_option' => 'Single Piece', 'abbreviation' => '1P'],
+
+            // Holes
+            ['parameter_name' => 'Holes', 'parameter_option' => 'With Holes',   'abbreviation' => 'HOLE'],
+            ['parameter_name' => 'Holes', 'parameter_option' => 'Without Holes', 'abbreviation' => null],
 
             // Strength for Manhole Cover
             ['parameter_name' => 'Grade', 'parameter_option' => 'Medium Duty',      'abbreviation' => 'MD'],
             ['parameter_name' => 'Grade', 'parameter_option' => 'Heavy Duty',       'abbreviation' => 'HD'],
             ['parameter_name' => 'Grade', 'parameter_option' => 'Extra Heavy Duty', 'abbreviation' => 'EHD'],
 
+            // Cement Pillar Type
+            ['parameter_name' => 'Pillar Type', 'parameter_option' => 'Plain End',  'abbreviation' => 'PLN'],
+            ['parameter_name' => 'Pillar Type', 'parameter_option' => 'With Rod',    'abbreviation' => 'ROD'],
+            ['parameter_name' => 'Pillar Type', 'parameter_option' => 'U Shaped Top','abbreviation' => 'UT'],
+
+            // Kerb Type
+            ['parameter_name' => 'Stone Type', 'parameter_option' => 'Onida',  'abbreviation' => 'PLN'],
+            ['parameter_name' => 'Stone Type', 'parameter_option' => 'Rectangle',    'abbreviation' => 'ROD'],
 
         ];
 

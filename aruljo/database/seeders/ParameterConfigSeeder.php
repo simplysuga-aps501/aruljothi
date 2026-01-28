@@ -18,9 +18,10 @@ class ParameterConfigSeeder extends Seeder
             ['template' => 'ring',       'parameters' => ['Diameter', 'Thickness', 'Height', 'Cover']],
             ['template' => 'v trough',    'parameters' => ['Voltage', 'Len', 'Thickness']],
             ['template' => 'water tank', 'parameters' => ['Shape','Capacity', 'Class']],
-            ['template' => 'cover',      'parameters' => ['Shape','Handle', 'Partition']],
+            ['template' => 'cover',      'parameters' => ['Shape(Cover)','Handle', 'Partition','Holes']],
             ['template' => 'manhole cover',   'parameters' => ['MHC_Size', 'Grade']],
-
+            ['template' => 'cement pillar',     'parameters' => ['Length', 'Breadth', 'Height','Pillar Type']],
+            ['template' => 'kerb stone',     'parameters' => ['Length', 'Breadth', 'Height','Stone Type']],
         ];
 
         // Build maps

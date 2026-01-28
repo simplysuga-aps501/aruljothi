@@ -17,6 +17,8 @@ class ParameterUnitSeeder extends Seeder
             'Height'    => ['MM','IN','FT'],
             'Breadth'   => ['MM','IN','FT'],
             'Thickness' => ['MM','CM'],
+            'Capacity' => ['LTR'],
+            'Voltage' => ['KV'],
         ];
 
         foreach ($unitsMap as $paramName => $units) {
