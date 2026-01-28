@@ -28,6 +28,15 @@ class ParameterConfigSeeder extends Seeder
         $paramIdMap    = Parameter::pluck('id', 'name')->toArray();   // ['Diameter' => 1, ...]
         $templateIdMap = template::pluck('id', 'name')->toArray();    // ['pipe' => 1, ...]
 
+         // 🧹 Delete old Shape parameter from Cover template
+        $coverTemplateId = Template::where('name', 'cover')->value('id');
+        $shapeParamId = Parameter::where('name', 'Shape')->value('id');
+        if ($coverTemplateId && $shapeParamId) {
+            ParameterConfig::where('prod_template_id', $coverTemplateId)
+                ->where('prod_parameter_id', $shapeParamId)
+                ->delete();
+        }
+
         foreach ($configs as $config) {
             $templateName = $config['template'];
 
