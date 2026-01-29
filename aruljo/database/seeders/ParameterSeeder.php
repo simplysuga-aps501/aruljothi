@@ -14,11 +14,9 @@ class ParameterSeeder extends Seeder
 
         $parameters = [
             ['name' => 'Shape',      'description' => null,                     'input_type' => 'select', 'abbreviation' => null,  'unit' => null],
-            ['name' => 'Shape(Cover)',      'description' => null,                     'input_type' => 'select', 'abbreviation' => null,  'unit' => null],
             ['name' => 'Voltage',   'description' => 'Voltage',               'input_type' => 'number', 'abbreviation' => 'KV',  'unit' => 'KV'],
             ['name' => 'Diameter',   'description' => 'Diameter',               'input_type' => 'number', 'abbreviation' => null,  'unit' => 'MM'],
             ['name' => 'Length',     'description' => 'Length',                 'input_type' => 'number', 'abbreviation' => null,  'unit' => 'MTR'],
-            ['name' => 'Len',        'description' => 'Length',                 'input_type' => 'number', 'abbreviation' => null,  'unit' => 'MM'],
             ['name' => 'Size',       'description' => 'Size',                   'input_type' => 'number', 'abbreviation' => null,  'unit' => 'MM'],
             ['name' => 'Thickness',  'description' => 'Thickness',              'input_type' => 'number', 'abbreviation' => null,  'unit' => 'MM'],
             ['name' => 'Height',     'description' => 'Height',                 'input_type' => 'number', 'abbreviation' => null,  'unit' => 'MM'],
@@ -32,8 +30,8 @@ class ParameterSeeder extends Seeder
             ['name' => 'Handle',     'description' => null,                     'input_type' => 'select', 'abbreviation' => null,  'unit' => null],
             ['name' => 'Partition',  'description' => null,                     'input_type' => 'select', 'abbreviation' => null,  'unit' => null],
             ['name' => 'Holes',  'description' => null,                     'input_type' => 'select', 'abbreviation' => null,  'unit' => null],
-            ['name' => 'MHC_Size',   'description' => 'Clear Opening size',     'input_type' => 'number', 'abbreviation' => null, 'unit' => 'MM'],
             ['name' => 'Grade',   'description' => null,                        'input_type' => 'select', 'abbreviation' => null,  'unit' => null],
+
         ];
 
         foreach ($parameters as $param) {

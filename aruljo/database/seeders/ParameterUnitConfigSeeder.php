@@ -6,10 +6,10 @@ use Illuminate\Database\Seeder;
 use App\Models\Product\Template;
 use App\Models\Product\Parameter;
 use App\Models\Product\ParameterUnit;
-use App\Models\Product\TemplateParameterUnit;
+use App\Models\Product\ParameterUnitConfig;
 use Carbon\Carbon;
 
-class TemplateParameterUnitSeeder extends Seeder
+class ParameterUnitConfigSeeder extends Seeder
 {
     public function run(): void
     {
@@ -21,10 +21,10 @@ class TemplateParameterUnitSeeder extends Seeder
             ['template' => 'offcut rcc pipe', 'parameters' => ['Diameter'=>'MM', 'Length'=>'MTR']],
             ['template' => 'chamber',         'parameters' => ['Diameter'=>'MM', 'Thickness'=>'MM', 'Height'=>'MM', 'Size'=>'MM']],
             ['template' => 'ring',            'parameters' => ['Diameter'=>'MM', 'Thickness'=>'MM', 'Height'=>'MM']],
-            ['template' => 'v trough',        'parameters' => ['Voltage'=>'KV', 'Len'=>'MM', 'Thickness'=>'MM']],
+            ['template' => 'v trough',        'parameters' => ['Voltage'=>'KV', 'Length'=>'MM', 'Thickness'=>'MM']],
             ['template' => 'water tank',      'parameters' => ['Capacity'=>'LTR','Diameter'=>'MM', 'Thickness'=>'MM', 'Height'=>'MM' ,'Size'=>'MM' ]],
             ['template' => 'cover',           'parameters' => ['Diameter'=>'MM', 'Thickness'=>'MM', 'Size'=>'MM']],
-            ['template' => 'manhole cover',   'parameters' => ['MHC_Size'=>'MM']],
+            ['template' => 'manhole cover',   'parameters' => ['Size'=>'MM']],
             ['template' => 'cement pillar',   'parameters' => ['Length'=>'IN', 'Breadth'=>'IN','Height'=>'FT',]],
             ['template' => 'kerb stone',   'parameters' => ['Length'=>'MM', 'Breadth'=>'MM','Height'=>'MM',]],
         ];
@@ -40,13 +40,13 @@ class TemplateParameterUnitSeeder extends Seeder
 
                 $unitId = $unitAbbr ? ParameterUnit::where('unit', $unitAbbr)->value('id') : null;
 
-                TemplateParameterUnit::updateOrCreate(
+                ParameterUnitConfig::updateOrCreate(
                     [
                         'prod_template_id'  => $template->id,
                         'prod_parameter_id' => $param->id,
                     ],
                     [
-                        'unit_id'           => $unitId,
+                        'prod_parameter_unit_id'           => $unitId,
                         'allow_custom_unit' => 0,
                         'modified_by'       => 1,
                         'created_at'        => $now,
@@ -56,6 +56,6 @@ class TemplateParameterUnitSeeder extends Seeder
             }
         }
 
-        $this->command->info("✅ TemplateParameterUnit seeder executed successfully.");
+        $this->command->info("✅ ParameterUnitConfig seeder executed successfully.");
     }
 }

@@ -11,15 +11,36 @@ class ParameterOptionDependency extends Model
 
     protected $table = 'prod_parameter_option_dependencies';
 
-    protected $fillable = ['option_id', 'req_param_id'];
+    protected $fillable = [
+        'option_id',
+        'req_param_id',
+        'prod_template_id',
+    ];
 
-    public function parameter()
-    {
-        return $this->belongsTo(Parameter::class, 'req_param_id');
-    }
+    /*
+    |--------------------------------------------------------------------------
+    | Relationships
+    |--------------------------------------------------------------------------
+    */
 
     public function option()
     {
         return $this->belongsTo(ParameterOptionConfig::class, 'option_id');
+    }
+
+    public function parameter()
+    {
+        return $this->belongsTo(Parameter::class, 'req_param_id')
+                    ->with('unitConfigs.unit');
+    }
+
+    public function requiredParameter()
+    {
+        return $this->belongsTo(Parameter::class, 'req_param_id');
+    }
+
+    public function template()
+    {
+        return $this->belongsTo(Template::class, 'prod_template_id');
     }
 }

@@ -20,8 +20,7 @@ class DatabaseSeeder extends Seeder
        $this->call(ParameterOptionConfigSeeder::class);
        $this->call(ParameterConfigSeeder::class);
        $this->call(ParameterOptionDependenciesSeeder::class);
-       $this->call(TemplateParameterUnitSeeder::class);
-       //$this->call(AddNewProductSeeder::class);
+       $this->call(ParameterUnitConfigSeeder::class);
        $this->call(TruckTypeSeeder::class);
        $this->call(TpMinKmMultiplierSeeder::class);
 

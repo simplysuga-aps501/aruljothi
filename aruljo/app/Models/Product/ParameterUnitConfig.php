@@ -5,14 +5,16 @@ namespace App\Models\Product;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class TemplateParameterUnit extends Model
+class ParameterUnitConfig extends Model
 {
     use HasFactory;
+
+    protected $table = 'prod_parameter_unit_configs';
 
     protected $fillable = [
         'prod_template_id',
         'prod_parameter_id',
-        'unit_id',
+        'prod_parameter_unit_id',
         'allow_custom_unit',
         'modified_by',
     ];
@@ -29,6 +31,11 @@ class TemplateParameterUnit extends Model
 
     public function unit()
     {
-        return $this->belongsTo(ParameterUnit::class, 'unit_id');
+        return $this->belongsTo(ParameterUnit::class, 'prod_parameter_unit_id');
     }
+    public function getUnitNameAttribute()
+    {
+        return $this->unit?->unit; // returns null if unit is missing
+    }
+
 }

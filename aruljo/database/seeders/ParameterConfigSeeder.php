@@ -5,59 +5,129 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use App\Models\Product\Parameter;
 use App\Models\Product\ParameterConfig;
-use App\Models\Product\template;
+use App\Models\Product\Template;
 
 class ParameterConfigSeeder extends Seeder
 {
     public function run(): void
     {
+        // Structured config array with input_type
         $configs = [
-            ['template' => 'rcc pipe',       'parameters' => ['Diameter', 'Length', 'Class', 'Pipe Type']],
-            ['template' => 'offcut rcc pipe',     'parameters' => ['Diameter', 'Length', 'Class']],
-            ['template' => 'chamber',    'parameters' => ['Shape', 'Cover']],
-            ['template' => 'ring',       'parameters' => ['Diameter', 'Thickness', 'Height', 'Cover']],
-            ['template' => 'v trough',    'parameters' => ['Voltage', 'Len', 'Thickness']],
-            ['template' => 'water tank', 'parameters' => ['Shape','Capacity', 'Class']],
-            ['template' => 'cover',      'parameters' => ['Shape(Cover)','Handle', 'Partition','Holes']],
-            ['template' => 'manhole cover',   'parameters' => ['MHC_Size', 'Grade']],
-            ['template' => 'cement pillar',     'parameters' => ['Length', 'Breadth', 'Height','Pillar Type']],
-            ['template' => 'kerb stone',     'parameters' => ['Length', 'Breadth', 'Height','Stone Type']],
+            [
+                'template' => 'rcc pipe',
+                'parameters' => [
+                    ['name' => 'Diameter',   'input_type' => 'numeric'],
+                    ['name' => 'Length',     'input_type' => 'numeric'],
+                    ['name' => 'Class',      'input_type' => 'select'],
+                    ['name' => 'Pipe Type',  'input_type' => 'select'],
+                ],
+            ],
+            [
+                'template' => 'offcut rcc pipe',
+                'parameters' => [
+                    ['name' => 'Diameter', 'input_type' => 'numeric'],
+                    ['name' => 'Length',   'input_type' => 'numeric'],
+                    ['name' => 'Class',    'input_type' => 'select'],
+                ],
+            ],
+            [
+                'template' => 'chamber',
+                'parameters' => [
+                    ['name' => 'Shape', 'input_type' => 'select'],
+                    ['name' => 'Cover', 'input_type' => 'select'],
+                ],
+            ],
+            [
+                'template' => 'ring',
+                'parameters' => [
+                    ['name' => 'Diameter',  'input_type' => 'numeric'],
+                    ['name' => 'Thickness', 'input_type' => 'numeric'],
+                    ['name' => 'Height',    'input_type' => 'numeric'],
+                    ['name' => 'Cover',     'input_type' => 'select'],
+                ],
+            ],
+            [
+                'template' => 'v trough',
+                'parameters' => [
+                    ['name' => 'Voltage',   'input_type' => 'numeric'],
+                    ['name' => 'Length',       'input_type' => 'numeric'],
+                    ['name' => 'Thickness', 'input_type' => 'numeric'],
+                ],
+            ],
+            [
+                'template' => 'water tank',
+                'parameters' => [
+                    ['name' => 'Shape',   'input_type' => 'select'],
+                    ['name' => 'Capacity','input_type' => 'numeric'],
+                    ['name' => 'Class',   'input_type' => 'select'],
+                ],
+            ],
+            [
+                'template' => 'cover',
+                'parameters' => [
+                    ['name' => 'Shape', 'input_type' => 'select'],
+                    ['name' => 'Handle',       'input_type' => 'select'],
+                    ['name' => 'Partition',    'input_type' => 'select'],
+                    ['name' => 'Holes',        'input_type' => 'select'],
+                ],
+            ],
+            [
+                'template' => 'manhole cover',
+                'parameters' => [
+                    ['name' => 'Size', 'input_type' => 'numeric'],
+                    ['name' => 'Grade',    'input_type' => 'select'],
+                ],
+            ],
+            [
+                'template' => 'cement pillar',
+                'parameters' => [
+                    ['name' => 'Length',      'input_type' => 'numeric'],
+                    ['name' => 'Breadth',     'input_type' => 'numeric'],
+                    ['name' => 'Height',      'input_type' => 'numeric'],
+                    ['name' => 'Pillar Type', 'input_type' => 'select'],
+                ],
+            ],
+            [
+                'template' => 'kerb stone',
+                'parameters' => [
+                    ['name' => 'Length',     'input_type' => 'numeric'],
+                    ['name' => 'Breadth',    'input_type' => 'numeric'],
+                    ['name' => 'Height',     'input_type' => 'numeric'],
+                    ['name' => 'Stone Type', 'input_type' => 'select'],
+                ],
+            ],
         ];
 
-        // Build maps
-        $paramIdMap    = Parameter::pluck('id', 'name')->toArray();   // ['Diameter' => 1, ...]
-        $templateIdMap = template::pluck('id', 'name')->toArray();    // ['pipe' => 1, ...]
+        // Lookup maps for template and parameter IDs
+        $paramIdMap    = Parameter::pluck('id', 'name')->toArray();
+        $templateIdMap = Template::pluck('id', 'name')->toArray();
 
-         // 🧹 Delete old Shape parameter from Cover template
-        $coverTemplateId = Template::where('name', 'cover')->value('id');
-        $shapeParamId = Parameter::where('name', 'Shape')->value('id');
-        if ($coverTemplateId && $shapeParamId) {
-            ParameterConfig::where('prod_template_id', $coverTemplateId)
-                ->where('prod_parameter_id', $shapeParamId)
-                ->delete();
-        }
-
+        // Loop through templates and parameters
         foreach ($configs as $config) {
             $templateName = $config['template'];
+            if (!isset($templateIdMap[$templateName])) continue;
 
-            if (!isset($templateIdMap[$templateName])) {
-                // Skip if template not found
-                continue;
-            }
+            $templateId = $templateIdMap[$templateName];
+            $sortOrder = 1;
 
-            foreach ($config['parameters'] as $paramName) {
-                if (!isset($paramIdMap[$paramName])) {
-                    // Skip if parameter not found
-                    continue;
-                }
+            foreach ($config['parameters'] as $param) {
+                $paramName = $param['name'];
+                if (!isset($paramIdMap[$paramName])) continue;
+
+                $inputType = $param['input_type'] ?? 'select'; // fallback
 
                 ParameterConfig::updateOrCreate(
                     [
-                        'prod_template_id'  => $templateIdMap[$templateName],
+                        'prod_template_id'  => $templateId,
                         'prod_parameter_id' => $paramIdMap[$paramName],
                     ],
                     [
-                        'modified_by' => 1,
+                        'modified_by'   => 1,
+                        'sort_order'    => $sortOrder++,
+                        'is_required'   => $param['is_required'] ?? true,
+                        'default_value' => $param['default_value'] ?? null,
+                        'input_type'    => $inputType,
+                        'group_name'    => $param['group_name'] ?? null,
                     ]
                 );
             }

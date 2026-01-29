@@ -9,7 +9,7 @@ use App\Models\Product\Unit;
 use App\Models\Product\Hsncode;
 use App\Models\Product\ParameterConfig;
 use App\Models\Product\ParameterValue;
-use App\Models\Product\TemplateParameterUnit;
+use App\Models\Product\ParameterUnitConfig;
 use App\Models\Transport\TruckType;
 use App\Models\Transport\TruckCapacity;
 use Illuminate\Http\Request;
@@ -36,31 +36,66 @@ class ProductController extends Controller
     /**
      * Load parameters dynamically based on template
      */
-    public function getParameters($templateId)
-    {
-       $configs = ParameterConfig::with([
-           'parameter.options.dependencies.parameter.options',
-       ])
-       ->where('prod_template_id', $templateId)
-       ->get();
 
-       // Attach unit from TemplateParameterUnit
-       $configs->each(function ($config) use ($templateId) {
-           $mapping = TemplateParameterUnit::with('unit')
-               ->where('prod_template_id', $templateId)
-               ->where('prod_parameter_id', $config->prod_parameter_id)
-               ->first();
+   public function getParameters($templateId)
+   {
+       // 1️⃣ Fetch all parameter configs for this template, with options and dependencies
+       $configs = ParameterConfig::forTemplate($templateId)
+           ->ordered()
+           ->get();
 
-           $config->unit = $mapping?->unit?->unit; // null if either is missing
+       // 2️⃣ Fetch all unit configs for this template once
+       $unitConfigs = ParameterUnitConfig::where('prod_template_id', $templateId)
+           ->with('unit')
+           ->get()
+           ->keyBy('prod_parameter_id'); // key by parameter_id for easy lookup
+
+       // 3️⃣ Attach the correct unit to each parameter
+       $configs->each(function ($config) use ($unitConfigs) {
+           $unitConfig = $unitConfigs[$config->prod_parameter_id] ?? null;
+           $config->parameter->unit = $unitConfig?->unit?->unit ?? null;
+
+           // Also attach units to all dependent parameters recursively
+           if ($config->parameter->options) {
+               foreach ($config->parameter->options as $option) {
+                   if ($option->dependencies) {
+                       $this->attachDependencyUnits($option->dependencies, $unitConfigs);
+                   }
+               }
+           }
        });
-       $units = TemplateParameterUnit::with('unit') // make sure the 'unit' relation exists in the model
-                   ->where('prod_template_id', $templateId)
-                   ->get();
-        return response()->json([
-            'configs' => $configs,
-            'units' => $units,
-        ]);
-    }
+
+       Log::info(json_encode($configs, JSON_PRETTY_PRINT));
+
+       return response()->json([
+           'configs' => $configs,
+       ]);
+   }
+
+   /**
+    * Recursive function to attach units to all required/dependent parameters
+    */
+   protected function attachDependencyUnits($dependencies, $unitConfigs)
+   {
+       foreach ($dependencies as $dep) {
+           $param = $dep->requiredParameter;
+           if (!$param) continue;
+
+           $unitConfig = $unitConfigs[$param->id] ?? null;
+           $param->unit = $unitConfig?->unit?->unit ?? null;
+
+           // Recurse if this dependent parameter has options with further dependencies
+           if ($param->options) {
+               foreach ($param->options as $opt) {
+                   if ($opt->dependencies) {
+                       $this->attachDependencyUnits($opt->dependencies, $unitConfigs);
+                   }
+               }
+           }
+       }
+   }
+
+
 
     /**
      * Store a new product with its parameter values

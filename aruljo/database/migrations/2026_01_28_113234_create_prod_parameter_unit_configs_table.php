@@ -7,12 +7,12 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void
     {
-        Schema::create('template_parameter_units', function (Blueprint $table) {
+        Schema::create('prod_parameter_unit_configs', function (Blueprint $table) {
             $table->id();
 
             $table->unsignedBigInteger('prod_template_id');
             $table->unsignedBigInteger('prod_parameter_id');
-            $table->unsignedBigInteger('unit_id')->nullable();
+            $table->unsignedBigInteger('prod_parameter_unit_id')->nullable();
             $table->boolean('allow_custom_unit')->default(false);
             $table->unsignedBigInteger('modified_by')->nullable();
 
@@ -21,12 +21,12 @@ return new class extends Migration {
             // Foreign keys
             $table->foreign('prod_template_id')->references('id')->on('prod_templates')->onDelete('cascade');
             $table->foreign('prod_parameter_id')->references('id')->on('prod_parameters')->onDelete('cascade');
-            $table->foreign('unit_id')->references('id')->on('prod_parameter_units')->onDelete('set null');
+            $table->foreign('prod_parameter_unit_id')->references('id')->on('prod_parameter_units')->onDelete('set null');
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('template_parameter_units');
+        Schema::dropIfExists('prod_parameter_unit_configs');
     }
 };

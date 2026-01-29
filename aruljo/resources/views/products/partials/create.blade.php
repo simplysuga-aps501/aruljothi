@@ -154,9 +154,6 @@
                 method: 'GET',
                 success: function (response) {
                     allConfigs = response.configs;
-                    allUnits = response.units;
-                    console.log(allConfigs);// save configs globally
-                    console.log(allUnits);
                     renderParameters(); // render fields
                 },
                 error: function (xhr) {
@@ -321,46 +318,7 @@
 
     });
 
-    // ==================================================
-    // PARAMETER DEPENDENCIES HANDLING
-    // ==================================================
-    $('#parameterFields').on('change', '.param-select', function () {
-        let paramId = $(this).data('parameter-id');
-        let selectedOption = $(this).val();
 
-        // Remove old dependencies
-        $(`.dependent-of-${paramId}`).remove();
-        $(`#dependencies-of-${paramId}`).remove();
-
-        // Find config
-        let config = allConfigs.find(c => c.parameter.id == paramId);
-        if (!config) return;
-
-        // Find option
-        let optionObj = config.parameter.options.find(o => o.parameter_option === selectedOption);
-        if (!optionObj) return;
-        // Add dependencies
-        if (optionObj.dependencies?.length) {
-            let $lastInserted = $(this).closest('.col-md-3');
-            optionObj.dependencies.forEach(dep => {
-                // Check if this parameter already exists in the DOM
-                let $existing = $(`#parameterFields [data-parameter-id="${dep.parameter.id}"]`);
-                if ($existing.length) {
-                    $existing.closest('.form-group').remove(); // remove duplicate
-                }
-                const unitMap = {};
-                allUnits.forEach(u => {
-                    unitMap[u.prod_parameter_id] = u.unit.unit||''; // or u.unit.name if it's an object
-                });
-                const unitText = unitMap[dep.parameter.id] || '';
-
-                let html = generateParameterHTML(dep.parameter,unitText);
-                let $element = $(html).addClass(`dependent-of-${paramId}`);
-                $element.insertAfter($lastInserted);
-                $lastInserted = $element;
-            });
-        }
-    });
 
     // ==================================================
     // PARAMETER RENDER FUNCTIONS
@@ -403,22 +361,102 @@
     }
 
 
+    // ==================================================
+    // PARAMETER RENDERING
+    // ==================================================
+    function generateParameterHTML(param) {
+        const unitText = param.unit || '';
+        let html = `<div class="form-group col-md-3">
+                        <label>${param.name}${param.is_required ? ' *' : ''}</label>`;
+
+        if (param.input_type === 'select') {
+            let options = Array.isArray(param.options) ? param.options : [];
+            html += `<select class="form-control param-input param-select"
+                             data-parameter-id="${param.id}"
+                             name="parameters[${param.id}][value]"
+                             data-description="${param.description || ''}">
+                        <option value="">-- Select ${param.name} --</option>`;
+            options.forEach(option => {
+                html += `<option value="${option.parameter_option}">${option.parameter_option}</option>`;
+            });
+            html += `</select>`;
+        } else if (param.input_type === 'number') {
+            html += `<div class="input-group">
+                        <input type="number" step="0.01" min="0"
+                               class="form-control param-input"
+                               data-parameter-id="${param.id}"
+                               name="parameters[${param.id}][value]"
+                               data-description="${param.description || ''}"
+                               placeholder="Enter ${param.name}" ${param.is_required ? 'required' : ''}>
+                        <div class="input-group-append">
+                            <span class="input-group-text bg-light param-unit">
+                                ${unitText}
+                            </span>
+                        </div>
+                     </div>`;
+        }
+
+        html += `</div>`;
+        return html;
+    }
+
+    // ==================================================
+    // RENDER TOP-LEVEL PARAMETERS
+    // ==================================================
     function renderParameters() {
         $('#parameterFields').empty();
 
-        // First, make a lookup map: parameter_id → unit name
-        const unitMap = {};
-        allUnits.forEach(u => {
-            unitMap[u.prod_parameter_id] = u.unit.unit; // or u.unit.name if it's an object
-        });
-
-        // Now render parameters with their corresponding units
         allConfigs.forEach(config => {
-            const unitText = unitMap[config.prod_parameter_id] || ''; // lookup
-            console.log(unitText);
-            $('#parameterFields').append(generateParameterHTML(config.parameter, unitText));
+            $('#parameterFields').append(generateParameterHTML(config.parameter));
         });
     }
+
+    // ==================================================
+    // PARAMETER DEPENDENCIES HANDLING (RECURSIVE)
+    // ==================================================
+    $('#parameterFields').on('change', '.param-select', function () {
+        const paramId = $(this).data('parameter-id');
+        const selectedOption = $(this).val();
+
+        // Remove old dependencies
+        $(`.dependent-of-${paramId}`).remove();
+
+        // Find config
+        const config = allConfigs.find(c => c.parameter.id == paramId);
+        if (!config) return;
+
+        // Find selected option
+        const optionObj = config.parameter.options.find(o => o.parameter_option === selectedOption);
+        if (!optionObj) return;
+
+        // Render dependencies recursively
+        renderDependencies(paramId, optionObj, $(this).closest('.col-md-3'));
+    });
+
+    function renderDependencies(parentParamId, optionObj, $lastInserted) {
+        if (!optionObj.dependencies?.length) return;
+
+        optionObj.dependencies.forEach(dep => {
+            const paramObj = dep.required_parameter;
+            if (!paramObj) return;
+
+            // Remove if already exists
+            const $existing = $(`#parameterFields [data-parameter-id="${paramObj.id}"]`);
+            if ($existing.length) {
+                $existing.closest('.form-group').remove();
+            }
+
+            // Generate HTML
+            const html = generateParameterHTML(paramObj);
+            const $element = $(html).addClass(`dependent-of-${parentParamId}`);
+            $element.insertAfter($lastInserted);
+            $lastInserted = $element;
+
+            // No auto-select for nested selects
+        });
+    }
+
+
 
 
     /*

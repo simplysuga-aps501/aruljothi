@@ -13,18 +13,33 @@ class ParameterOptionConfig extends Model
 
     protected $fillable = [
         'prod_parameter_id',
+        'prod_template_id',
         'parameter_option',
+        'abbreviation',
         'dependencies',
+        'is_active',
         'modified_by',
     ];
 
     protected $casts = [
         'dependencies' => 'array',
+        'is_active'    => 'boolean',
     ];
+
+    /*
+    |--------------------------------------------------------------------------
+    | Relationships
+    |--------------------------------------------------------------------------
+    */
 
     public function parameter()
     {
         return $this->belongsTo(Parameter::class, 'prod_parameter_id');
+    }
+
+    public function template()
+    {
+        return $this->belongsTo(Template::class, 'prod_template_id');
     }
 
     public function modifiedBy()
@@ -35,5 +50,22 @@ class ParameterOptionConfig extends Model
     public function dependencies()
     {
         return $this->hasMany(ParameterOptionDependency::class, 'option_id');
+    }
+
+    public function dependentParameters()
+    {
+        return $this->hasManyThrough(
+            Parameter::class,
+            ParameterOptionDependency::class,
+            'option_id',
+            'id',
+            'id',
+            'req_param_id'
+        )->with('unitConfigs.unit');
+    }
+
+    public function dependenciesWithParameters()
+    {
+        return $this->dependencies()->with(['parameter.unitConfigs.unit']);
     }
 }
