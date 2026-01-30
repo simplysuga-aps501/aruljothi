@@ -50,14 +50,20 @@ class ProductController extends Controller
            ->get()
            ->keyBy('prod_parameter_id'); // key by parameter_id for easy lookup
 
-       // 3️⃣ Attach the correct unit to each parameter
+       // 3️⃣ Attach units and is_required
        $configs->each(function ($config) use ($unitConfigs) {
-           $unitConfig = $unitConfigs[$config->prod_parameter_id] ?? null;
-           $config->parameter->unit = $unitConfig?->unit?->unit ?? null;
+           $param = $config->parameter;
 
-           // Also attach units to all dependent parameters recursively
-           if ($config->parameter->options) {
-               foreach ($config->parameter->options as $option) {
+           // ✅ Top-level parameter required flag from config
+           $param->is_required = $config->is_required ? true : false;
+
+           // ✅ Attach unit
+           $unitConfig = $unitConfigs[$config->prod_parameter_id] ?? null;
+           $param->unit = $unitConfig?->unit?->unit ?? null;
+
+           // Attach units and is_required to dependencies recursively
+           if ($param->options) {
+               foreach ($param->options as $option) {
                    if ($option->dependencies) {
                        $this->attachDependencyUnits($option->dependencies, $unitConfigs);
                    }
@@ -65,15 +71,13 @@ class ProductController extends Controller
            }
        });
 
-       Log::info(json_encode($configs, JSON_PRETTY_PRINT));
-
        return response()->json([
            'configs' => $configs,
        ]);
    }
 
    /**
-    * Recursive function to attach units to all required/dependent parameters
+    * Recursive function to attach units and is_required to all dependent parameters
     */
    protected function attachDependencyUnits($dependencies, $unitConfigs)
    {
@@ -81,10 +85,14 @@ class ProductController extends Controller
            $param = $dep->requiredParameter;
            if (!$param) continue;
 
-           $unitConfig = $unitConfigs[$param->id] ?? null;
-           $param->unit = $unitConfig?->unit?->unit ?? null;
+           // ✅ Attach required flag from dependency row
+           $param->is_required = $dep->is_required ? true : false;
 
-           // Recurse if this dependent parameter has options with further dependencies
+           // ✅ Attach unit
+           $unitConfig = $unitConfigs[$param->id] ?? null;
+           $param->unit = $unitConfig?->unit?->unit ?? $param->unit ?? null;
+
+           // Recurse for further nested dependencies
            if ($param->options) {
                foreach ($param->options as $opt) {
                    if ($opt->dependencies) {
@@ -94,8 +102,6 @@ class ProductController extends Controller
            }
        }
    }
-
-
 
     /**
      * Store a new product with its parameter values

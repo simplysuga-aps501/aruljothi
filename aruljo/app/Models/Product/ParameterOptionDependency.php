@@ -15,6 +15,7 @@ class ParameterOptionDependency extends Model
         'option_id',
         'req_param_id',
         'prod_template_id',
+        'is_required',
     ];
 
     /*

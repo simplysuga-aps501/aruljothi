@@ -15,22 +15,80 @@ class ParameterOptionDependenciesSeeder extends Seeder
         // Map template names to IDs
         $templates = Template::pluck('id', 'name')->all();
 
+        // Each option can require specific parameters, some required and some optional
         $dependenciesData = [
             'cover' => [
-                ['option' => 'Round',    'requires' => ['Diameter', 'Thickness']],
-                ['option' => 'Square',   'requires' => ['Size', 'Thickness']],
+                [
+                    'option' => 'Round',
+                    'requires' => [
+                        ['param' => 'Diameter', 'is_required' => true],
+                        ['param' => 'Thickness', 'is_required' => true],
+                    ],
+                ],
+                [
+                    'option' => 'Square',
+                    'requires' => [
+                        ['param' => 'Size', 'is_required' => true],
+                        ['param' => 'Thickness', 'is_required' => true],
+                    ],
+                ],
             ],
+
             'chamber' => [
-                ['option' => 'Round',  'requires' => ['Diameter', 'Thickness','Height']],
-                ['option' => 'Square', 'requires' => ['Size', 'Thickness', 'Height']],
-                ['option' => 'With Lid', 'requires' => ['Handle', 'Partition', 'Holes']],
+                [
+                    'option' => 'Round',
+                    'requires' => [
+                        ['param' => 'Diameter', 'is_required' => true],
+                        ['param' => 'Thickness', 'is_required' => true],
+                        ['param' => 'Height', 'is_required' => true],
+                    ],
+                ],
+                [
+                    'option' => 'Square',
+                    'requires' => [
+                        ['param' => 'Size', 'is_required' => true],
+                        ['param' => 'Thickness', 'is_required' => true],
+                        ['param' => 'Height', 'is_required' => true],
+                    ],
+                ],
+                [
+                    'option' => 'With Lid',
+                    'requires' => [
+                        ['param' => 'Handle', 'is_required' => true],
+                        ['param' => 'Partition', 'is_required' => true],
+                        ['param' => 'Holes', 'is_required' => true],
+                    ],
+                ],
             ],
+
             'water tank' => [
-                ['option' => 'Round',  'requires' => ['Diameter', 'Thickness','Height']],
-                ['option' => 'Square', 'requires' => ['Size', 'Thickness', 'Height']],
+                [
+                    'option' => 'Round',
+                    'requires' => [
+                        ['param' => 'Diameter', 'is_required' => true],
+                        ['param' => 'Thickness', 'is_required' => true],
+                        ['param' => 'Height', 'is_required' => true],
+                    ],
+                ],
+                [
+                    'option' => 'Square',
+                    'requires' => [
+                        ['param' => 'Size', 'is_required' => true],
+                        ['param' => 'Thickness', 'is_required' => true],
+                        ['param' => 'Height', 'is_required' => true],
+                    ],
+                ],
             ],
+
             'ring' => [
-                ['option' => 'With Lid', 'requires' => ['Handle', 'Partition', 'Holes']],
+                [
+                    'option' => 'With Lid',
+                    'requires' => [
+                        ['param' => 'Handle', 'is_required' => true],
+                        ['param' => 'Partition', 'is_required' => true],
+                        ['param' => 'Holes', 'is_required' => true],
+                    ],
+                ],
             ],
         ];
 
@@ -42,7 +100,6 @@ class ParameterOptionDependenciesSeeder extends Seeder
             }
 
             foreach ($deps as $dep) {
-                // Find the option linked to the template
                 $option = ParameterOptionConfig::where('parameter_option', $dep['option'])
                     ->where('prod_template_id', $templateId)
                     ->first();
@@ -52,24 +109,30 @@ class ParameterOptionDependenciesSeeder extends Seeder
                     continue;
                 }
 
-                foreach ($dep['requires'] as $paramName) {
-                    // Fetch global parameter
+                foreach ($dep['requires'] as $req) {
+                    $paramName   = $req['param'];
+                    $isRequired  = $req['is_required'] ?? true;
+
                     $param = Parameter::where('name', $paramName)->first();
                     if (!$param) {
                         $this->command->warn("Parameter '{$paramName}' not found, skipping.");
                         continue;
                     }
 
-                    // Insert dependency
-                    ParameterOptionDependency::firstOrCreate([
-                        'option_id'       => $option->id,
-                        'req_param_id'    => $param->id,
-                        'prod_template_id'=> $templateId,
-                    ]);
+                    ParameterOptionDependency::firstOrCreate(
+                        [
+                            'option_id'        => $option->id,
+                            'req_param_id'     => $param->id,
+                            'prod_template_id' => $templateId,
+                        ],
+                        [
+                            'is_required' => $isRequired,
+                        ]
+                    );
                 }
             }
         }
 
-        $this->command->info("✅ All template-specific parameter option dependencies seeded successfully.");
+        $this->command->info("✅ All parameter option dependencies seeded with is_required flags successfully.");
     }
 }

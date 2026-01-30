@@ -319,62 +319,23 @@
     });
 
 
-
-    // ==================================================
-    // PARAMETER RENDER FUNCTIONS
-    // ==================================================
-    function generateParameterHTML(param, unitText = '') {
-
-        let html = `<div class="form-group col-md-3">
-                        <label>${param.name}</label>`;
-
-            if (param.input_type === 'select') {
-                let options = Array.isArray(param.options) ? param.options : [];
-                html += `<select class="form-control param-input param-select"
-                                 data-parameter-id="${param.id}"
-                                 name="parameters[${param.id}][value]"
-                                 data-description="${param.description || ''}">
-                            <option value="">-- Select ${param.name} --</option>`;
-                options.forEach(option => {
-                    html += `<option value="${option.parameter_option}">${option.parameter_option}</option>`;
-                });
-                html += `</select>`;
-            }
-            else if (param.input_type === 'number') {
-                html += `<div class="input-group">
-                            <input type="number" step="0.01" min="0"
-                                   class="form-control param-input"
-                                   data-parameter-id="${param.id}"
-                                   name="parameters[${param.id}][value]"
-                                   data-description="${param.description || ''}"
-                                   placeholder="Enter ${param.name}" required>
-                            <div class="input-group-append">
-                                <span class="input-group-text bg-light param-unit">
-                                    ${unitText}
-                                </span>
-                            </div>
-                         </div>`;
-            }
-
-        html += `</div>`;
-        return html;
-    }
-
-
     // ==================================================
     // PARAMETER RENDERING
     // ==================================================
     function generateParameterHTML(param) {
+
         const unitText = param.unit || '';
         let html = `<div class="form-group col-md-3">
-                        <label>${param.name}${param.is_required ? ' *' : ''}</label>`;
+                        <label>${param.name}${param.is_required ? ' <span class="text-danger">*</span>' : ''}</label>`;
+
 
         if (param.input_type === 'select') {
             let options = Array.isArray(param.options) ? param.options : [];
             html += `<select class="form-control param-input param-select"
                              data-parameter-id="${param.id}"
                              name="parameters[${param.id}][value]"
-                             data-description="${param.description || ''}">
+                             data-description="${param.description || ''}"
+                             ${param.is_required ? 'required' : ''}>
                         <option value="">-- Select ${param.name} --</option>`;
             options.forEach(option => {
                 html += `<option value="${option.parameter_option}">${option.parameter_option}</option>`;
@@ -399,6 +360,7 @@
         html += `</div>`;
         return html;
     }
+
 
     // ==================================================
     // RENDER TOP-LEVEL PARAMETERS
@@ -440,24 +402,34 @@
             const paramObj = dep.required_parameter;
             if (!paramObj) return;
 
+            // ✅ Attach the required flag from dependency row
+            paramObj.is_required = dep.is_required ? true : false;
+
+            // ✅ Attach unit if available
+            paramObj.unit = paramObj.unit || '';
+
             // Remove if already exists
             const $existing = $(`#parameterFields [data-parameter-id="${paramObj.id}"]`);
             if ($existing.length) {
                 $existing.closest('.form-group').remove();
             }
 
-            // Generate HTML
+            // Generate HTML for the dependent parameter
             const html = generateParameterHTML(paramObj);
             const $element = $(html).addClass(`dependent-of-${parentParamId}`);
             $element.insertAfter($lastInserted);
             $lastInserted = $element;
 
-            // No auto-select for nested selects
+            // Recursively render further nested dependencies
+            if (paramObj.options) {
+                paramObj.options.forEach(opt => {
+                    if (opt.dependencies) {
+                        renderDependencies(paramObj.id, opt, $lastInserted);
+                    }
+                });
+            }
         });
     }
-
-
-
 
     /*
     // ==================================================

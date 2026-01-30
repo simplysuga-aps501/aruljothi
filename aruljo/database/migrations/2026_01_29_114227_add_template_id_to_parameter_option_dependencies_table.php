@@ -9,7 +9,8 @@ return new class extends Migration
     {
         Schema::table('prod_parameter_option_dependencies', function (Blueprint $table) {
             // Just add a nullable template_id column, no FK, no index
-            $table->unsignedBigInteger('prod_template_id')->nullable()->after('req_param_id');
+            $table->unsignedBigInteger('prod_template_id')->nullable()->after('id');
+            $table->boolean('is_required')->default(true)->after('req_param_id');
         });
     }
 
