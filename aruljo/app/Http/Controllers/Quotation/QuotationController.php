@@ -29,50 +29,18 @@ use Yajra\DataTables\Facades\DataTables;
 
 class QuotationController extends Controller
 {
-    public function index(Request $request)
+    public function index()
     {
-        if ($request->ajax()) {
-            $query = Quotation::with(['lead', 'creator', 'modifier', 'activeVersion'])
+        $quotations = Quotation::with(['lead', 'creator', 'versions', 'activeVersion'])
                 ->whereHas('lead', function ($q) {
                     $q->where('status', '!=', 'Cancelled');
                 })
-                ->latest();
+                ->latest()
+                ->get();
 
-            return DataTables::of($query)
-                ->addColumn('lead_no', fn($q) => $q->lead->id ?? '-')
-                ->addColumn('buyer_name', function ($q) {
-                    if (!$q->lead) return '-';
-                    $url = route('quotations.create-version', $q->id);
-                    return '<a href="'.$url.'">'.$q->lead->buyer_name.'</a>';
-                })
-                ->addColumn('contact', function ($q) {
-                    if (!$q->lead || !$q->lead->buyer_contact) return '-';
-                    $contact = preg_replace('/\D/', '', $q->lead->buyer_contact);
-                    if (strlen($contact) == 10) $contact = '91' . $contact;
-                    $whatsappUrl = "https://wa.me/{$contact}";
-                    $callUrl = "tel:+{$contact}";
-                    return '
-                        <a href="'.$callUrl.'" class="text-primary" title="Click to call">'
-                            .$q->lead->buyer_contact.'</a>
-                        <a href="'.$whatsappUrl.'" target="_blank" class="text-success ml-2" title="Chat on WhatsApp">
-                            <i class="fab fa-whatsapp fa-lg"></i>
-                        </a>
-                    ';
-                })
-                ->addColumn('amount', fn($q) => formatIndianCurrency($q->total_amount))
-                ->addColumn('modified_by', fn($q) => $q->modifier->name ?? $q->creator->name ?? '-')
-                ->addColumn('last_updated', fn($q) => $q->updated_at?->format('d-M-Y H:i'))
-                ->addColumn('actions', function ($q) {
-                    return '<button class="btn btn-xs btn-danger download-pdf" data-id="'.$q->id.'">
-                                <i class="fas fa-file-pdf"></i>
-                            </button>';
-                })
-                ->rawColumns(['buyer_name', 'contact', 'actions'])
-                ->make(true);
-        }
-
-        return view('quotations.index');
+        return view('quotations.index', compact('quotations'));
     }
+
 
     public function create()
     {

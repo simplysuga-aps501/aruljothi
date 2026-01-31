@@ -146,10 +146,10 @@ class LeadController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
+        $products = Product::all();
         $tab = $request->get('tab', 'active');
         $today = now()->toDateString();
 
-        // euser default tab
         if (
             ($user->getRoleNames()->count() === 1 && $user->hasRole('euser')) ||
             $user->getRoleNames()->count() === 0
@@ -157,17 +157,22 @@ class LeadController extends Controller
             $tab = 'my';
         }
 
-        // ✅ AJAX path — DataTables
-        if ($request->ajax()) {
+        if ($tab === 'all') {
+            $leads = Lead::with('tags')
+                ->where('created_at', '>=', now()->subDays(60))
+                ->orderBy('created_at', 'desc')
+                ->get();
+        } else {
             $query = Lead::with('tags');
 
-            // Filter by tab
-            if ($tab === 'all') {
-                $query->where('created_at', '>=', now()->subDays(60));
-            } elseif ($tab === 'my') {
+            if ($tab === 'my') {
+                // My Leads: allow future follow-ups
                 $query->where('assigned_to', $user->name)
                       ->whereNotIn('status', ['Cancelled', 'Completed']);
-            } elseif ($tab === 'active') {
+            }
+
+            if ($tab === 'active') {
+                // Active Leads: only today or past follow-ups
                 $query->whereNotIn('status', ['Cancelled', 'Completed'])
                       ->where(function ($q) use ($today) {
                           $q->whereNull('follow_up_date')
@@ -175,106 +180,91 @@ class LeadController extends Controller
                       });
             }
 
-            // Sorting logic for urgency & follow-up
-            $query->select('leads.*')->selectRaw("
-                CASE
-                    WHEN EXISTS (
-                        SELECT 1 FROM taggables tg
-                        JOIN tags t ON t.id = tg.tag_id
-                        WHERE tg.taggable_id = leads.id
-                          AND tg.taggable_type = ?
-                          AND JSON_UNQUOTE(JSON_EXTRACT(t.name, '$.en')) = 'Urgent'
-                    ) THEN 1
-                    WHEN DATE(follow_up_date) = ? THEN 2
-                    WHEN follow_up_date IS NOT NULL AND DATE(follow_up_date) < ? THEN 3
-                    ELSE 4
-                END as sort_priority
-            ", [Lead::class, $today, $today]);
+            $query->select('leads.*')
+                  ->selectRaw("
+                      CASE
+                          WHEN EXISTS (
+                              SELECT 1
+                              FROM taggables tg
+                              JOIN tags t ON t.id = tg.tag_id
+                              WHERE tg.taggable_id = leads.id
+                                AND tg.taggable_type = ?
+                                AND JSON_UNQUOTE(JSON_EXTRACT(t.name, '$.en')) = 'Urgent'
+                          ) THEN 1
+                          WHEN DATE(follow_up_date) = ? THEN 2
+                          WHEN follow_up_date IS NOT NULL AND DATE(follow_up_date) < ? THEN 3
+                          ELSE 4
+                      END as sort_priority
+                  ", [Lead::class, $today, $today])
+                  ->orderByRaw("
+                      CASE
+                          WHEN sort_priority IN (1, 2, 3) THEN sort_priority
+                          ELSE 999
+                      END ASC
+                  ")
+                  ->orderByRaw("
+                      CASE
+                          WHEN sort_priority IN (1, 2, 3) THEN created_at
+                          ELSE NULL
+                      END DESC
+                  ")
+                  ->orderByRaw("
+                      CASE
+                          WHEN sort_priority NOT IN (1, 2, 3) THEN created_at
+                          ELSE NULL
+                      END DESC
+                  ");
 
-            return DataTables::of($query)
-                ->addIndexColumn()
-                ->addColumn('platform', fn($lead) => $tab === 'all' ? e($lead->platform) : null)
-                ->addColumn('buyer', function ($lead) {
-                    $tags = $lead->tags->map(fn($t) => '<span class="badge badge-info">'.$t->name.'</span>')
-                                      ->implode(' ');
-                    $name = Str::limit(e($lead->buyer_name), 20);
-                    return <<<HTML
-                        <a href="javascript:void(0);" class="open-edit-lead-modal" data-lead-id="{$lead->id}">
-                            {$tags} <span title="{$lead->buyer_name}">{$name}</span>
-                        </a>
-                    HTML;
-                })
-                ->addColumn('lead_date', function ($lead) {
-                    if (!$lead->lead_date) return '<span class="text-muted">—</span>';
-                    $d = Carbon::parse($lead->lead_date);
-                    $short = $d->format('d-m-Y');
-                    $full = $d->format('d-m-Y h:i A');
-                    $daysago = str_pad($d->diffInDays(now()), 2, '0', STR_PAD_LEFT);
-                    return "<span title='{$full}'>{$short} <small class='text-muted'>({$daysago})</small></span>";
-                })
-                ->addColumn('buyer_contact', function ($lead) {
-                    if (!$lead->buyer_contact) return '-';
-                    $phone = e($lead->buyer_contact);
-                    $wa = "https://wa.me/91{$phone}";
-                    return <<<HTML
-                        <a href="tel:{$phone}" onclick="copyPhone(event, '{$phone}')" class="text-primary">
-                            {$phone}
-                        </a>
-                        <a href="{$wa}" target="_blank" class="ms-2">
-                            <button class="btn btn-success btn-xs"><i class="fab fa-whatsapp"></i></button>
-                        </a>
-                    HTML;
-                })
-                ->addColumn('follow_up_date', function ($lead) {
-                    if (!$lead->follow_up_date) return '-';
-                    $f = Carbon::parse($lead->follow_up_date);
-                    $formatted = $f->format('d-m-Y');
-                    $cls = $f->isToday()
-                        ? 'bg-warning text-dark px-2 py-1 rounded'
-                        : ($f->isPast() ? 'bg-danger text-white px-2 py-1 rounded' : '');
-                    return "<span class='{$cls}'>{$formatted}</span>";
-                })
-                ->addColumn('actions', function ($lead) {
-                    $logUrl = route('leads.audits', $lead->id);
-                    $deleteUrl = route('leads.destroy', $lead->id);
-                    return <<<HTML
-                        <div class="d-flex align-items-center">
-                            <a href="{$logUrl}" class="btn btn-xs btn-outline-info ml-1" title="View Logs">
-                                <i class="fas fa-sticky-note"></i>
-                            </a>
-                            <i class="fas fa-trash text-danger ml-2" style="cursor:pointer; font-size:0.85rem;"
-                                data-toggle="modal" data-target="#deleteModal"
-                                onclick="setDeleteAction('{$deleteUrl}')"></i>
-                        </div>
-                    HTML;
-                })
-                ->rawColumns(['buyer', 'buyer_contact', 'lead_date', 'follow_up_date', 'actions'])
-                ->make(true);
+            $leads = $query->get();
         }
 
-        // ---------------- Normal view load ----------------
-        $users = User::whereDoesntHave('roles', fn($q) => $q->where('name', 'admin'))->get();
+        $users = User::whereDoesntHave('roles', function ($query) {
+            $query->where('name', 'admin');
+        })->get();
+
+        $currentUser = $user->name;
         $statuses = $this->allowedStatuses();
         $platforms = config('platforms.list');
         $allTags = Tag::pluck('name');
+
         $isEuser = ($user->getRoleNames()->count() === 0)
-            || ($user->getRoleNames()->count() === 1 && $user->hasRole('euser'));
+                || ($user->getRoleNames()->count() === 1 && $user->hasRole('euser'));
 
-        $productsArray = Product::all()->map(fn($p) => [
-            'id' => $p->id,
-            'name' => $p->name,
-            'sku' => $p->sku,
-            'weight' => $p->weight_kg,
-            'price' => $p->quote_price,
-        ])->toArray();
+        foreach ($leads as $lead)
+        {
 
-        return view('leads.index', compact(
-            'users', 'tab', 'statuses', 'platforms', 'allTags', 'isEuser', 'productsArray'
-        ));
+            // Lead date
+            if ($lead->lead_date) {
+                $leadDate = \Carbon\Carbon::parse($lead->lead_date);
+                $lead->lead_date_formatted_short = $leadDate->format('d-m-Y');
+                $lead->lead_date_formatted_full = $leadDate->format('d-m-Y h:i A');
+                $lead->lead_date_order = $leadDate->format('Y-m-d H:i:s');
+                $lead->lead_date_daysago = str_pad($leadDate->diffInDays(now()), 2, '0', STR_PAD_LEFT);
+            }
+             // Follow up date
+            if ($lead->follow_up_date) {
+                $followUp = \Carbon\Carbon::parse($lead->follow_up_date);
+                $lead->followup_formatted = $followUp->format('d-m-Y');
+                $lead->followup_order = $followUp->format('Y-m-d');
+                $lead->followup_diff = $followUp->diffForHumans(null, true);
+                $lead->followup_is_today = $followUp->isToday();
+                $lead->followup_is_past = $followUp->isPast() && !$followUp->isToday();
+            }
+        }
+
+        //products
+        // Fetch all products for autocomplete
+                $products = Product::all();
+                $productsArray = $products->map(fn($p) => [
+                    'id' => $p->id,
+                    'name' => $p->name,
+                    'sku' => $p->sku,
+                    'weight' => $p->weight_kg,
+                    'price' => $p->quote_price,
+                ])->toArray();
+       return view('leads.index', compact(
+            'leads', 'users', 'currentUser', 'tab', 'statuses', 'platforms', 'allTags','isEuser','productsArray'));
     }
-
-
-
     /**
      * Show lead for editing.
      */
