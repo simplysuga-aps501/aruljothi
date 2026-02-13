@@ -91,8 +91,8 @@ class ParameterConfigSeeder extends Seeder
                 'template' => 'kerb stone',
                 'parameters' => [
                     ['name' => 'Length',     'input_type' => 'numeric'],
-                    ['name' => 'Breadth',    'input_type' => 'numeric'],
                     ['name' => 'Height',     'input_type' => 'numeric'],
+                    ['name' => 'Thickness', 'input_type' => 'numeric'],
                     ['name' => 'Stone Type', 'input_type' => 'select'],
                 ],
             ],

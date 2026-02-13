@@ -569,11 +569,34 @@ class LeadController extends Controller
         $locationId  = $request->input('delivery_location_id');
         $includeDraft = filter_var($request->input('include_draft', false), FILTER_VALIDATE_BOOLEAN);
 
+        if (!empty($products)) {
+            $productIds = collect($products)->pluck('id')->filter()->all();
+
+            $products = \App\Models\Product\Product::with(['parameterValues.parameter'])
+                ->whereIn('id', $productIds)
+                ->get()
+                ->map(function ($product) use ($products) {
+                    $req = collect($products)->firstWhere('id', $product->id);
+
+                    $product->qty = $req['qty'] ?? 0;
+                    $product->price = $req['price'] ?? $product->quote_price;
+                    $product->weight = $req['weight'] ?? $product->weight_kg;
+
+                    $product->parameterValues = $product->parameterValues->map(fn($pv) => [
+                        'parameter' => $pv->parameter->name ?? 'Unknown',
+                        'value'     => $pv->value,
+                    ]);
+
+                    return $product;
+                });
+        }
+
         $service = new \App\Services\QuoteCalculatorService();
 
         return response()->json(
-            $service->getQuoteReferenceData($products, $distance, $locationId, $includeDraft)
+            $service->getQuoteReferenceData($products->toArray(), $distance, $locationId, $includeDraft)
         );
+
     }
 
 }

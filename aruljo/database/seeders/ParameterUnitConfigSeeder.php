@@ -26,7 +26,7 @@ class ParameterUnitConfigSeeder extends Seeder
             ['template' => 'cover',           'parameters' => ['Diameter'=>'MM', 'Thickness'=>'MM', 'Size'=>'MM']],
             ['template' => 'manhole cover',   'parameters' => ['Size'=>'MM']],
             ['template' => 'cement pillar',   'parameters' => ['Length'=>'IN', 'Breadth'=>'IN','Height'=>'FT',]],
-            ['template' => 'kerb stone',   'parameters' => ['Length'=>'MM', 'Breadth'=>'MM','Height'=>'MM',]],
+            ['template' => 'kerb stone',   'parameters' => ['Length'=>'MM', 'Thickness'=>'MM','Height'=>'MM',]],
         ];
 
 

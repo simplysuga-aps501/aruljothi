@@ -512,9 +512,12 @@
 
             // ✅ determine body type from text cell
             const bodyText = ($row.find('td:nth-child(2) small').text() || '').trim().toLowerCase();
+            //Changes for trailor open body
+            const truckName = ($row.find('td:nth-child(2)').text() || '').toLowerCase();
+            const isTrailer = truckName.includes('trailor') || truckName.includes('trailer');
 
             let newTotal = 0;
-            if (bodyText === 'open') {
+             if (!isTrailer && bodyText === 'open') {
                 console.log(multiplier);
                 // open → per km
                 newTotal = (rate * multiplier * dist) + unloading;
@@ -539,10 +542,10 @@
 
             // ✅ Determine body type from current row (Open vs Truck)
             const bodyText = ($row.find('td:nth-child(2) small').text() || '').trim().toLowerCase();
-            const isOpen = bodyText === 'open';
+            const truckName = ($row.find('td:nth-child(2)').text() || '').toLowerCase();
+            const isTrailer = truckName.includes('trailor') || truckName.includes('trailer');
 
-            // ✅ Compute base cost based on current body type, not global distance
-            const baseCost = isOpen
+            const baseCost = (!isTrailer && bodyText === 'open')
                 ? rate * multiplier * dist     // Open body → per km
                 : rate;                        // Truck → fixed rate
 
@@ -573,9 +576,11 @@
 
             // 🟢 3️⃣ Continue cost calculation
             const bodyText = ($row.find('td:nth-child(2) small').text() || '').trim().toLowerCase();
+            const truckName = ($row.find('td:nth-child(2)').text() || '').toLowerCase();
+            const isTrailer = truckName.includes('trailor') || truckName.includes('trailer');
 
             let total = 0;
-            if (bodyText === 'open') {
+            if (!isTrailer && bodyText === 'open') {
                 total = (rate * newMultiplier * newDistance) + unloading;
             } else {
                 total = rate + unloading;
@@ -854,7 +859,6 @@
     }
 
     // Removes a truck and all its associated product rows
-    // Removes a truck and all its associated product rows
     function removeTruckRow($button) {
         const $row = $button.closest('tr');
         const $tbody = $row.closest('tbody');
@@ -935,19 +939,31 @@
             const truck = trucks.find(x => x.id === t.truckId);
             if (!truck) return;
 
-            const isOpenBody = t.bodyType.toLowerCase() === 'open';
-            // ✅ Unloading is purely based on body type
+            const truckName = (truck.name || '').toLowerCase();
+            const isTrailer = truckName.includes('trailor') || truckName.includes('trailer'); // handle both spellings
+
+            // Default open-body check
+            let isOpenBody = (t.bodyType || '').toLowerCase() === 'open';
+
+            // ✅ Trailers are always treated as fixed rate
+            if (isTrailer) {
+                isOpenBody = false;
+            }
+
+            const useFixedRate = isTrailer || !isOpenBody;
+
+            // ✅ Unloading is still based on actual body type
             const unloading = isOpenBody
-                ? parseFloat(truck.unloading_charges_below_150 || 0)  // Open → use "below_150" field
-                : parseFloat(truck.unloading_charges_above_150 || 0); // Truck → use "above_150" field
+                ? parseFloat(truck.unloading_charges_below_150 || 0)
+                : parseFloat(truck.unloading_charges_above_150 || 0);
 
             let rateDisplay = 0;
             let baseCost = 0;
             let multiplier = 1;
-            let rateTypeLabel = isOpenBody ? 'Rate/km' : 'Fixed Rate (₹)';
+            let rateTypeLabel = useFixedRate ? 'Fixed Rate (₹)' : 'Rate/km';
             let rateCellExtra = '';
 
-            if (isOpenBody) {
+            if (!useFixedRate) {
                 // 🟢 OPEN BODY → rate/km calculation
                 const ratePerKm = parseFloat(truck.rate_per_km || 0);
                 const match = multipliers.find(m => distance >= m.min_km && (!m.max_km || distance < m.max_km));
@@ -955,7 +971,7 @@
                 baseCost = ratePerKm * multiplier * distance;
                 rateDisplay = ratePerKm;
             } else {
-                // 🟠 TRUCK → fixed rate
+                // 🟠 FIXED RATE (trailers + closed body)
                 let fixedRate = 0;
                 if (window.lastDistrictRates) {
                     const match = window.lastDistrictRates.find(r =>
@@ -963,9 +979,9 @@
                     );
                     fixedRate = match ? parseFloat(match.rate) : 0;
                 }
-                baseCost = fixedRate;
+                baseCost = fixedRate; // ✅ no distance multiplication
                 rateDisplay = fixedRate;
-                // ⚠️ Warning if missing
+
                 rateCellExtra = `
                     <div class="rate-message ${!fixedRate ? 'text-danger' : 'text-success'} small mt-1">
                         ${!fixedRate ? '⚠️ Missing fixed rate' : '✔ Rate set'}
@@ -986,12 +1002,12 @@
                     <td>${truck.name}<br><small class="text-muted">${t.bodyType}</small></td>
                     <td>
                         <input type="number"
-                            class="form-control form-control-sm ${isOpenBody ? 'rate-km' : 'fixed-rate'}"
+                            class="form-control form-control-sm ${useFixedRate ? 'fixed-rate' : 'rate-km'}"
                             value="${rateDisplay.toFixed(2)}">
                         <label class="small text-muted">${rateTypeLabel}</label>
                         ${rateCellExtra}
                     </td>
-                    <td class="multiplier">${isOpenBody ? multiplier : '-'}</td>
+                    <td class="multiplier">${useFixedRate ? '-' : multiplier}</td>
                     <td>
                         <input type="number" class="form-control form-control-sm transport-distance"
                             value="${distance.toFixed(1)}" min="1" step="0.1">
@@ -1007,8 +1023,6 @@
         $tbody.html(htmlRows);
         updateTransportTotal();
     }
-
-
 
     // ================================================================
     // WEIGHT AND COST CALCULATIONS
@@ -1129,6 +1143,51 @@
         // 6️⃣ Finally, update all totals
         updatePriceTotals();
     }
+    // ==========================================================
+        //Recalculate quote when distance or product is changed
+    // ==========================================================
+    // Distance/location changes
+    $(document).on('change', '#quote_distance_km', showQuoteRecalcAlert);
+
+    // Product changes
+    $(document).on('click', '.product-add', showQuoteRecalcAlert);
+    $(document).on('click', '.product-pill-remove', showQuoteRecalcAlert);
+
+    function showQuoteRecalcAlert() {
+        Swal.fire({
+            title: 'Quote Update',
+            html: 'The quote will be recalculated based on the latest distance or product changes.',
+            icon: 'info',
+            width: '300px',
+            showCancelButton: false, // no cancel button
+            confirmButtonText: 'OK',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            didOpen: () => {
+                        const popup = Swal.getPopup();
+                        popup.style.fontSize = '13px';
+                        popup.style.padding = '1rem';
+                        Swal.getTitle().style.fontSize = '15px';
+                        Swal.getConfirmButton().style.fontSize = '13px';
+                    }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Show loader before recalculation
+                $('#quote_loader').show();
+
+                // Trigger the recalculation
+                $('#calculate_quote_btn').trigger('click');
+
+                // Wait a small moment for calc (optional, if your calc sets net total asynchronously)
+                setTimeout(() => {
+                    $('#quote_loader').hide();
+                }, 500); // adjust based on calc time
+            }
+        });
+    }
+    // ================================================================
+    // FOR SUBMISSION Functions
+    // ================================================================
 
     // ================================================================
     // DATA COLLECTION FUNCTIONS (FOR SUBMISSION)
@@ -1386,48 +1445,7 @@
         return valid;
     }
 
-    // ==========================================================
-        //Recalculate quote when distance or product is changed
-    // ==========================================================
-    // Distance/location changes
-    $(document).on('change', '#quote_distance_km', showQuoteRecalcAlert);
 
-    // Product changes
-    $(document).on('click', '.product-add', showQuoteRecalcAlert);
-    $(document).on('click', '.product-pill-remove', showQuoteRecalcAlert);
-
-    function showQuoteRecalcAlert() {
-        Swal.fire({
-            title: 'Quote Update',
-            html: 'The quote will be recalculated based on the latest distance or product changes.',
-            icon: 'info',
-            width: '300px',
-            showCancelButton: false, // no cancel button
-            confirmButtonText: 'OK',
-            allowOutsideClick: false,
-            allowEscapeKey: false,
-            didOpen: () => {
-                        const popup = Swal.getPopup();
-                        popup.style.fontSize = '13px';
-                        popup.style.padding = '1rem';
-                        Swal.getTitle().style.fontSize = '15px';
-                        Swal.getConfirmButton().style.fontSize = '13px';
-                    }
-        }).then((result) => {
-            if (result.isConfirmed) {
-                // Show loader before recalculation
-                $('#quote_loader').show();
-
-                // Trigger the recalculation
-                $('#calculate_quote_btn').trigger('click');
-
-                // Wait a small moment for calc (optional, if your calc sets net total asynchronously)
-                setTimeout(() => {
-                    $('#quote_loader').hide();
-                }, 500); // adjust based on calc time
-            }
-        });
-    }
     function formatINR(amount) {
                 if (isNaN(amount)) amount = 0;
                 return '₹ ' + amount.toLocaleString('en-IN', {
